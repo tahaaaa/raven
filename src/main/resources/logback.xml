@@ -1,0 +1,25 @@
+<configuration>
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <!-- encoders are assigned the type ch.qos.logback.classic.encoder.PatternLayoutEncoder by default -->
+        <encoder>
+            <pattern>[%highlight(%level)][%d{ISO8601}][%logger{36}] - %msg%n</pattern>
+        </encoder>
+    </appender>
+    <logger name="com.typesafe.atmos.trace" level="DEBUG" />
+    <logger name="akka.remote.RemoteWatcher" level="INFO" />
+    <logger name="spray.can.server.HttpServerConnection" level="DEBUG" />
+    <logger name="spray.can.client.HttpClientConnection" level="DEBUG" />
+    <logger name="spray.can.client.HttpHostConnector" level="DEBUG" />
+    <logger name="spray.can.client.HttpHostConnectionSlot" level="DEBUG" />
+    <logger name="akka.io.TcpOutgoingConnection" level="DEBUG" />
+    <logger name="spray.can.HttpManager" level="DEBUG" />
+    <logger name="akka.io.TcpIncomingConnection" level="DEBUG" />
+    <logger name="spray.can.server.HttpListener" level="DEBUG" />
+    <logger name="akka.io.SelectionHandler" level="DEBUG" />
+    <logger name="akka.io.TcpListener" level="DEBUG" />
+    <logger name="spray.can.client.HttpClientSettingsGroup" level="DEBUG" />
+    <logger name="akka" level="DEBUG" />
+    <root level="DEBUG">
+        <appender-ref ref="STDOUT" />
+    </root>
+</configuration>
