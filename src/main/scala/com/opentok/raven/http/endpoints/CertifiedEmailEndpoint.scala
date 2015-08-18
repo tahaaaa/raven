@@ -13,16 +13,18 @@ import com.opentok.raven.model.{EmailRequest, Receipt}
 
 class CertifiedEmailEndpoint(handler: ActorRef)(implicit val mat: Materializer, system: ActorSystem) extends Endpoint {
 
-  import GlobalConfig.ACTOR_TIMEOUT
+  import GlobalConfig.ENDPOINT_TIMEOUT
 
   implicit val logger: LoggingAdapter = system.log
 
   val route: Route =
-    path("certified") {
-      post {
-        entity(as[Either[List[EmailRequest], EmailRequest]]) {
-          case Right(req) ⇒ complete(handler.ask(req).mapTo[Receipt])
-          case Left(lReq) ⇒ complete(handler.ask(lReq).mapTo[Receipt])
+    post {
+      path("certified") {
+        pathEndOrSingleSlash {
+          entity(as[Either[List[EmailRequest], EmailRequest]]) {
+            case Right(req) ⇒ complete(handler.ask(EmailRequest.fillInRequest(req)).mapTo[Receipt])
+            case Left(lReq) ⇒ complete(handler.ask(lReq.map(EmailRequest.fillInRequest)).mapTo[Receipt])
+          }
         }
       }
     }

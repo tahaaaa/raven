@@ -13,11 +13,14 @@ class PriorityEmailEndpoint(handler: ActorRef)(implicit val mat: Materializer, s
 
   import GlobalConfig.ENDPOINT_TIMEOUT
 
-  val route: Route = path("priority") {
+  val route: Route =
     post {
-      entity(as[EmailRequest]) { req ⇒
-        complete(handler.ask(req).mapTo[Receipt])
+      path("priority") {
+        pathEndOrSingleSlash {
+          entity(as[EmailRequest]) { req ⇒
+            complete(handler.ask(EmailRequest.fillInRequest(req)).mapTo[Receipt])
+          }
+        }
       }
     }
-  }
 }

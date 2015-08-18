@@ -4,7 +4,7 @@ import akka.actor.{ActorRef, ActorSystem, Props}
 import akka.stream.ActorMaterializer
 import com.opentok.raven.GlobalConfig
 import com.opentok.raven.dal.{MysqlDal, Dal}
-import com.opentok.raven.service.actors.{CertifiedCourier, MonitoringActor, PriorityCourier, EmailSupervisor}
+import com.opentok.raven.service.actors._
 
 trait System {
   implicit val system: ActorSystem
@@ -22,11 +22,20 @@ trait AkkaSystem extends System {
   implicit val system = ActorSystem("raven")
   implicit val materializer: ActorMaterializer = ActorMaterializer()
 
-  val certifiedService = system.actorOf(Props(classOf[EmailSupervisor],
-    Props(classOf[CertifiedCourier], emailRequestDao), GlobalConfig.CERTIFIED_POOL), "certified-service")
+  val sendgridActor: ActorRef = system.actorOf(Props[SendgridActor], "SendgridActor")
 
-  val priorityService = system.actorOf(Props(classOf[EmailSupervisor],
-    Props(classOf[PriorityCourier], emailRequestDao), GlobalConfig.PRIORITY_POOL).withDispatcher("akka.actor.priority-dispatcher"), "priority-service")
+  val certifiedService = system.actorOf(
+    Props(classOf[EmailSupervisor],
+      Props(classOf[CertifiedCourier], emailRequestDao, sendgridActor),
+      GlobalConfig.CERTIFIED_POOL, emailRequestDao),
+    "certified-service"
+  )
 
-  val monitoringService = system.actorOf(Props(classOf[MonitoringActor], certifiedService, priorityService, db, driver, materializer), "monitoring-service")
+  val priorityService = system.actorOf(
+    Props(classOf[EmailSupervisor],
+      Props(classOf[PriorityCourier], emailRequestDao, sendgridActor),
+      GlobalConfig.PRIORITY_POOL, emailRequestDao).withDispatcher("akka.actor.priority-dispatcher"),
+    "priority-service")
+
+  val monitoringService = system.actorOf(Props(classOf[MonitoringActor], certifiedService, priorityService, db, driver), "monitoring-service")
 }

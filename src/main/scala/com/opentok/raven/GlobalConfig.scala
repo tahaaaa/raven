@@ -16,6 +16,8 @@ class GlobalConfig(config: Config) {
   val HOST = config.getString("raven.host")
 
   val PORT = config.getInt("raven.port")
+  
+  val SENDGRID_API_KEY = config.getString("raven.sendgrid.api-key")
 
   val MAX_RETRIES = config.getInt("raven.max_retries")
 

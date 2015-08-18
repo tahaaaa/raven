@@ -15,9 +15,9 @@ import spray.json._
 case class EmailRequest(
   to: String,
   template_id: String,
-  inject: Map[String, String] = Map.empty,
-  status: EmailRequest.Status = EmailRequest.Pending,
-  id: String = UUID.randomUUID.toString
+  inject: Option[Map[String, String]],
+  status: Option[EmailRequest.Status],
+  id: Option[String]
 ) {
 
   @transient
@@ -29,6 +29,14 @@ case class EmailRequest(
 
 object EmailRequest {
   import spray.json.DefaultJsonProtocol._
+
+  //transforms an incoming request without id and status
+  val fillInRequest = { req: EmailRequest ⇒
+    req.copy(
+      id = Some(UUID.randomUUID.toString),
+      status = Some(EmailRequest.Pending)
+    )
+  }
 
   sealed trait Status
 

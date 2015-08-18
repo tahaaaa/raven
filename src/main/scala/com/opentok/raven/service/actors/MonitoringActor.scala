@@ -22,12 +22,14 @@ object MonitoringActor {
 
 }
 
-class MonitoringActor(certifiedService: ActorRef, priorityService: ActorRef, db: JdbcBackend#Database, driver: JdbcProfile, materializer: ActorMaterializer) extends Actor with ActorLogging {
+class MonitoringActor(certifiedService: ActorRef, priorityService: ActorRef, db: JdbcBackend#Database, driver: JdbcProfile)
+  extends Actor with ActorLogging {
 
   import com.opentok.raven.GlobalConfig.ACTOR_TIMEOUT
   import context.dispatcher
   import driver.api._
 
+  implicit val materializer: ActorMaterializer = ActorMaterializer()
   implicit val logger: LoggingAdapter = log
   lazy val selfConnectionFlow: Flow[HttpRequest, HttpResponse, Any] =
     Http(context.system).outgoingConnection(GlobalConfig.HOST, GlobalConfig.PORT)
@@ -35,7 +37,7 @@ class MonitoringActor(certifiedService: ActorRef, priorityService: ActorRef, db:
   override def receive: Receive = {
 
     case ComponentHealthCheck("api") ⇒
-      Source.single(RequestBuilding.Get("/v1/monitoring/health/")).via(selfConnectionFlow).runWith(Sink.head)(materializer).map { i ⇒
+      Source.single(RequestBuilding.Get("/v1/monitoring/health/")).via(selfConnectionFlow).runWith(Sink.head).map { i ⇒
         Receipt.success(Some("OK"), None)
       } recover {
         case e: Exception ⇒ Receipt.error(e, "Unable to establish communication with api")

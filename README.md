@@ -5,19 +5,19 @@
 ```javascript
 GET /v1/monitoring/health?component=<component>
 
-<receipt>
+← <receipt>
 
 
 POST /v1/priority
 
- -> <EmailRequest>
- <- <Receipt>
+→ <EmailRequest>
+← <Receipt>
 
 
 POST /v1/certified
 
- -> <EmailRequest> || [ <EmailRequest> .. N ]
- <- <Receipt>
+→ <EmailRequest> || [ <EmailRequest> .. N ]
+← <Receipt>
 
 ```
 

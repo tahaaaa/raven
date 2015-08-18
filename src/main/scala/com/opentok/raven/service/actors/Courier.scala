@@ -14,13 +14,22 @@ import scala.util.{Failure, Success, Try}
 trait Courier {
   this: Actor with ActorLogging ⇒
 
+  val requestToTemplate = { req: EmailRequest ⇒
+
+  }
+
   def persistSuccessOrFailure(req: EmailRequest, emails: EmailRequestDao)(implicit ctx: ExecutionContext): PartialFunction[Try[Receipt], Unit] = {
     case Success(receipt) if receipt.success ⇒
-      log.info(s"Successfully forwarded to sendgrid request with id ${req.id}")
-      emails.persistRequest(req.copy(status = EmailRequest.Succeeded)).onComplete(logPersist(req))
-    case Failure(e) ⇒
-      emails.persistRequest(req.copy(status = EmailRequest.Failed)).onComplete(logPersist(req))
-      log.error(e, s"There was a problem when forwarding to sendgrid request with id ${req.id}")
+      log.info(s"Successfully forwarded to sendgrid, request with id ${req.id}")
+      emails.persistRequest(req.copy(status = Some(EmailRequest.Succeeded))).onComplete(logPersist(req))
+    case anyElse ⇒
+      emails.persistRequest(req.copy(status = Some(EmailRequest.Failed))).onComplete(logPersist(req))
+      anyElse match {
+        case Success(failedReceipt) ⇒
+          log.error(s"Receipt from sendgrid Actor success is false $failedReceipt")
+        case Failure(e) ⇒
+          log.error(e, s"There was a failure in the request with id ${req.id} pipe to sendgridActor")
+      }
   }
 
   def logPersist(req: EmailRequest): PartialFunction[Try[Int], Unit] = {
@@ -30,17 +39,17 @@ trait Courier {
       log.error(e, s"There was an error when persisting request with id ${req.id} to database")
   }
 
-  def exceptionToReceipt(req: EmailRequest):PartialFunction[Throwable, Receipt] = {
+  def exceptionToReceipt(req: EmailRequest): PartialFunction[Throwable, Receipt] = {
     case e: Exception ⇒
-      Receipt(success = false, requestId = Some(req.id),
-        message = Some("There was a problem when processing email request"),
-        errors = e.getCause.getMessage :: e.getMessage :: Nil)
+      Receipt(success = false, requestId = req.id,
+        message = Some(s"There was a problem when processing email request with id ${req.id}"),
+        errors = e.getMessage :: Nil)
   }
 
   def responseToReceipt(req: EmailRequest): PartialFunction[HttpResponse, Receipt] = {
     case response if response.status.isSuccess() ⇒
-      Receipt(success = true, requestId = Some(req.id))
-    case response ⇒ Receipt(success = false, requestId = Some(req.id),
+      Receipt(success = true, requestId = req.id)
+    case response ⇒ Receipt(success = false, requestId = req.id,
       Some(response.status.defaultMessage()), errors = response.status.reason :: Nil)
   }
 }

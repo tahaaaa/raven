@@ -4,6 +4,7 @@ import akka.actor._
 import akka.event.LoggingAdapter
 import akka.routing._
 import com.opentok.raven.GlobalConfig
+import com.opentok.raven.dal.components.EmailRequestDao
 import com.opentok.raven.model.{EmailRequest, Receipt}
 
 import scala.concurrent.duration._
@@ -11,9 +12,13 @@ import scala.util.Random
 
 /**
  * Service Supervisor
+ * TODO document
+ *
  * @param superviseeProps Actor configuration object used to instantiate new [[Actor]]
+ * @param pool number of actors to supervise and create using props
+ * @param emailDao
  */
-class EmailSupervisor(superviseeProps: Props, pool: Int) extends Actor with ActorLogging {
+class EmailSupervisor(superviseeProps: Props, pool: Int, emailDao: EmailRequestDao) extends Actor with ActorLogging {
 
   case class SupervisedRequest(request: EmailRequest, requester: ActorRef, handler: ActorRef)
 
@@ -28,18 +33,18 @@ class EmailSupervisor(superviseeProps: Props, pool: Int) extends Actor with Acto
     case anyEx if sender().path.name.contains("supervisee") ⇒
       val routee = sender()
       inFlight.find(_._1.handler == routee)
-        .map(retryOrFail)
+        .map(retryOrReplyBack(None))
         .getOrElse(logNotFound("Routee not handling any in flight requests. Resuming.."))
       SupervisorStrategy.Resume
     case e: Exception ⇒ SupervisorStrategy.Escalate //should never happen
-    case e:Throwable ⇒ SupervisorStrategy.Escalate
+    case e: Throwable ⇒ SupervisorStrategy.Escalate
   }
 
   implicit val logger: LoggingAdapter = log
 
   val poolN = 0 until pool
 
-  val supervisee: Vector[ActorRef] = poolN.foldLeft(Vector.empty[ActorRef]){ (vec, i) ⇒
+  val supervisee: Vector[ActorRef] = poolN.foldLeft(Vector.empty[ActorRef]) { (vec, i) ⇒
     val routee = context.actorOf(superviseeProps, s"supervisee-$i")
     context.watch(routee)
     vec :+ routee
@@ -48,14 +53,41 @@ class EmailSupervisor(superviseeProps: Props, pool: Int) extends Actor with Acto
   //uuid -> n tries
   val inFlight: scala.collection.mutable.Map[SupervisedRequest, Int] = scala.collection.mutable.Map.empty
 
-  def retryOrFail: PartialFunction[(SupervisedRequest, Int), Unit] = {
+  def retryOrReplyBack(receipt: Option[Receipt]): PartialFunction[(SupervisedRequest, Int), Unit] = {
     case (supervisedRequest, retries) if retries < GlobalConfig.MAX_RETRIES ⇒
-      context.system.scheduler.scheduleOnce((5 * retries).seconds, self, supervisedRequest.request)
+      //check that email was not really sent and only if status in db is not completed, retry again
+      supervisedRequest.request.id.map { id ⇒
+        emailDao.retrieveRequest(id).map {
+          case Some(req) ⇒ req.status match {
+            case Some(status) if status == EmailRequest.Failed || status == EmailRequest.Pending ⇒
+              log.warning(s"It looks like request with id $id is failed or still pending. Retrying now..")
+              context.system.scheduler.scheduleOnce((5 * retries).seconds, self, supervisedRequest.request)
+            case Some(status) if status == EmailRequest.Succeeded ⇒
+              val msg = "Request with id appears to have succeded. Aborting retry mechanism"
+              supervisedRequest.requester ! receipt.getOrElse(Receipt(success = true,
+                requestId = Some(id), message = Some(msg)))
+              log.warning(msg)
+            case None ⇒
+              val msg = "Request not found in database. Unable to determine status. Aborting retry mechanism!"
+              supervisedRequest.requester ! receipt.getOrElse(Receipt(success = false,
+                requestId = Some(id), message = Some(msg)))
+              log.error(msg)
+          }
+          case None ⇒
+            val msg = s"Weird. Request with id $id was not persisted first time. Aborting retry mechanism!"
+            supervisedRequest.requester ! receipt.getOrElse(Receipt(success = false,
+              requestId = Some(id), message = Some(msg)))
+            log.error(msg)
+        }
+      }.getOrElse {
+        log.error("Could use retry mechanism because request doesn't have a request id")
+      }
+
     case (supervisedRequest, retries) ⇒
       val msg = s"Retried request ${supervisedRequest.request} ${GlobalConfig.MAX_RETRIES} times unsuccessfully"
       log.error(msg)
       supervisedRequest.requester ! Receipt.error(new Exception(s"Maximum number of retries reached"), msg,
-        requestId = Some(supervisedRequest.request.id))
+        requestId = supervisedRequest.request.id)
   }
 
   def superviseRequest(req: EmailRequest, requester: ActorRef) {
@@ -75,8 +107,10 @@ class EmailSupervisor(superviseeProps: Props, pool: Int) extends Actor with Acto
     handler ! req
   }
 
-  def logNotFound(reason: String): Unit = {
-    log.warning(s"Could not send receipt back to original requester. $reason")
+  val logNotFound = { reason: String ⇒
+    log.debug("Control map {}", inFlight)
+    log.error(s"Could not send receipt back to original requester. $reason")
+    stringReturn: String ⇒ stringReturn
   }
 
   override def receive: Receive = {
@@ -99,7 +133,7 @@ class EmailSupervisor(superviseeProps: Props, pool: Int) extends Actor with Acto
 
     case rec: Receipt if rec.success ⇒
       rec.requestId.map { id ⇒
-        inFlight.find(_._1.request.id == id).map { request ⇒
+        inFlight.find(_._1.request.id.getOrElse("") == id).map { request ⇒
           //reply to requester
           request._1.requester ! rec
           //remove from control map
@@ -109,15 +143,15 @@ class EmailSupervisor(superviseeProps: Props, pool: Int) extends Actor with Acto
 
     case rec: Receipt if !rec.success ⇒
       rec.requestId.map { id ⇒
-        inFlight.find(_._1.request.id == id)
-          .map(retryOrFail)
-          .getOrElse(log.error("This is impossible! Unsuccessful receipt has a receipt id but id not present in control map.."))
-      }.getOrElse(log.error(s"Unable to retry because receipt doesn't have a requestId!! Dropping $rec"))
+        inFlight.find(_._1.request.id.getOrElse("") == id)
+          .map(retryOrReplyBack(Some(rec)))
+          .getOrElse(logNotFound("This is impossible! Unsuccessful receipt has a receipt id but id not present in control map.."))
+      }.getOrElse(logNotFound(s"Unable to retry because receipt doesn't have a requestId!! Dropping $rec"))
 
     case anyElse ⇒
       log.warning(s"Not an acceptable request $anyElse")
 
-//    case Terminated(routee) ⇒ not handled to force trigger DeathPactException
+    //    case Terminated(routee) ⇒ not handled to force trigger DeathPactException
 
   }
 }

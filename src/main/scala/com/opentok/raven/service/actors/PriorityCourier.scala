@@ -16,32 +16,28 @@ import scala.concurrent.Future
  * the receipt to the requester.
  *
  * @param emailsDao email requests data access object
+ * @param sendgridActor actor instance
  */
 
-class PriorityCourier(emailsDao: EmailRequestDao) extends Actor with ActorLogging with Courier {
+class PriorityCourier(emailsDao: EmailRequestDao, sendgridActor: ActorRef) extends Actor with ActorLogging with Courier {
 
   import context.dispatcher
 
   implicit val timeout: Timeout = GlobalConfig.ACTOR_TIMEOUT
-
-  val sendgridActor: ActorRef = context.system.deadLetters
 
   override def receive: Receive = {
     case req: EmailRequest ⇒
       log.info(s"Received request with id ${req.id}")
       log.debug("Received {}", req)
 
-      //TODO map request to template
       //query sendgrid via sendgridActor and map/recover HttpResponse to Receipt
-      val fReceipt: Future[Receipt] = sendgridActor.ask(req).mapTo[HttpResponse]
+      sendgridActor.ask(req).mapTo[HttpResponse]
         .map(responseToReceipt(req))
         .recover(exceptionToReceipt(req))
-
-      //install pipe of future receipt to sender
-      fReceipt pipeTo sender()
-
-      //install persist success or failure to db
-      fReceipt.onComplete(persistSuccessOrFailure(req, emailsDao))
+        //install side effecting persist to db, guaranteeing order of callbacks
+        .andThen(persistSuccessOrFailure(req, emailsDao))
+        //install pipe of future receipt to sender
+        .pipeTo(sender())
 
     case anyElse ⇒ log.warning(s"Not an acceptable request $anyElse")
   }
