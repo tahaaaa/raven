@@ -24,7 +24,7 @@ object MonitoringActor {
 
 class MonitoringActor(certifiedService: ActorRef, priorityService: ActorRef, db: JdbcBackend#Database, driver: JdbcProfile, materializer: ActorMaterializer) extends Actor with ActorLogging {
 
-  import com.opentok.raven.GlobalConfig.DEFAULT_TIMEOUT
+  import com.opentok.raven.GlobalConfig.ACTOR_TIMEOUT
   import context.dispatcher
   import driver.api._
 

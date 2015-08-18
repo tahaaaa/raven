@@ -1,30 +1,53 @@
 package com.opentok.raven.service.actors
 
-import akka.actor.{Actor, ActorLogging}
-import akka.event.LoggingAdapter
+import akka.actor.{Actor, ActorLogging, ActorRef}
+import akka.http.scaladsl.model.HttpResponse
+import akka.pattern._
+import akka.util.Timeout
+import com.opentok.raven.GlobalConfig
 import com.opentok.raven.dal.components.EmailRequestDao
-import com.opentok.raven.model.Receipt
-import com.opentok.raven.service.actors.EmailSupervisor.RelayEmailCmd
+import com.opentok.raven.model.{EmailRequest, Receipt}
 
-class CertifiedCourier(emails: EmailRequestDao) extends Actor with ActorLogging {
+import scala.concurrent.Future
+
+/**
+ * Upon receiving an email request, this actor will first
+ * persist an attempt in the db, then forward request to sendgridActor
+ * to finally update previously saved record to success or failure.
+ * @param emailsDao email requests data access object
+ */
+class CertifiedCourier(emailsDao: EmailRequestDao) extends Actor with ActorLogging with Courier {
 
   import context.dispatcher
-  implicit val logger: LoggingAdapter = log
+  import GlobalConfig.ACTOR_TIMEOUT
 
-  var reqNo = 0
+  val sendgridActor: ActorRef = context.system.deadLetters
 
   override def receive: Receive = {
-    case req@RelayEmailCmd(msg) ⇒
-      reqNo += 1
-      log.info(s"Received $req request with id '$reqNo'")
-      emails.persistRequest(req).map { i ⇒
-        log.info(s"Saved $req with id '$reqNo' successfully into database")
-        Receipt.success
-      }.recover {
+    case req: EmailRequest ⇒
+      log.info(s"Received request with id ${req.id}")
+      log.debug("Received {}", req)
+
+      //TODO map request to template
+      //persist request attempt
+      val fReceipt: Future[Receipt] = emailsDao.persistRequest(req).flatMap { i ⇒
+        sendgridActor.ask(req).mapTo[HttpResponse]
+          .map(responseToReceipt(req))
+          .recover(exceptionToReceipt(req))
+      }.recoverWith { //if persist request attempt fails, we skip step and try to send anyway
         case e: Exception ⇒
-          val msg = "Something went wrong when trying to persist relay request"
-          log.error(e, msg)
-          Receipt.error(e, msg)
+          log.warning("There was a problem when trying to save request before forwarding it to sendgridActor. Skipping persist..")
+          sendgridActor.ask(req).mapTo[HttpResponse]
+            .map(responseToReceipt(req))
+            .recover(exceptionToReceipt(req))
       }
+
+      //install pipe of future receipt to sender
+      fReceipt pipeTo sender()
+
+      //install persist success or failure to db
+      fReceipt.onComplete(persistSuccessOrFailure(req, emailsDao))
+
+    case anyElse ⇒ log.warning(s"Not an acceptable request $anyElse")
   }
 }

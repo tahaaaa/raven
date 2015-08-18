@@ -5,6 +5,7 @@ import akka.event.LoggingAdapter
 import akka.http.scaladsl.server.Route
 import akka.stream.Materializer
 import akka.http.scaladsl.server.Directives._
+import com.opentok.raven.GlobalConfig
 import com.opentok.raven.http.{Endpoint, JsonProtocols}
 import akka.pattern.ask
 import com.opentok.raven.model.Receipt
@@ -19,7 +20,7 @@ import scala.concurrent.Future
  */
 class MonitoringEndpoint(handler: ActorRef)(implicit val mat: Materializer, system: ActorSystem) extends Endpoint {
 
-  import com.opentok.raven.GlobalConfig.DEFAULT_TIMEOUT
+  import GlobalConfig.ENDPOINT_TIMEOUT
   import mat.executionContext
 
   implicit val logger: LoggingAdapter = system.log
@@ -30,8 +31,10 @@ class MonitoringEndpoint(handler: ActorRef)(implicit val mat: Materializer, syst
         get {
           parameters('component.as[String]) { component ⇒
             complete {
-              handler.ask(MonitoringActor.ComponentHealthCheck(component)).mapTo[Receipt] recover {
-                case e: Exception ⇒ Receipt.error(e, Some(s"MonitoringActor in path ${handler.path} seems unresponsive"))
+              handler.ask(MonitoringActor.ComponentHealthCheck(component))
+                .mapTo[Receipt]
+                .recover {
+                case e: Exception ⇒ Receipt.error(e, s"MonitoringActor in path ${handler.path} seems unresponsive", None)
               }
             }
           }

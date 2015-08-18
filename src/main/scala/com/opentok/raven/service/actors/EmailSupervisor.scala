@@ -2,43 +2,77 @@ package com.opentok.raven.service.actors
 
 import akka.actor._
 import akka.event.LoggingAdapter
+import akka.routing._
 import com.opentok.raven.GlobalConfig
 import com.opentok.raven.model.{EmailRequest, Receipt}
 
 import scala.concurrent.duration._
+import scala.util.Random
 
 /**
  * Service Supervisor
  * @param superviseeProps Actor configuration object used to instantiate new [[Actor]]
  */
-class EmailSupervisor(superviseeProps: Props) extends Actor with ActorLogging {
+class EmailSupervisor(superviseeProps: Props, pool: Int) extends Actor with ActorLogging {
 
-  case class SupervisedRequest(request: EmailRequest, requester: ActorRef)
+  case class SupervisedRequest(request: EmailRequest, requester: ActorRef, handler: ActorRef)
+
+  import context.dispatcher
+
+  override def preStart(): Unit = {
+    log.info(s"Supervisor up and monitoring $superviseeProps with a pool of $pool actors")
+  }
 
   /* The policy to apply when a supervisee crashes */
   override def supervisorStrategy: SupervisorStrategy = OneForOneStrategy() {
-    case e: Exception ⇒ SupervisorStrategy.Restart
+    case anyEx if sender().path.name.contains("supervisee") ⇒
+      val routee = sender()
+      inFlight.find(_._1.handler == routee)
+        .map(retryOrFail)
+        .getOrElse(logNotFound("Routee not handling any in flight requests. Resuming.."))
+      SupervisorStrategy.Resume
+    case e: Exception ⇒ SupervisorStrategy.Escalate //should never happen
+    case e:Throwable ⇒ SupervisorStrategy.Escalate
   }
 
   implicit val logger: LoggingAdapter = log
 
-  val supervisee = context.actorOf(superviseeProps)
+  val poolN = 0 until pool
+
+  val supervisee: Vector[ActorRef] = poolN.foldLeft(Vector.empty[ActorRef]){ (vec, i) ⇒
+    val routee = context.actorOf(superviseeProps, s"supervisee-$i")
+    context.watch(routee)
+    vec :+ routee
+  }
 
   //uuid -> n tries
   val inFlight: scala.collection.mutable.Map[SupervisedRequest, Int] = scala.collection.mutable.Map.empty
 
+  def retryOrFail: PartialFunction[(SupervisedRequest, Int), Unit] = {
+    case (supervisedRequest, retries) if retries < GlobalConfig.MAX_RETRIES ⇒
+      context.system.scheduler.scheduleOnce((5 * retries).seconds, self, supervisedRequest.request)
+    case (supervisedRequest, retries) ⇒
+      val msg = s"Retried request ${supervisedRequest.request} ${GlobalConfig.MAX_RETRIES} times unsuccessfully"
+      log.error(msg)
+      supervisedRequest.requester ! Receipt.error(new Exception(s"Maximum number of retries reached"), msg,
+        requestId = Some(supervisedRequest.request.id))
+  }
+
   def superviseRequest(req: EmailRequest, requester: ActorRef) {
-    inFlight.find(_._1.request.id == req.id).map {
+    val handler: ActorRef = inFlight.find(_._1.request.id == req.id).map {
       //already registered, update retries
       request ⇒
         log.info(s"EmailRequest already registered, currently with ${request._2} retries")
         inFlight.update(request._1, request._2 + 1)
+        request._1.handler
     }.getOrElse {
       // first try
       log.info(s"Supervising EmailRequest with id ${req.id}")
-      inFlight.update(SupervisedRequest(req, requester), 1)
+      val routee = supervisee(poolN(new scala.util.Random nextInt pool))
+      inFlight.update(SupervisedRequest(req, requester, routee), 1)
+      routee
     }
-    supervisee ! req
+    handler ! req
   }
 
   def logNotFound(reason: String): Unit = {
@@ -75,15 +109,15 @@ class EmailSupervisor(superviseeProps: Props) extends Actor with ActorLogging {
 
     case rec: Receipt if !rec.success ⇒
       rec.requestId.map { id ⇒
-        inFlight.find(_._1.request.id == id).map {
-          case (supervisedRequest, retries) if retries < GlobalConfig.MAX_RETRIES ⇒
-            context.system.scheduler.scheduleOnce((5 * retries).seconds, self, supervisedRequest.request)
-          case (supervisedRequest, retries) ⇒
-            val msg = s"Retried request ${supervisedRequest.request} ${GlobalConfig.MAX_RETRIES} times unsuccessfully"
-            log.error(msg)
-            supervisedRequest.requester ! Receipt.error(new Exception(s"Maximum number of retries reached"), msg,
-              requestId = Some(supervisedRequest.request.id))
-        }.getOrElse(log.error("This is impossible! Unsuccessful receipt has a receipt id but id not present in control map.."))
+        inFlight.find(_._1.request.id == id)
+          .map(retryOrFail)
+          .getOrElse(log.error("This is impossible! Unsuccessful receipt has a receipt id but id not present in control map.."))
       }.getOrElse(log.error(s"Unable to retry because receipt doesn't have a requestId!! Dropping $rec"))
+
+    case anyElse ⇒
+      log.warning(s"Not an acceptable request $anyElse")
+
+//    case Terminated(routee) ⇒ not handled to force trigger DeathPactException
+
   }
 }

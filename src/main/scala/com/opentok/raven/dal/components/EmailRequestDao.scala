@@ -14,9 +14,8 @@ trait EmailRequestDao {
 
 class EmailRequestSlickDao()(implicit driver: JdbcProfile, db: JdbcBackend#Database) extends EmailRequestDao {
 
-  import driver.api._
-
-  def persistRequest(req: EmailRequest): Future[Int] =
-    db.run(sqlu"INSERT INTO email_requests (message) VALUES (${req.message})")
+  //TODO
+  def persistRequest(req: EmailRequest): Future[Int] = ???
+  //    db.run(sqlu"INSERT INTO email_requests (message) VALUES (${req.message})")
 
 }

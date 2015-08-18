@@ -19,7 +19,13 @@ class GlobalConfig(config: Config) {
 
   val MAX_RETRIES = config.getInt("raven.max_retries")
 
-  implicit val DEFAULT_TIMEOUT: Timeout = config.getDuration("raven.timeout", TimeUnit.MILLISECONDS)
+  val CERTIFIED_POOL = config.getInt("raven.certified-pool")
+
+  val PRIORITY_POOL = config.getInt("raven.priority-pool")
+
+  implicit val ACTOR_TIMEOUT: Timeout = config.getDuration("raven.actor-timeout", TimeUnit.MILLISECONDS)
+  
+  implicit val ENDPOINT_TIMEOUT: Timeout = config.getDuration("raven.endpoint-timeout", TimeUnit.MILLISECONDS)
 
   implicit val DB_CHECK: String = config.getString("raven.database.connectionTestQuery")
 
