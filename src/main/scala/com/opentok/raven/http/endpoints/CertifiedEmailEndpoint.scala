@@ -8,7 +8,7 @@ import akka.pattern.ask
 import akka.stream.Materializer
 import com.opentok.raven.GlobalConfig
 import com.opentok.raven.http.{Endpoint, JsonProtocols}
-import com.opentok.raven.model.Receipt
+import com.opentok.raven.model.{EmailRequest, Receipt}
 import com.opentok.raven.service.actors.EmailSupervisor
 
 
@@ -21,14 +21,18 @@ class CertifiedEmailEndpoint(handler: ActorRef)(implicit val mat: Materializer, 
   val route: Route = pathPrefix("certified") {
     post {
       path("send") {
-        entity(as[EmailSupervisor.RelayEmailCmd]) { cmd ⇒
+        entity(as[EmailRequest]) { req ⇒
           complete {
-            handler.ask(cmd).mapTo[Receipt]
+            handler.ask(req).mapTo[Receipt]
           }
         }
       } ~
-        path("sendBatch") {
-          complete("OK")
+        path("send_batch") {
+          entity(as[List[EmailRequest]]) { reqs ⇒
+            complete {
+              handler.ask(reqs).mapTo[Receipt]
+            }
+          }
         }
     }
   }

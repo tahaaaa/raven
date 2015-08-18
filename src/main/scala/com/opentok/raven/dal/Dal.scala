@@ -12,6 +12,6 @@ trait Dal {
 
 trait MysqlDal extends Dal {
   implicit val driver: JdbcProfile = slick.driver.MySQLDriver
-  implicit val db: JdbcBackend#Database = driver.backend.Database.forConfig("hermes.database")
+  implicit val db: JdbcBackend#Database = driver.backend.Database.forConfig("raven.database")
   val emailRequestDao: EmailRequestDao = new EmailRequestSlickDao()
 }

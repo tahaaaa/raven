@@ -31,14 +31,14 @@ class MonitoringEndpoint(handler: ActorRef)(implicit val mat: Materializer, syst
           parameters('component.as[String]) { component ⇒
             complete {
               handler.ask(MonitoringActor.ComponentHealthCheck(component)).mapTo[Receipt] recover {
-                case e: Exception ⇒ Receipt.error(e, s"MonitoringActor in path ${handler.path} seems unresponsive")
+                case e: Exception ⇒ Receipt.error(e, Some(s"MonitoringActor in path ${handler.path} seems unresponsive"))
               }
             }
           }
         } ~
           get {
             complete {
-              Receipt.success("OK")
+              Receipt.success(Some("OK"), None)
             }
           }
       }

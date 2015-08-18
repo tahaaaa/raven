@@ -18,7 +18,7 @@ trait System {
 trait AkkaSystem extends System {
   this: Dal ⇒
 
-  implicit val system = ActorSystem("hermes")
+  implicit val system = ActorSystem("raven")
   implicit val materializer: ActorMaterializer = ActorMaterializer()
 
   val certifiedService = system.actorOf(Props(classOf[EmailSupervisor],

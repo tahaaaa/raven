@@ -13,11 +13,6 @@ POST /v1/priority/send
 <EmailRequest> -> <Receipt>
 
 
-POST /v1/priority/send_batch
-
-[ <EmailRequest> ] -> <Receipt>
-
-
 POST /v1/certified/send
 
 <EmailRequest> -> <Receipt>

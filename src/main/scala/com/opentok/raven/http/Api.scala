@@ -16,7 +16,7 @@ trait AkkaApi extends Api {
 
   val monitoring = new MonitoringEndpoint(monitoringService)
 
-  val routeTree = logRequestResult("hermes") {
+  val routeTree = logRequestResult("raven") {
     Route.seal(pathPrefix("v1") {
       priority.route ~ certified.route ~ monitoring.route
     })

@@ -13,12 +13,14 @@ object GlobalConfig extends GlobalConfig(ConfigFactory.load())
 
 class GlobalConfig(config: Config) {
 
-  val HOST = config.getString("hermes.host")
+  val HOST = config.getString("raven.host")
 
-  val PORT = config.getInt("hermes.port")
+  val PORT = config.getInt("raven.port")
 
-  implicit val DEFAULT_TIMEOUT: Timeout = config.getDuration("hermes.timeout", TimeUnit.MILLISECONDS)
+  val MAX_RETRIES = config.getInt("raven.max_retries")
 
-  implicit val DB_CHECK: String = config.getString("hermes.database.connectionTestQuery")
+  implicit val DEFAULT_TIMEOUT: Timeout = config.getDuration("raven.timeout", TimeUnit.MILLISECONDS)
+
+  implicit val DB_CHECK: String = config.getString("raven.database.connectionTestQuery")
 
 }

@@ -7,6 +7,6 @@ import slick.jdbc.JdbcBackend
 
 class MockDal extends Dal {
   implicit val driver: JdbcProfile = H2Driver
-  implicit val db: JdbcBackend#Database = driver.backend.Database.forConfig("hermes.database")
+  implicit val db: JdbcBackend#Database = driver.backend.Database.forConfig("raven.database")
   val emailRequestDao: EmailRequestDao = new EmailRequestSlickDao()
 }

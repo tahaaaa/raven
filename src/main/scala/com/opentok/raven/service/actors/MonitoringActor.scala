@@ -36,7 +36,7 @@ class MonitoringActor(certifiedService: ActorRef, priorityService: ActorRef, db:
 
     case ComponentHealthCheck("api") ⇒
       Source.single(RequestBuilding.Get("/v1/monitoring/health/")).via(selfConnectionFlow).runWith(Sink.head)(materializer).map { i ⇒
-        Receipt.success("OK")
+        Receipt.success(Some("OK"), None)
       } recover {
         case e: Exception ⇒ Receipt.error(e, "Unable to establish communication with api")
       } pipeTo sender()
@@ -45,21 +45,23 @@ class MonitoringActor(certifiedService: ActorRef, priorityService: ActorRef, db:
       (for {
         idCertified ← certifiedService ? Identify("certified")
         idPriority ← priorityService ? Identify("priority")
-      } yield Receipt.success("OK")) recover {
+      } yield Receipt.success(Some("OK"), None)) recover {
         case e: Exception ⇒ Receipt.error(e, "Unable to establish communication with services")
       } pipeTo sender()
 
     case ComponentHealthCheck("dal") ⇒ sender() ! Try {
       val conn = db.source.createConnection()
-      val r = Receipt(conn.createStatement().execute(conn.nativeSQL(GlobalConfig.DB_CHECK)), "OK")
+      val r = Receipt(conn.createStatement().execute(conn.nativeSQL(GlobalConfig.DB_CHECK)), Some("OK"))
       conn.close()
       r
     }.recover {
       case e: Exception ⇒ Receipt.error(e, s"Unable to establish communication with db $db using driver $driver")
     }.get
 
-    case ComponentHealthCheck(_) ⇒ sender() ! Receipt.error(new Exception("Not a valid component. Try 'dal', 'service' or 'api')"))
+    case ComponentHealthCheck(_) ⇒ sender() ! Receipt.error(
+      new Exception("Not a valid component. Try 'dal', 'service' or 'api')"), "Error when processing request")
 
-    case _ ⇒ sender() ! Receipt.error(new Exception("Unable to understand message"))
+    case msg ⇒ sender() ! Receipt.error(
+      new Exception(s"Unable to understand message $msg"), "Not a valid monitoring request")
   }
 }

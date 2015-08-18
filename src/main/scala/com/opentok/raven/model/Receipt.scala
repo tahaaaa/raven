@@ -5,11 +5,17 @@ import spray.json.DefaultJsonProtocol._
 import spray.json.{JsObject, RootJsonFormat}
 
 /**
- * Task receipt.
+ * Service Task receipt
  * @param success Boolean if whether task was successful or not
+ * @param requestId Optional request id value
+ * @param message Optional reply message
  * @param errors List of errors, if any.
  */
-case class Receipt(success: Boolean, message: String = "", errors: List[String] = List.empty) {
+case class Receipt(
+  success: Boolean,
+  requestId: Option[String] = None,
+  message: Option[String] = None,
+  errors: List[String] = List.empty) {
 
   @transient
   lazy val json: JsObject = {
@@ -19,22 +25,35 @@ case class Receipt(success: Boolean, message: String = "", errors: List[String] 
 
 object Receipt {
 
-  implicit val receiptJsonFormat: RootJsonFormat[Receipt] = jsonFormat3(Receipt.apply)
+  implicit val receiptJsonFormat: RootJsonFormat[Receipt] = jsonFormat4(Receipt.apply)
 
   def success: Receipt = Receipt(success = true)
 
-  def success(msg: String)(implicit log: LoggingAdapter): Receipt = {
-    log.info(msg)
-    Receipt(success = true, message = msg)
+  def success(message: Option[String], requestId: Option[String])(implicit log: LoggingAdapter): Receipt = {
+    message.map(log.info)
+    Receipt(
+      success = true,
+      requestId = requestId,
+      message = message
+    )
   }
 
-  def error(e: Throwable, message: String = "")(implicit log: LoggingAdapter): Receipt = {
+  def error(e: Throwable, message: String, requestId:Option[String] = None)(implicit log: LoggingAdapter): Receipt = {
     log.error(e, message)
-    Receipt(success = false, message = message, errors = List(e.getMessage))
+    Receipt(
+      success = false,
+      requestId = requestId,
+      message = Some(message),
+      errors = List(e.getMessage)
+    )
   }
 
   def reduce(s: Seq[Receipt]): Receipt = s.reduce { (a, b) ⇒
-    Receipt(a.success && b.success, a.message + "-" + b.message, a.errors ::: b.errors)
+    Receipt(
+      success = a.success && b.success,
+      message = Some(a.message.getOrElse("") + "-" + b.message.getOrElse("")),
+      errors = a.errors ::: b.errors
+    )
   }
 
 }

@@ -8,7 +8,7 @@ import com.opentok.raven.service.actors.EmailSupervisor
 
 trait MockSystem extends com.opentok.raven.service.System {
 
-  override implicit val system: ActorSystem = ActorSystem("hermes-test")
+  override implicit val system: ActorSystem = ActorSystem("raven-test")
   override implicit val materializer: ActorMaterializer = ActorMaterializer()
   override val monitoringService, certifiedService, priorityService = TestActorRef(new Actor {
     var received: Any = 0
