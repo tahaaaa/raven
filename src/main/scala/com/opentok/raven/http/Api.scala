@@ -2,6 +2,8 @@ package com.opentok.raven.http
 
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
+import akka.util.Timeout
+import com.opentok.raven.{RavenConfig, FromResourcesConfig}
 import com.opentok.raven.http.endpoints.{MonitoringEndpoint, CertifiedEmailEndpoint, PriorityEmailEndpoint}
 
 trait Api {
@@ -9,12 +11,12 @@ trait Api {
 }
 
 trait AkkaApi extends Api {
-  this: com.opentok.raven.service.System ⇒
+  this: com.opentok.raven.service.System with RavenConfig ⇒
 
-  val certified = new CertifiedEmailEndpoint(certifiedService)
-  val priority = new PriorityEmailEndpoint(priorityService)
+  val certified = new CertifiedEmailEndpoint(certifiedService, ENDPOINT_TIMEOUT)
+  val priority = new PriorityEmailEndpoint(priorityService, ENDPOINT_TIMEOUT)
 
-  val monitoring = new MonitoringEndpoint(monitoringService)
+  val monitoring = new MonitoringEndpoint(monitoringService, ENDPOINT_TIMEOUT)
 
   val routeTree = logRequestResult("raven") {
     Route.seal(pathPrefix("v1") {

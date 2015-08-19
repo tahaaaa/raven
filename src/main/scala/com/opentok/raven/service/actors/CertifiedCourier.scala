@@ -1,14 +1,11 @@
 package com.opentok.raven.service.actors
 
-import akka.actor.{Props, Actor, ActorLogging, ActorRef}
-import akka.http.scaladsl.model.HttpResponse
+import akka.actor.{Actor, ActorLogging, ActorRef}
 import akka.pattern._
-import com.opentok.raven.GlobalConfig
+import akka.util.Timeout
 import com.opentok.raven.dal.components.EmailRequestDao
 import com.opentok.raven.model.{Template, EmailRequest, Receipt}
 import spray.json.{JsObject, JsValue}
-
-import scala.concurrent.Future
 
 /**
  * Upon receiving an email request, this actor will first
@@ -18,10 +15,11 @@ import scala.concurrent.Future
  * @param emailsDao email requests data access object
  * @param sendridService actor instance
  */
-class CertifiedCourier(emailsDao: EmailRequestDao, sendridService: ActorRef) extends Actor with ActorLogging with Courier {
+class CertifiedCourier(emailsDao: EmailRequestDao, sendridService: ActorRef, t: Timeout) extends Actor with ActorLogging with Courier {
 
-  import GlobalConfig.ACTOR_INNER_TIMEOUT
   import context.dispatcher
+
+  implicit val timeout: Timeout = t
 
   override def receive: Receive = {
     case req: EmailRequest ⇒

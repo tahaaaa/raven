@@ -2,13 +2,8 @@ package com.opentok.raven.service.actors
 
 import akka.actor._
 import akka.event.LoggingAdapter
-import akka.http.scaladsl.Http
-import akka.http.scaladsl.client.RequestBuilding
-import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
 import akka.pattern.{ask, pipe}
-import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.{Flow, Sink, Source}
-import com.opentok.raven.GlobalConfig
+import akka.util.Timeout
 import com.opentok.raven.model.Receipt
 import com.opentok.raven.service.actors.MonitoringActor.{ComponentHealthCheck, InFlightEmailsCheck}
 import slick.driver.JdbcProfile
@@ -23,16 +18,14 @@ object MonitoringActor {
 
 }
 
-class MonitoringActor(certifiedService: ActorRef, priorityService: ActorRef, db: JdbcBackend#Database, driver: JdbcProfile)
+class MonitoringActor(certifiedService: ActorRef, priorityService: ActorRef,
+                      db: JdbcBackend#Database, driver: JdbcProfile, dbCheck: String, t: Timeout)
   extends Actor with ActorLogging {
 
-  import com.opentok.raven.GlobalConfig.ACTOR_TIMEOUT
   import context.dispatcher
 
-  implicit val materializer: ActorMaterializer = ActorMaterializer()
   implicit val logger: LoggingAdapter = log
-  lazy val selfConnectionFlow: Flow[HttpRequest, HttpResponse, Any] =
-    Http(context.system).outgoingConnection(GlobalConfig.HOST, GlobalConfig.PORT)
+  implicit val timeout: Timeout = t
 
   override def receive: Receive = {
 
@@ -45,13 +38,6 @@ class MonitoringActor(certifiedService: ActorRef, priorityService: ActorRef, db:
         priorityEmails ← pf
       } yield certifiedEmails ++ priorityEmails) pipeTo sender()
 
-    case ComponentHealthCheck("api") ⇒
-      Source.single(RequestBuilding.Get("/v1/monitoring/health/")).via(selfConnectionFlow).runWith(Sink.head).map { i ⇒
-        Receipt.success(Some("OK"), None)
-      } recover {
-        case e: Exception ⇒ Receipt.error(e, "Unable to establish communication with api")
-      } pipeTo sender()
-
     case ComponentHealthCheck("service") ⇒
       (for {
         idCertified ← certifiedService ? Identify("certified")
@@ -62,7 +48,7 @@ class MonitoringActor(certifiedService: ActorRef, priorityService: ActorRef, db:
 
     case ComponentHealthCheck("dal") ⇒ sender() ! Try {
       val conn = db.source.createConnection()
-      val r = Receipt(conn.createStatement().execute(conn.nativeSQL(GlobalConfig.DB_CHECK)), Some("OK"))
+      val r = Receipt(conn.createStatement().execute(conn.nativeSQL(dbCheck)), Some("OK"))
       conn.close()
       r
     }.recover {

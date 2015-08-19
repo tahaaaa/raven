@@ -3,7 +3,6 @@ package com.opentok.raven.service.actors
 import akka.actor.{Props, Actor, ActorLogging, ActorRef}
 import akka.pattern._
 import akka.util.Timeout
-import com.opentok.raven.GlobalConfig
 import com.opentok.raven.dal.components.EmailRequestDao
 import com.opentok.raven.model.{EmailRequest, Receipt, Template}
 import spray.json.{JsObject, JsValue}
@@ -17,10 +16,11 @@ import spray.json.{JsObject, JsValue}
  * @param sendgridService actor instance
  */
 
-class PriorityCourier(emailsDao: EmailRequestDao, sendgridService: ActorRef) extends Actor with ActorLogging with Courier {
+class PriorityCourier(emailsDao: EmailRequestDao, sendgridService: ActorRef, t: Timeout) extends Actor with ActorLogging with Courier {
 
   import context.dispatcher
-  import GlobalConfig.ACTOR_INNER_TIMEOUT
+
+  implicit val timeout: Timeout = t
 
   override def receive: Receive = {
     case req: EmailRequest ⇒

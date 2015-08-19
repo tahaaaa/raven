@@ -2,7 +2,6 @@ package com.opentok.raven.service.actors
 
 import akka.actor._
 import akka.event.LoggingAdapter
-import com.opentok.raven.GlobalConfig
 import com.opentok.raven.dal.components.EmailRequestDao
 import com.opentok.raven.model.{EmailRequest, Receipt}
 import com.opentok.raven.service.actors.MonitoringActor.InFlightEmailsCheck
@@ -17,7 +16,7 @@ import scala.concurrent.duration._
  * @param pool number of actors to supervise and create using props
  * @param emailDao
  */
-class EmailSupervisor(superviseeProps: Props, pool: Int, emailDao: EmailRequestDao) extends Actor with ActorLogging {
+class EmailSupervisor(superviseeProps: Props, pool: Int, emailDao: EmailRequestDao, maxRetries: Int) extends Actor with ActorLogging {
 
   case class SupervisedRequest(request: EmailRequest, requester: ActorRef, handler: ActorRef)
 
@@ -53,7 +52,7 @@ class EmailSupervisor(superviseeProps: Props, pool: Int, emailDao: EmailRequestD
   val inFlight: scala.collection.mutable.Map[SupervisedRequest, Int] = scala.collection.mutable.Map.empty
 
   def retryOrReplyBack(receipt: Option[Receipt]): PartialFunction[(SupervisedRequest, Int), Unit] = {
-    case (supervisedRequest, retries) if retries < GlobalConfig.MAX_RETRIES ⇒
+    case (supervisedRequest, retries) if retries < retries ⇒
       //check that email was not really sent and only if status in db is not completed, retry again
       supervisedRequest.request.id.map { id ⇒
         emailDao.retrieveRequest(id).map {
@@ -83,7 +82,8 @@ class EmailSupervisor(superviseeProps: Props, pool: Int, emailDao: EmailRequestD
       }
 
     case (supervisedRequest, retries) ⇒
-      val msg = s"Retried request ${supervisedRequest.request} ${GlobalConfig.MAX_RETRIES} times unsuccessfully"
+      //keeps request_id in map
+      val msg = s"Retried request ${supervisedRequest.request} $retries times unsuccessfully"
       log.error(msg)
       supervisedRequest.requester ! Receipt.error(new Exception(s"Maximum number of retries reached"), msg,
         requestId = supervisedRequest.request.id)

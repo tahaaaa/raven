@@ -2,20 +2,20 @@ package com.opentok.raven.service.actors
 
 import akka.actor.{Actor, ActorLogging}
 import akka.event.LoggingAdapter
-import com.opentok.raven.GlobalConfig
+import com.opentok.raven.FromResourcesConfig
 import com.opentok.raven.model.{Receipt, Template}
 import com.sendgrid.SendGrid
 import com.sendgrid.SendGrid.Email
 
 import scala.util.Try
 
-class SendgridActor extends Actor with ActorLogging {
+class SendgridActor(apiKey: String) extends Actor with ActorLogging {
 
   import SendgridActor._
 
   implicit val logger: LoggingAdapter = log
 
-  val client = new SendGrid(GlobalConfig.SENDGRID_API_KEY)
+  val client = new SendGrid(apiKey)
 
   override def receive: Receive = {
     case tmp: Template ⇒

@@ -6,7 +6,7 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.pattern.ask
 import akka.stream.Materializer
-import com.opentok.raven.GlobalConfig
+import akka.util.Timeout
 import com.opentok.raven.http.Endpoint
 import com.opentok.raven.model.Receipt
 import com.opentok.raven.service.actors.MonitoringActor
@@ -16,11 +16,12 @@ import com.opentok.raven.service.actors.MonitoringActor
  * @param handler instance of [[com.opentok.raven.service.actors.MonitoringActor]]
  * @param mat ticktick
  */
-class MonitoringEndpoint(handler: ActorRef)(implicit val mat: Materializer, system: ActorSystem) extends Endpoint {
+class MonitoringEndpoint(handler: ActorRef, t: Timeout)(implicit val mat: Materializer, system: ActorSystem) extends Endpoint {
 
-  import GlobalConfig.ENDPOINT_TIMEOUT
   import mat.executionContext
   import spray.json.DefaultJsonProtocol._
+
+  implicit val timeout: Timeout = t
 
   val actorNotReponding: PartialFunction[Throwable, Receipt] = {
     case e: Exception ⇒ Receipt.error(e, s"MonitoringActor in path ${handler.path} seems unresponsive", None)

@@ -6,12 +6,20 @@ import akka.util.Timeout
 import com.typesafe.config.{Config, ConfigFactory}
 import slick.jdbc.JdbcBackend.Database
 
-/**
- * Created by ernest on 7/8/15.
- */
-object GlobalConfig extends GlobalConfig(ConfigFactory.load())
+trait RavenConfig {
+  val HOST: String
+  val PORT: Int
+  val SENDGRID_API_KEY: String
+  val MAX_RETRIES: Int
+  val CERTIFIED_POOL: Int
+  val PRIORITY_POOL: Int
+  val ACTOR_TIMEOUT: Timeout
+  val ACTOR_INNER_TIMEOUT: Timeout
+  val ENDPOINT_TIMEOUT: Timeout
+  val DB_CHECK: String
+}
 
-class GlobalConfig(config: Config) {
+abstract class FromResourcesConfig(config: Config) extends RavenConfig {
 
   val HOST = config.getString("raven.host")
 

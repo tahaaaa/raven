@@ -4,10 +4,11 @@ import akka.http.scaladsl.Http
 import com.opentok.raven.dal.MysqlDal
 import com.opentok.raven.http.AkkaApi
 import com.opentok.raven.service.AkkaSystem
+import com.typesafe.config.ConfigFactory
 
 
-object Boot extends App with MysqlDal with AkkaSystem with AkkaApi {
+object Boot extends FromResourcesConfig(ConfigFactory.load()) with App with MysqlDal with AkkaSystem with AkkaApi {
 
-  Http().bindAndHandle(handler = routeTree, interface = GlobalConfig.HOST, port = GlobalConfig.PORT)
+  Http().bindAndHandle(handler = routeTree, interface = HOST, port = PORT)
 
 }
