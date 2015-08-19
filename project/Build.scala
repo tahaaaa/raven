@@ -3,7 +3,6 @@ import sbt._
 import Keys._
 import play.twirl.sbt.Import.TwirlKeys._
 import spray.revolver.RevolverPlugin._
-import com.typesafe.sbt.SbtAtmos.{ Atmos, atmosSettings }
 
 
 object RavenBuild extends Build {
@@ -59,8 +58,6 @@ object RavenBuild extends Build {
         )
       }
     ).enablePlugins(SbtTwirl)
-    .configs(Atmos)
-    .settings(atmosSettings: _*)
 
   //lazy val root: Project = Project("root", file(".")).aggregate(core)
 }
