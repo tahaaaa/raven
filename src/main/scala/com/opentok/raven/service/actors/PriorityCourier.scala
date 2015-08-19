@@ -1,6 +1,6 @@
 package com.opentok.raven.service.actors
 
-import akka.actor.{Actor, ActorLogging, ActorRef}
+import akka.actor.{Props, Actor, ActorLogging, ActorRef}
 import akka.pattern._
 import akka.util.Timeout
 import com.opentok.raven.GlobalConfig
@@ -14,10 +14,10 @@ import spray.json.{JsObject, JsValue}
  * the receipt to the requester.
  *
  * @param emailsDao email requests data access object
- * @param sendgridActor actor instance
+ * @param sendgridService actor instance
  */
 
-class PriorityCourier(emailsDao: EmailRequestDao, sendgridActor: ActorRef) extends Actor with ActorLogging with Courier {
+class PriorityCourier(emailsDao: EmailRequestDao, sendgridService: ActorRef) extends Actor with ActorLogging with Courier {
 
   import context.dispatcher
 
@@ -34,7 +34,7 @@ class PriorityCourier(emailsDao: EmailRequestDao, sendgridActor: ActorRef) exten
 
       templateMaybe.map { template ⇒
         //query sendgrid via sendgridActor and map/recover HttpResponse to Receipt
-        sendgridActor.ask(template).mapTo[Receipt]
+        sendgridService.ask(template).mapTo[Receipt]
           .map(_.copy(requestId = req.id))
           .recover(exceptionToReceipt(req))
           //install side effecting persist to db, guaranteeing order of callbacks

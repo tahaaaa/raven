@@ -1,6 +1,7 @@
 package com.opentok.raven.service
 
 import akka.actor.{ActorRef, ActorSystem, Props}
+import akka.routing.FromConfig
 import akka.stream.ActorMaterializer
 import com.opentok.raven.GlobalConfig
 import com.opentok.raven.dal.{MysqlDal, Dal}
@@ -9,6 +10,8 @@ import com.opentok.raven.service.actors._
 trait System {
   implicit val system: ActorSystem
   implicit val materializer: ActorMaterializer
+
+  val smtpService: ActorRef
 
   val certifiedService: ActorRef
   val priorityService: ActorRef
@@ -22,18 +25,18 @@ trait AkkaSystem extends System {
   implicit val system = ActorSystem("raven")
   implicit val materializer: ActorMaterializer = ActorMaterializer()
 
-  val sendgridActor: ActorRef = system.actorOf(Props[SendgridActor], "SendgridActor")
+  val smtpService: ActorRef = system.actorOf(Props[SendgridActor].withRouter(FromConfig), "SMTPService")
 
   val certifiedService = system.actorOf(
     Props(classOf[EmailSupervisor],
-      Props(classOf[CertifiedCourier], emailRequestDao, sendgridActor),
+      Props(classOf[CertifiedCourier], emailRequestDao, smtpService),
       GlobalConfig.CERTIFIED_POOL, emailRequestDao),
     "certified-service"
   )
 
   val priorityService = system.actorOf(
     Props(classOf[EmailSupervisor],
-      Props(classOf[PriorityCourier], emailRequestDao, sendgridActor),
+      Props(classOf[PriorityCourier], emailRequestDao, smtpService),
       GlobalConfig.PRIORITY_POOL, emailRequestDao).withDispatcher("akka.actor.priority-dispatcher"),
     "priority-service")
 

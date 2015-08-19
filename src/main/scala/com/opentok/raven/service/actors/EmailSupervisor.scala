@@ -109,7 +109,6 @@ class EmailSupervisor(superviseeProps: Props, pool: Int, emailDao: EmailRequestD
   val logNotFound = { reason: String ⇒
     log.debug("Control map {}", inFlight)
     log.error(s"Could not send receipt back to original requester. $reason")
-    stringReturn: String ⇒ stringReturn
   }
 
   override def receive: Receive = {

@@ -1,6 +1,6 @@
 package com.opentok.raven.service.actors
 
-import akka.actor.{Actor, ActorLogging, ActorRef}
+import akka.actor.{Props, Actor, ActorLogging, ActorRef}
 import akka.http.scaladsl.model.HttpResponse
 import akka.pattern._
 import com.opentok.raven.GlobalConfig
@@ -16,9 +16,9 @@ import scala.concurrent.Future
  * to finally update previously saved record to success or failure.
  *
  * @param emailsDao email requests data access object
- * @param sendgridActor actor instance
+ * @param sendridService actor instance
  */
-class CertifiedCourier(emailsDao: EmailRequestDao, sendgridActor: ActorRef) extends Actor with ActorLogging with Courier {
+class CertifiedCourier(emailsDao: EmailRequestDao, sendridService: ActorRef) extends Actor with ActorLogging with Courier {
 
   import GlobalConfig.ACTOR_TIMEOUT
   import context.dispatcher
@@ -35,14 +35,14 @@ class CertifiedCourier(emailsDao: EmailRequestDao, sendgridActor: ActorRef) exte
       templateMaybe.map { template ⇒
         //persist request attempt
         emailsDao.persistRequest(req).flatMap { i ⇒
-          sendgridActor.ask(template).mapTo[Receipt]
+          sendridService.ask(template).mapTo[Receipt]
             .map(_.copy(requestId = req.id))
             .recover(exceptionToReceipt(req))
         }.recoverWith {
           //if persist request attempt fails, we skip step and try to send anyway
           case e: Exception ⇒
             log.warning("There was a problem when trying to save request before forwarding it to sendgridActor. Skipping persist..")
-            sendgridActor.ask(template).mapTo[Receipt]
+            sendridService.ask(template).mapTo[Receipt]
               .map(_.copy(requestId = req.id))
               .recover(exceptionToReceipt(req))
         } //install side effecting persist to db, guaranteeing order of callbacks
