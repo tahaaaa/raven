@@ -3,11 +3,6 @@
 ## Service
 
 ```javascript
-GET /v1/monitoring/health?component=<component>
-
-← <receipt>
-
-
 POST /v1/priority
 
 → <EmailRequest>
@@ -18,6 +13,21 @@ POST /v1/certified
 
 → <EmailRequest> || [ <EmailRequest> .. N ]
 ← <Receipt>
+
+
+GET /v1/monitoring/health?component=<component>
+
+← <receipt>
+
+
+GET /v1/monitoring/inflight
+
+  {
+    <request_id> : <tries>,
+←   <request_id> : <tries>,
+    ...
+  }
+
 
 ```
 

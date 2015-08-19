@@ -33,7 +33,6 @@ class SendgridActor extends Actor with ActorLogging {
 object SendgridActor {
 
   //translates com.opentok.raven.model.Template to com.sendgrid.SendGrid.Email
-  //for sendgrid client
   implicit def templateToSendgridEmail(tmp: Template): Email = {
     val m = new Email()
       .setSubject(tmp.subject)

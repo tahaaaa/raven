@@ -19,7 +19,7 @@ class GlobalConfig(config: Config) {
   
   val SENDGRID_API_KEY = config.getString("raven.sendgrid.api-key")
 
-  val MAX_RETRIES = config.getInt("raven.max_retries")
+  val MAX_RETRIES = config.getInt("raven.max-retries")
 
   val CERTIFIED_POOL = config.getInt("raven.certified-pool")
 

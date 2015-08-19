@@ -1,12 +1,10 @@
 package com.opentok.raven.service.actors
 
 import akka.actor.{Actor, ActorLogging, ActorRef}
-import akka.http.scaladsl.model.HttpResponse
 import com.opentok.raven.dal.components.EmailRequestDao
 import com.opentok.raven.model.{EmailRequest, Receipt}
-import akka.pattern._
 
-import scala.concurrent.{Future, ExecutionContext}
+import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success, Try}
 
 /**

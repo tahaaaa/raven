@@ -2,13 +2,12 @@ package com.opentok.raven.service.actors
 
 import akka.actor._
 import akka.event.LoggingAdapter
-import akka.routing._
 import com.opentok.raven.GlobalConfig
 import com.opentok.raven.dal.components.EmailRequestDao
 import com.opentok.raven.model.{EmailRequest, Receipt}
+import com.opentok.raven.service.actors.MonitoringActor.InFlightEmailsCheck
 
 import scala.concurrent.duration._
-import scala.util.Random
 
 /**
  * Service Supervisor
@@ -114,6 +113,11 @@ class EmailSupervisor(superviseeProps: Props, pool: Int, emailDao: EmailRequestD
   }
 
   override def receive: Receive = {
+
+    //monitoring
+    case InFlightEmailsCheck ⇒
+      val stats = inFlight.toMap.map( kv ⇒ kv._1.request.id.getOrElse("") → kv._2) //make immutable before sending
+      sender() ! stats
 
     case reqs: List[_] ⇒
       val processed = reqs.foldLeft((0, 0)) {
