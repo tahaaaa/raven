@@ -1,4 +1,4 @@
-package fixture
+package com.opentok.raven.fixture
 
 import akka.actor.{ActorRef, Actor, ActorSystem}
 import akka.stream.ActorMaterializer
@@ -10,7 +10,7 @@ trait MockSystem extends com.opentok.raven.service.System {
 
   override implicit val system: ActorSystem = ActorSystem("raven-test")
   override implicit val materializer: ActorMaterializer = ActorMaterializer()
-  override val monitoringService, certifiedService, priorityService = TestActorRef(new Actor {
+  override val monitoringService, certifiedService, priorityService, smtpService = TestActorRef(new Actor {
     var received: Any = 0
 
     override def receive: Receive = {
