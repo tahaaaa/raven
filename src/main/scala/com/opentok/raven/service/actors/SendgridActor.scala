@@ -2,37 +2,52 @@ package com.opentok.raven.service.actors
 
 import akka.actor.{Actor, ActorLogging}
 import akka.event.LoggingAdapter
-import akka.http.scaladsl.{HttpsContext, Http}
-import akka.http.scaladsl.model.{HttpResponse, HttpRequest}
-import akka.pattern._
-import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.Flow
 import com.opentok.raven.GlobalConfig
-import com.opentok.raven.model.EmailRequest
+import com.opentok.raven.model.{Receipt, Template}
 import com.sendgrid.SendGrid
 import com.sendgrid.SendGrid.Email
 
+import scala.util.Try
 
 class SendgridActor extends Actor with ActorLogging {
 
-  import context.dispatcher
+  import SendgridActor._
 
   implicit val logger: LoggingAdapter = log
-//  implicit val materializer: ActorMaterializer = ActorMaterializer()
-//
-//  lazy val sendgridConnectionFlow: Flow[HttpRequest, HttpResponse, Any] =
-//    Http(context.system).outgoingConnectionTls(GlobalConfig.SENDGRID_API_URL, GlobalConfig.PORT)
 
   val client = new SendGrid(GlobalConfig.SENDGRID_API_KEY)
 
   override def receive: Receive = {
-    case req: EmailRequest ⇒
-      val email = new Email()
-      email.addTo("ernest@tokbox.com")
-      email.setFrom("ba@tokbox.com")
-      email.setFromName("Business Analytics")
-      email.setSubject("Hello World")
-      email.setHtml("<h1>Hello</h1>")
-      client.send(email)
+    case tmp: Template ⇒
+      val receipt: Receipt = Try(client.send(tmp)).map { rsp ⇒
+        Receipt(rsp.getStatus)
+      }.recover {
+        case e: Exception ⇒
+          Receipt.error(e, "Error when connecting with SendGrid client")
+      }.get
+      sender() ! receipt
+    case anyElse ⇒ log.warning(s"Not an acceptable request $anyElse")
   }
+}
+
+object SendgridActor {
+
+  //translates com.opentok.raven.model.Template to com.sendgrid.SendGrid.Email
+  //for sendgrid client
+  implicit def templateToSendgridEmail(tmp: Template): Email = {
+    val m = new Email()
+      .setSubject(tmp.subject)
+      .setTo(Array(tmp.to))
+      .setFrom(tmp.from)
+      .setHtml(tmp.html)
+    tmp.toName.map(l ⇒ m.setToName(Array(l)))
+    tmp.fromName.map(m.setFromName)
+    tmp.setReply.map(m.setReplyTo)
+    m.setCc(tmp.cc.toArray)
+    m.setBcc(tmp.bcc.toArray)
+    tmp.attachments.map(a ⇒ m.addAttachment(a._1, a._2))
+    tmp.headers.map(h ⇒ m.addHeader(h._1, h._2))
+    m
+  }
+
 }

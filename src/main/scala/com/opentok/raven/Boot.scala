@@ -3,7 +3,6 @@ package com.opentok.raven
 import akka.http.scaladsl.Http
 import com.opentok.raven.dal.MysqlDal
 import com.opentok.raven.http.AkkaApi
-import com.opentok.raven.model.Templates
 import com.opentok.raven.service.AkkaSystem
 
 

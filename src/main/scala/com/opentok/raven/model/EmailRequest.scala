@@ -15,7 +15,7 @@ import spray.json._
 case class EmailRequest(
   to: String,
   template_id: String,
-  inject: Option[Map[String, String]],
+  inject: Option[JsObject],
   status: Option[EmailRequest.Status],
   id: Option[String]
 ) {
@@ -24,7 +24,6 @@ case class EmailRequest(
   lazy val json: JsObject = {
     EmailRequest.requestJsonFormat.write(this).asJsObject
   }
-
 }
 
 object EmailRequest {
