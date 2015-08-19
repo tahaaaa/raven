@@ -45,7 +45,7 @@ object RavenBuild extends Build {
           "com.typesafe.akka"                 %% "akka-http-core-experimental"            % akkaStreamV,
           "com.typesafe.akka"                 %% "akka-http-testkit-experimental"         % akkaStreamV,
           "com.typesafe.akka"                 %% "akka-slf4j"                             % akkaV,
-          "com.typesafe.slick"                %% "slick"                                  % "3.0.0",
+          "com.typesafe.slick"                %% "slick"                                  % "3.0.2",
           "com.sendgrid"                       % "sendgrid-java"                          % "2.2.1",
           "mysql"                              % "mysql-connector-java"                   % "5.1.6",
           "joda-time"                          % "joda-time"                              % "2.5",

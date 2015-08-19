@@ -20,7 +20,7 @@ import scala.concurrent.Future
  */
 class CertifiedCourier(emailsDao: EmailRequestDao, sendridService: ActorRef) extends Actor with ActorLogging with Courier {
 
-  import GlobalConfig.ACTOR_TIMEOUT
+  import GlobalConfig.ACTOR_INNER_TIMEOUT
   import context.dispatcher
 
   override def receive: Receive = {

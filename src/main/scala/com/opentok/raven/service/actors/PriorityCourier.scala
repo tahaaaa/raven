@@ -20,8 +20,7 @@ import spray.json.{JsObject, JsValue}
 class PriorityCourier(emailsDao: EmailRequestDao, sendgridService: ActorRef) extends Actor with ActorLogging with Courier {
 
   import context.dispatcher
-
-  implicit val timeout: Timeout = GlobalConfig.ACTOR_TIMEOUT
+  import GlobalConfig.ACTOR_INNER_TIMEOUT
 
   override def receive: Receive = {
     case req: EmailRequest ⇒
