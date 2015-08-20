@@ -1,8 +1,9 @@
 package com.opentok.raven
 
-import akka.actor.{ActorLogging, Actor}
+import akka.actor.{ActorSystem, Props, ActorLogging, Actor}
+import akka.testkit.TestActorRef
 import com.opentok.raven.dal.components.EmailRequestDao
-import com.opentok.raven.model.{Receipt, EmailRequest}
+import com.opentok.raven.model.{Template, Receipt, EmailRequest}
 import org.joda.time.DateTime
 import spray.json._
 
@@ -25,12 +26,14 @@ package object fixture {
 
     import scala.concurrent.ExecutionContext.Implicits.global
 
+    val timeout = 20000
+
     val received = scala.collection.mutable.ListBuffer.empty[EmailRequest]
 
     def retrieveRequest(id: String)(implicit ctx: ExecutionContext): Future[Option[EmailRequest]] =
       if (persistanceFails) Future.failed(new Exception("Could not fetch request"))
       else if (persistanceTimesOut) Future {
-        Thread.sleep(20000)
+        Thread.sleep(timeout)
         testRequest
       }
       else Future(testRequest)
@@ -39,7 +42,7 @@ package object fixture {
       if (persistanceFails) Future.failed(new Exception("BOOM"))
       else if (persistanceTimesOut) Future {
         received += req
-        Thread.sleep(20000)
+        Thread.sleep(timeout)
         0
       } else Future{
         received += req
@@ -76,5 +79,12 @@ package object fixture {
         wrong += 1
     }
   }
+
+  def sendgridService(implicit system: ActorSystem): TestActorRef[TestActor[Template]] =
+    TestActorRef(Props(classOf[TestActor[Template]], classOf[Template],
+      implicitly[ClassTag[Template]]))
+
+  def unresponsiveSendgridService(implicit system: ActorSystem): TestActorRef[UnresponsiveActor] =
+    TestActorRef(Props[UnresponsiveActor])
 
 }

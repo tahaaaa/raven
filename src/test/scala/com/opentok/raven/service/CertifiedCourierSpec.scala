@@ -23,13 +23,6 @@ with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
   implicit val ctx = system.dispatcher
   implicit val log = system.log
 
-  def sendgridService(): TestActorRef[TestActor[Template]] =
-    TestActorRef(Props(classOf[TestActor[Template]], classOf[Template],
-      implicitly[ClassTag[Template]]))
-
-  def unresponsiveSendgridService(): TestActorRef[UnresponsiveActor] =
-    TestActorRef(Props[UnresponsiveActor])
-
   def certifiedCourier(mockRequestDao: MockEmailRequestDao,
                        serv: TestActorRef[_]) =
     TestActorRef(Props(classOf[CertifiedCourier],
@@ -39,7 +32,7 @@ with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
 
     "First attempt to persist request to db and then pass it to sendgridService" in {
       val dao = new MockEmailRequestDao(Some(testRequest))
-      val serv = sendgridService()
+      val serv = sendgridService
       val courier = certifiedCourier(dao, serv)
       courier ! testRequest
 
@@ -54,7 +47,7 @@ with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
 
     "If first attempt to persist fails, try to send anyway but change success receipt message with warning" in {
       val dao = new MockEmailRequestDao(Some(testRequest), persistanceFails = true)
-      val serv = sendgridService()
+      val serv = sendgridService
       val courier = certifiedCourier(dao, serv)
       courier ! testRequest
 
@@ -68,7 +61,7 @@ with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
 
     "If attempt to persist timeouts, try to send anyway but change success receipt message with warning" in {
       val dao = new MockEmailRequestDao(Some(testRequest), persistanceTimesOut = true)
-      val serv = sendgridService()
+      val serv = sendgridService
       val courier = certifiedCourier(dao, serv)
       courier ! testRequest
 
@@ -82,7 +75,7 @@ with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
 
     "If sendgridService request timeouts, should persist failure to db and return an unsuccessful receipt" in {
       val dao = new MockEmailRequestDao(Some(testRequest))
-      val serv = unresponsiveSendgridService()
+      val serv = unresponsiveSendgridService
       val courier = certifiedCourier(dao, serv)
       courier ! testRequest
 
@@ -99,7 +92,7 @@ with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
 
     "If both sendgridService and db timeouts, should return an unsuccessful receipt with both errors" in {
       val dao = new MockEmailRequestDao(Some(testRequest), persistanceTimesOut = true)
-      val serv = unresponsiveSendgridService()
+      val serv = unresponsiveSendgridService
       val courier = certifiedCourier(dao, serv)
       courier ! testRequest
 
@@ -113,6 +106,21 @@ with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
       dao.received.tail.head.status should be(Some(EmailRequest.Failed)) //then save failed
 
       serv.underlyingActor.received shouldBe 1
+    }
+
+    "If EmailRequest contains an invalid template, should reply with unsuccessful receipt and persist attempt" in {
+      val testRequest2 = testRequest.copy(template_id = "¬…¬…¬…˚ø∆µ¬≤…¬")
+      val dao = new MockEmailRequestDao(Some(testRequest2), persistanceFails = true)
+      val serv = sendgridService
+      val courier = certifiedCourier(dao, serv)
+
+      courier ! testRequest2
+      //receipt should contain receipt id
+      expectMsgPF(3.seconds){
+        case r: Receipt ⇒
+          r.success should be(false)
+          r.message.get.toLowerCase.contains("not found") should be(true)
+      }
     }
 
   }
