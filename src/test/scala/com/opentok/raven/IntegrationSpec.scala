@@ -1,93 +1,113 @@
 package com.opentok.raven
 
-import akka.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
-import com.opentok.raven.fixture.H2Dal
+import akka.actor.ActorSystem
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.client.RequestBuilding
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
+import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
+import akka.http.scaladsl.testkit.RouteTestTimeout
+import akka.http.scaladsl.unmarshalling._
+import akka.stream.scaladsl.{Flow, Sink, Source}
+import akka.testkit.TestKit
+import com.opentok.raven.fixture.{H2Dal, _}
 import com.opentok.raven.http.{AkkaApi, JsonProtocols}
 import com.opentok.raven.model.{EmailRequest, Receipt}
-import com.opentok.raven.service.AkkaSystem
-import com.typesafe.config.ConfigFactory
-import org.joda.time.DateTime
-import org.scalatest.{Matchers, WordSpec}
-import spray.json._
+import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
+import spray.json.DefaultJsonProtocol
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-class IntegrationSpec extends WordSpec with Matchers with ScalatestRouteTest with JsonProtocols {
+//uses all components but DAL uses an in-memory DB
+//and fake sendgrid actor
+class IntegrationSpec extends TestKit(ActorSystem("IntegrationSpec"))
+with com.opentok.raven.service.System with TestConfig
+with WordSpecLike with Matchers with JsonProtocols
+with BeforeAndAfterAll with H2Dal with TestAkkaSystem with AkkaApi
+with SprayJsonSupport with DefaultJsonProtocol {
+
+  //start service
+  val bound = Await.result(Http().bindAndHandle(handler = routeTree,
+    interface = HOST, port = PORT), 3.seconds)
+
+  override def afterAll() {
+    TestKit.shutdownActorSystem(system)
+    bound.unbind()
+  }
+
+  import system.dispatcher
+
+  lazy val selfConnectionFlow: Flow[HttpRequest, HttpResponse, Any] =
+    Http(system).outgoingConnection(HOST, PORT)
 
   implicit val routeTestTimeout = RouteTestTimeout(5.seconds)
 
-  //uses all components but DAL uses an in-memory DB
-  val app = new FromResourcesConfig(ConfigFactory.load()) with H2Dal with AkkaSystem with AkkaApi
-  val routeTree = app.routeTree
+  val receiptUnmarshaller: FromEntityUnmarshaller[Receipt] = Receipt.receiptJsonFormat
+  val mapUnmarshaller: FromEntityUnmarshaller[Map[String, Int]] = mapFormat[String, Int]
 
   "Expose connectivity between service and database" in {
-    Get("/v1/monitoring/health?component=dal") ~> routeTree ~> check {
-      responseAs[Receipt].success shouldBe true
-    }
+    val receipt = Await.result(Source.single(RequestBuilding
+      .Get("/v1/monitoring/health?component=dal")).via(selfConnectionFlow)
+      .runWith(Sink.head).map(_.entity).flatMap(receiptUnmarshaller.apply), 3.seconds)
+    receipt.success should be(true)
   }
 
   "Expose service uptime check" in {
-    Get("/v1/monitoring/health?component=service") ~> routeTree ~> check {
-      responseAs[Receipt].success shouldBe true
-    }
+    val receipt = Await.result(Source.single(RequestBuilding.Get("/v1/monitoring/health?component=service"))
+      .via(selfConnectionFlow).runWith(Sink.head).map(_.entity).flatMap(receiptUnmarshaller.apply), 3.seconds)
+    receipt.success should be(true)
   }
 
   "Expose in-flight emails information" in {
-    Get("/v1/monitoring/inflight") ~> routeTree ~> check {
-      response.status.isSuccess()
-    }
+    val resp = Await.result(Source.single(RequestBuilding.Get("/v1/monitoring/inflight"))
+      .via(selfConnectionFlow).runWith(Sink.head), 3.seconds)
+    resp.status.isSuccess() should be(true)
   }
 
-  val testRequest = EmailRequest("ernest+raven@tokbox.com", "twirl_test",
-    Some(JsObject(Map("a" → JsString(s"INTEGRATION TEST RUN AT ${new DateTime().toString}"),
-      "b" → JsNumber(1)))), None, None)
-
-  val marshalledRequest = EmailRequest.requestJsonFormat.write(testRequest)
-
-  val nBatch = 3
-
-  val marshalledBatch: JsValue = JsArray(Vector.fill(nBatch)(EmailRequest.requestJsonFormat.write(
-    EmailRequest("ernest+ravenbatch@tokbox.com", "twirl_test",
-      Some(JsObject(Map("a" → JsString(s"INTEGRATION TEST RUN AT ${new DateTime().toString}"),
-        "b" → JsNumber(1)))), None, None))).toSeq: _*)
-
   "Send an email via priority service, persist results to DB and reply back to requester with success" in {
-    Post("/v1/priority", marshalledRequest) ~> routeTree ~> check {
-      val receipt = responseAs[Receipt]
-      receipt.success shouldBe true
-      val dbRecord = Await.result(app.emailRequestDao.retrieveRequest(receipt.requestId.get), 5.seconds).get
-      dbRecord.id shouldBe receipt.requestId
-      dbRecord.status shouldBe Some(EmailRequest.Succeeded)
-      dbRecord.to shouldBe testRequest.to
-      dbRecord.template_id shouldBe testRequest.template_id
-    }
+    val receipt = Await.result(Source.single(RequestBuilding.Post("/v1/priority", marshalledRequest))
+      .via(selfConnectionFlow).runWith(Sink.head).map(_.entity).flatMap(receiptUnmarshaller.apply), 3.seconds)
+
+    Thread.sleep(2000) //wait for persist
+
+    val dbRecord = Await.result(emailRequestDao.retrieveRequest(receipt.requestId.get), 5.seconds).get
+    dbRecord.id shouldBe receipt.requestId
+    dbRecord.status shouldBe Some(EmailRequest.Succeeded)
+    dbRecord.to shouldBe testRequest.to
+    dbRecord.template_id shouldBe testRequest.template_id
+
+    receipt.success shouldBe (true)
   }
 
   "Send an email via certified service, persist results to DB and reply back to requester with success" in {
-    Post("/v1/certified", marshalledRequest) ~> routeTree ~> check {
-      val receipt = responseAs[Receipt]
-      receipt.success shouldBe true
-      val dbRecord = Await.result(app.emailRequestDao.retrieveRequest(receipt.requestId.get), 5.seconds).get
-      dbRecord.id shouldBe receipt.requestId
-      dbRecord.status shouldBe Some(EmailRequest.Succeeded)
-      dbRecord.to shouldBe testRequest.to
-      dbRecord.template_id shouldBe testRequest.template_id
-    }
+    val receipt = Await.result(Source.single(RequestBuilding.Post("/v1/certified", marshalledRequest))
+      .via(selfConnectionFlow).runWith(Sink.head).map(_.entity).flatMap(receiptUnmarshaller.apply), 3.seconds)
+
+    Thread.sleep(2000) //wait for persist
+
+    val dbRecord = Await.result(emailRequestDao.retrieveRequest(receipt.requestId.get), 5.seconds).get
+    dbRecord.id shouldBe receipt.requestId
+    dbRecord.status shouldBe Some(EmailRequest.Succeeded)
+    dbRecord.to shouldBe testRequest.to
+    dbRecord.template_id shouldBe testRequest.template_id
+
+    receipt.success shouldBe (true)
   }
 
   "Send a batch of emails via certified service, persist results to DB and reply back to requester with success" in {
-    Post("/v1/certified", marshalledBatch) ~> routeTree ~> check {
-      import app.driver.api._
-      val receipt = responseAs[Receipt]
-      receipt.success shouldBe true
-      val count = Await.result(app.db.run(
-        sql"SELECT status FROM email_requests WHERE recipient = 'ernest+ravenbatch@tokbox.com'".as[String]
-      ), 5.seconds)
+    val receipt = Await.result(Source.single(RequestBuilding.Post("/v1/certified", marshalledBatch))
+      .via(selfConnectionFlow).runWith(Sink.head).map(_.entity).flatMap(receiptUnmarshaller.apply), 3.seconds)
 
-      count.length shouldBe nBatch
-      count.filter(_ == EmailRequest.Succeeded.toString.toLowerCase)
-    }
+    Thread.sleep(2000) //wait for persist
+
+    import driver.api._
+    val count = Await.result(db.run(
+      sql"SELECT status FROM email_requests WHERE recipient = 'ernest+ravenbatch@tokbox.com'".as[String]
+    ), 5.seconds)
+    count.length shouldBe nBatch
+    count.filter(_ == EmailRequest.Succeeded.toString.toLowerCase).length shouldBe nBatch
+
+    receipt.success shouldBe (true)
   }
 
 
