@@ -45,7 +45,12 @@ class IntegrationSpec extends WordSpec with Matchers with ScalatestRouteTest wit
 
   val marshalledRequest = EmailRequest.requestJsonFormat.write(testRequest)
 
-  val marshalledBatch: JsValue = JsArray(Vector.fill(3)(EmailRequest.requestJsonFormat.write(testRequest)).toSeq: _*)
+  val nBatch = 3
+
+  val marshalledBatch: JsValue = JsArray(Vector.fill(nBatch)(EmailRequest.requestJsonFormat.write(
+    EmailRequest("ernest+ravenbatch@tokbox.com", "twirl_test",
+      Some(JsObject(Map("a" → JsString(s"INTEGRATION TEST RUN AT ${new DateTime().toString}"),
+        "b" → JsNumber(1)))), None, None))).toSeq: _*)
 
   "Send an email via priority service, persist results to DB and reply back to requester with success" in {
     Post("/v1/priority", marshalledRequest) ~> routeTree ~> check {
@@ -73,8 +78,15 @@ class IntegrationSpec extends WordSpec with Matchers with ScalatestRouteTest wit
 
   "Send a batch of emails via certified service, persist results to DB and reply back to requester with success" in {
     Post("/v1/certified", marshalledBatch) ~> routeTree ~> check {
+      import app.driver.api._
       val receipt = responseAs[Receipt]
       receipt.success shouldBe true
+      val count = Await.result(app.db.run(
+        sql"SELECT status FROM email_requests WHERE recipient = 'ernest+ravenbatch@tokbox.com'".as[String]
+      ), 5.seconds)
+
+      count.length shouldBe nBatch
+      count.filter(_ == EmailRequest.Succeeded.toString.toLowerCase)
     }
   }
 
