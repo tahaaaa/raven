@@ -9,13 +9,14 @@ import akka.util.CompactByteString
 import com.opentok.raven.RavenConfig
 import com.opentok.raven.http.endpoints.{CertifiedEmailEndpoint, MonitoringEndpoint, PriorityEmailEndpoint}
 import com.opentok.raven.model.Receipt
+import com.opentok.raven.service.Service
 
 trait Api {
   val routeTree: Route
 }
 
 trait AkkaApi extends Api {
-  this: com.opentok.raven.service.System with RavenConfig ⇒
+  this: com.opentok.raven.service.System with Service with RavenConfig ⇒
 
   val receiptExceptionHandler = ExceptionHandler {
     case e: Exception ⇒ complete(HttpResponse(InternalServerError,
