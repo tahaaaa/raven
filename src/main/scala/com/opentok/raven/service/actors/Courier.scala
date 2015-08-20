@@ -1,8 +1,10 @@
 package com.opentok.raven.service.actors
 
-import akka.actor.{Actor, ActorLogging, ActorRef}
+import akka.actor.{Props, Actor, ActorLogging, ActorRef}
+import akka.util.Timeout
 import com.opentok.raven.dal.components.EmailRequestDao
 import com.opentok.raven.model.{EmailRequest, Receipt}
+import akka.pattern._
 
 import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success, Try}
@@ -12,15 +14,21 @@ import scala.util.{Failure, Success, Try}
  */
 trait Courier {
   this: Actor with ActorLogging ⇒
+  
+  val emailsDao: EmailRequestDao
+  implicit val timeout: Timeout
 
+  val emailRequestDaoActor = context.actorOf(Props(classOf[RequestPersister], emailsDao))
 
-  def persistSuccessOrFailure(req: EmailRequest, dao: EmailRequestDao)
+  def persistSuccessOrFailure(req: EmailRequest)
                              (implicit ctx: ExecutionContext): PartialFunction[Try[Receipt], Unit] = {
     case Success(receipt) if receipt.success ⇒
       log.info(s"Successfully forwarded to sendgrid, request with id ${req.id}")
-      dao.persistRequest(req.copy(status = Some(EmailRequest.Succeeded))).onComplete(logPersist(req))
+      emailRequestDaoActor.ask(req.copy(status = Some(EmailRequest.Succeeded)))
+        .mapTo[Int].onComplete(logPersist(req))
     case anyElse ⇒
-      dao.persistRequest(req.copy(status = Some(EmailRequest.Failed))).onComplete(logPersist(req))
+      emailRequestDaoActor.ask(req.copy(status = Some(EmailRequest.Failed)))
+        .mapTo[Int].onComplete(logPersist(req))
       anyElse match {
         case Success(failedReceipt) ⇒
           log.error(s"Receipt from sendgrid Actor success is false $failedReceipt")
@@ -29,7 +37,7 @@ trait Courier {
       }
   }
 
-  def recoverTemplateNotFound(req: EmailRequest, dao: EmailRequestDao, requester: ActorRef)
+  def recoverTemplateNotFound(req: EmailRequest, requester: ActorRef)
                              (implicit ctx: ExecutionContext) =
     PartialFunction.apply[Throwable, (String, Throwable)] {
       case e: ClassCastException ⇒ (s"One of the injection variables for '${req.template_id}' does not have the right type", e)
@@ -41,7 +49,8 @@ trait Courier {
     }.andThen {
       //persist attempt to db,
       case (msg, e) ⇒
-        dao.persistRequest(req)
+        emailRequestDaoActor.ask(req)
+          .mapTo[Int]
           .andThen(logPersist(req))
           .andThen {
           case _ ⇒ //regardless of persist results, send receipt
@@ -61,5 +70,16 @@ trait Courier {
       Receipt(success = false, requestId = req.id,
         message = Some(s"There was a problem when processing email request with id ${req.id}"),
         errors = e.getMessage :: Nil)
+  }
+}
+
+/**
+ * Helper actor that wraps emailsDao futures to provide timeout support
+ */
+class RequestPersister(emailsDao: EmailRequestDao) extends Actor {
+  import context.dispatcher
+  def receive: Actor.Receive = {
+    case req: EmailRequest ⇒ emailsDao.persistRequest(req) pipeTo sender()
+    case id: String ⇒ emailsDao.retrieveRequest(id) pipeTo sender()
   }
 }

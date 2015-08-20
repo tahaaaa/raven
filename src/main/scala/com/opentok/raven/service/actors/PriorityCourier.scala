@@ -16,16 +16,21 @@ import spray.json.{JsObject, JsValue}
  * @param sendgridService actor instance
  */
 
-class PriorityCourier(emailsDao: EmailRequestDao, sendgridService: ActorRef, t: Timeout) extends Actor with ActorLogging with Courier {
+class PriorityCourier(val emailsDao: EmailRequestDao, sendgridService: ActorRef, t: Timeout)
+  extends Actor with ActorLogging with Courier {
 
   import context.dispatcher
 
   implicit val timeout: Timeout = t
 
   override def receive: Receive = {
-    case req: EmailRequest ⇒
-      log.info(s"Received request with id ${req.id}")
-      log.debug("Received {}", req)
+    case r: EmailRequest ⇒
+      log.info(s"Received request with id ${r.id}")
+      log.debug("Received {}", r)
+
+      val req = //at this point, no request should have empty status
+        if (r.status.isEmpty) r.copy(status = Some(EmailRequest.Pending))
+        else r
 
       val templateMaybe =
         Template.build(req.template_id,
@@ -37,11 +42,11 @@ class PriorityCourier(emailsDao: EmailRequestDao, sendgridService: ActorRef, t: 
           .map(_.copy(requestId = req.id))
           .recover(exceptionToReceipt(req))
           //install side effecting persist to db, guaranteeing order of callbacks
-          .andThen(persistSuccessOrFailure(req, emailsDao))
+          .andThen(persistSuccessOrFailure(req))
           //install pipe of future receipt to sender
           .pipeTo(sender())
         //template not found, reply and persist attempt
-      }.recover(recoverTemplateNotFound(req, emailsDao, sender()))
+      }.recover(recoverTemplateNotFound(req, sender()))
 
 
     case anyElse ⇒ log.warning(s"Not an acceptable request $anyElse")

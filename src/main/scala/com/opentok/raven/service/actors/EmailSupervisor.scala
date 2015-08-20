@@ -43,7 +43,7 @@ class EmailSupervisor(superviseeProps: Props, pool: Int, emailDao: EmailRequestD
   val poolN = 0 until pool
 
   val supervisee: Vector[ActorRef] = poolN.foldLeft(Vector.empty[ActorRef]) { (vec, i) ⇒
-    val routee = context.actorOf(superviseeProps, s"supervisee-$i")
+    val routee = context.actorOf(superviseeProps, s"${superviseeProps.actorClass().toString}-$i")
     context.watch(routee)
     vec :+ routee
   }
