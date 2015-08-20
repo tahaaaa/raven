@@ -1,18 +1,13 @@
 package com.opentok.raven.fixture
 
-import java.io.File
-
 import com.opentok.raven.dal.Dal
 import com.opentok.raven.dal.components.{EmailRequestDao, EmailRequestSlickDao}
 import slick.driver.{H2Driver, JdbcProfile}
-import slick.jdbc.{StaticQuery, JdbcBackend}
+import slick.jdbc.{JdbcBackend, StaticQuery}
 
 import scala.io.Source
-import scala.util.Success
 
-//TODO insert schema
-//TODO SHTMPAPI HEADERS FOR CATEGORIES?
-class H2Dal extends Dal {
+trait H2Dal extends Dal {
   implicit val driver: JdbcProfile = H2Driver
   implicit val db: JdbcBackend#Database = driver.backend.Database.forConfig("raven.database")
   val emailRequestDao: EmailRequestDao = new EmailRequestSlickDao()
