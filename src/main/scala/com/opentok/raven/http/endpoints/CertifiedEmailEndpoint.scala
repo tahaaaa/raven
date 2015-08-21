@@ -22,11 +22,11 @@ class CertifiedEmailEndpoint(handler: ActorRef, t: Timeout)(implicit val mat: Ma
         pathEndOrSingleSlash {
           entity(as[Either[List[Requestable], Requestable]]) {
             case Right(req: EmailRequest) ⇒ complete(handler.ask(EmailRequest.fillInRequest(req)).mapTo[Receipt])
-            case Right(req: Email) ⇒ complete(handler.ask(Email.fillInEmail(req)).mapTo[Receipt])
+            case Right(em: Email) ⇒ complete(handler.ask(Email.fillInEmail(em)).mapTo[Receipt])
             case Right(req) ⇒ complete(handler.ask(req).mapTo[Receipt])
             case Left(lReq) ⇒ complete(handler.ask(lReq.map {
-              case e: EmailRequest ⇒ EmailRequest.fillInRequest(e)
-              case e: Email ⇒ Email.fillInEmail(e)
+              case req: EmailRequest ⇒ EmailRequest.fillInRequest(req)
+              case em: Email ⇒ Email.fillInEmail(em)
               case e ⇒ e
             }).mapTo[Receipt])
           }

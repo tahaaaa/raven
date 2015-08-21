@@ -4,7 +4,7 @@ import akka.actor.{ActorSystem, Props}
 import akka.testkit.{ImplicitSender, TestActorRef, TestKit}
 import akka.util.Timeout
 import com.opentok.raven.fixture._
-import com.opentok.raven.model.{EmailRequest, Receipt, Template}
+import com.opentok.raven.model.{EmailRequest, Receipt, Email}
 import com.opentok.raven.service.actors.CertifiedCourier
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 

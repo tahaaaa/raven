@@ -3,7 +3,7 @@ package com.opentok.raven
 import akka.actor.{ActorSystem, Props, ActorLogging, Actor}
 import akka.testkit.TestActorRef
 import com.opentok.raven.dal.components.EmailRequestDao
-import com.opentok.raven.model.{Template, Receipt, EmailRequest}
+import com.opentok.raven.model.{Email, Receipt, EmailRequest}
 import org.joda.time.DateTime
 import spray.json._
 
@@ -44,7 +44,7 @@ package object fixture {
         received += req
         Thread.sleep(timeout)
         0
-      } else Future{
+      } else Future {
         received += req
         0
       }
@@ -56,19 +56,31 @@ package object fixture {
 
   val marshalledRequest = EmailRequest.requestJsonFormat.write(testRequest)
 
+  val testRequest2 = EmailRequest("ernest+ravenbatchEmail@tokbox.com", "twirl_test",
+    Some(JsObject(Map("a" → JsString(s"INTEGRATION TEST RUN AT ${new DateTime().toString}"),
+      "b" → JsNumber(1)))), None, None)
+
+  val testEmail =
+    Email.build(testRequest2.id, testRequest2.template_id, testRequest2.inject.get, testRequest2.to)
+
   val nBatch = 3
+
+  val marshalledBatchEmail: JsValue = JsArray(Vector.fill(nBatch)(
+    Email.emailJsonFormat.write(testEmail.get.copy(to = "BATCH@tokbox.com"))).toSeq: _*)
+
+  val marshalledEmail = Email.emailJsonFormat.write(testEmail.get)
 
   val marshalledBatch: JsValue = JsArray(Vector.fill(nBatch)(EmailRequest.requestJsonFormat.write(
     EmailRequest("ernest+ravenbatch@tokbox.com", "twirl_test",
       Some(JsObject(Map("a" → JsString(s"INTEGRATION TEST RUN AT ${new DateTime().toString}"),
         "b" → JsNumber(1)))), None, None))).toSeq: _*)
 
-  class TestActor[T](reference: Class[T], t: ClassTag[T]) extends Actor with ActorLogging{
+  class TestActor[T](reference: Class[T], t: ClassTag[T]) extends Actor with ActorLogging {
     var right = 0
     var wrong = 0
 
     override def receive: Receive = {
-      case _: String ⇒ sender() ! (right, wrong)
+      case _: String ⇒ sender() !(right, wrong)
       case a if t.runtimeClass.isAssignableFrom(a.getClass) ⇒
         sender() ! Receipt.success
         right += 1
@@ -80,9 +92,9 @@ package object fixture {
     }
   }
 
-  def sendgridService(implicit system: ActorSystem): TestActorRef[TestActor[Template]] =
-    TestActorRef(Props(classOf[TestActor[Template]], classOf[Template],
-      implicitly[ClassTag[Template]]))
+  def sendgridService(implicit system: ActorSystem): TestActorRef[TestActor[Email]] =
+    TestActorRef(Props(classOf[TestActor[Email]], classOf[Email],
+      implicitly[ClassTag[Email]]))
 
   def unresponsiveSendgridService(implicit system: ActorSystem): TestActorRef[UnresponsiveActor] =
     TestActorRef(Props[UnresponsiveActor])

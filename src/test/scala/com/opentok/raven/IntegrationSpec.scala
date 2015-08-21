@@ -110,5 +110,36 @@ with SprayJsonSupport with DefaultJsonProtocol {
     receipt.success shouldBe (true)
   }
 
+  "Send an prebuilt email via certified service, persist results to DB and reply back to requester with success" in {
+    val receipt = Await.result(Source.single(RequestBuilding.Post("/v1/certified", marshalledEmail))
+      .via(selfConnectionFlow).runWith(Sink.head).map(_.entity).flatMap(receiptUnmarshaller.apply), 3.seconds)
+
+    Thread.sleep(2000) //wait for persist
+
+    val dbRecord = Await.result(emailRequestDao.retrieveRequest(receipt.requestId.get), 5.seconds).get
+    dbRecord.id shouldBe receipt.requestId
+    dbRecord.status shouldBe Some(EmailRequest.Succeeded)
+    dbRecord.to shouldBe testEmail.get.to
+    dbRecord.template_id shouldBe testEmail.get.fromTemplateId.get
+
+    receipt.success shouldBe (true)
+  }
+
+  "Send a batch of prebuilt emails via certified service, persist results to DB and reply back to requester with success" in {
+    val receipt = Await.result(Source.single(RequestBuilding.Post("/v1/certified", marshalledBatchEmail))
+      .via(selfConnectionFlow).runWith(Sink.head).map(_.entity).flatMap(receiptUnmarshaller.apply), 3.seconds)
+
+    Thread.sleep(2000) //wait for persist
+
+    import driver.api._
+    val count = Await.result(db.run(
+      sql"SELECT status FROM email_requests WHERE recipient = 'BATCH@tokbox.com'".as[String]
+    ), 5.seconds)
+    count.length shouldBe nBatch
+    count.filter(_ == EmailRequest.Succeeded.toString.toLowerCase).length shouldBe nBatch
+
+    receipt.success shouldBe (true)
+  }
+
 
 }
