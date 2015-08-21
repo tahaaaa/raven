@@ -26,9 +26,9 @@ package object fixture {
 
     import scala.concurrent.ExecutionContext.Implicits.global
 
-    val timeout = 20000
+    lazy val timeout = 20000
 
-    val received = scala.collection.mutable.ListBuffer.empty[EmailRequest]
+    lazy val received = scala.collection.mutable.ListBuffer.empty[EmailRequest]
 
     def retrieveRequest(id: String)(implicit ctx: ExecutionContext): Future[Option[EmailRequest]] =
       if (persistanceFails) Future.failed(new Exception("Could not fetch request"))
@@ -50,30 +50,30 @@ package object fixture {
       }
   }
 
-  val testRequest = EmailRequest("ernest+raven@tokbox.com", "twirl_test",
+  lazy val testRequest = EmailRequest("ernest+raven@tokbox.com", "twirl_test",
     Some(JsObject(Map("a" → JsString(s"INTEGRATION TEST RUN AT ${new DateTime().toString}"),
-      "b" → JsNumber(1)))), None, Some("1"))
+      "b" → JsString("1")))), None, Some("1"))
 
-  val marshalledRequest = EmailRequest.requestJsonFormat.write(testRequest)
+  lazy val marshalledRequest = EmailRequest.requestJsonFormat.write(testRequest)
 
-  val testRequest2 = EmailRequest("ernest+ravenbatchEmail@tokbox.com", "twirl_test",
+  lazy val testRequest2 = EmailRequest("ernest+ravenbatchEmail@tokbox.com", "twirl_test",
     Some(JsObject(Map("a" → JsString(s"INTEGRATION TEST RUN AT ${new DateTime().toString}"),
-      "b" → JsNumber(1)))), None, None)
+      "b" → JsString("1")))), None, None)
 
-  val testEmail =
+  lazy val testEmail =
     Email.build(testRequest2.id, testRequest2.template_id, testRequest2.inject.get, testRequest2.to)
 
-  val nBatch = 3
+  lazy val nBatch = 3
 
-  val marshalledBatchEmail: JsValue = JsArray(Vector.fill(nBatch)(
+  lazy val marshalledBatchEmail: JsValue = JsArray(Vector.fill(nBatch)(
     Email.emailJsonFormat.write(testEmail.get.copy(to = "BATCH@tokbox.com"))).toSeq: _*)
 
-  val marshalledEmail = Email.emailJsonFormat.write(testEmail.get)
+  lazy val marshalledEmail = Email.emailJsonFormat.write(testEmail.get)
 
-  val marshalledBatch: JsValue = JsArray(Vector.fill(nBatch)(EmailRequest.requestJsonFormat.write(
+  lazy val marshalledBatch: JsValue = JsArray(Vector.fill(nBatch)(EmailRequest.requestJsonFormat.write(
     EmailRequest("ernest+ravenbatch@tokbox.com", "twirl_test",
       Some(JsObject(Map("a" → JsString(s"INTEGRATION TEST RUN AT ${new DateTime().toString}"),
-        "b" → JsNumber(1)))), None, None))).toSeq: _*)
+        "b" → JsString("1")))), None, None))).toSeq: _*)
 
   class TestActor[T](reference: Class[T], t: ClassTag[T]) extends Actor with ActorLogging {
     var right = 0

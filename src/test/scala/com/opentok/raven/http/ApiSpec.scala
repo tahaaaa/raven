@@ -36,10 +36,6 @@ class ApiSpec extends WordSpec with Matchers with ScalatestRouteTest with JsonPr
     }
   }
 
-  val testRequest = EmailRequest("ernest+raven@tokbox.com", "twirl_test",
-    Some(JsObject(Map("a" → JsString(s"API UNIT TEST RUN AT ${new DateTime().toString}"),
-      "b" → JsNumber(2)))), None, None)
-
   val testEmail = Email.build(testRequest.id, testRequest.template_id, testRequest.inject.get,testRequest.to)
 
   val marshalledRequest = EmailRequest.requestJsonFormat.write(testRequest)

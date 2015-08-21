@@ -27,12 +27,12 @@ with BeforeAndAfterAll with H2Dal with TestAkkaSystem with AkkaApi
 with SprayJsonSupport with DefaultJsonProtocol {
 
   //start service
-  val bound = Await.result(Http().bindAndHandle(handler = routeTree,
+  val binding = Await.result(Http().bindAndHandle(handler = routeTree,
     interface = HOST, port = PORT), 3.seconds)
 
   override def afterAll() {
     TestKit.shutdownActorSystem(system)
-    bound.unbind()
+    binding.unbind()
   }
 
   import system.dispatcher
@@ -68,6 +68,9 @@ with SprayJsonSupport with DefaultJsonProtocol {
     val receipt = Await.result(Source.single(RequestBuilding.Post("/v1/priority", marshalledRequest))
       .via(selfConnectionFlow).runWith(Sink.head).map(_.entity).flatMap(receiptUnmarshaller.apply), 3.seconds)
 
+    smtpService.underlyingActor.wrong should be(0)
+    smtpService.underlyingActor.right should be(1)
+
     Thread.sleep(2000) //wait for persist
 
     val dbRecord = Await.result(emailRequestDao.retrieveRequest(receipt.requestId.get), 5.seconds).get
@@ -82,6 +85,9 @@ with SprayJsonSupport with DefaultJsonProtocol {
   "Send an email via certified service, persist results to DB and reply back to requester with success" in {
     val receipt = Await.result(Source.single(RequestBuilding.Post("/v1/certified", marshalledRequest))
       .via(selfConnectionFlow).runWith(Sink.head).map(_.entity).flatMap(receiptUnmarshaller.apply), 3.seconds)
+
+    smtpService.underlyingActor.wrong should be(0)
+    smtpService.underlyingActor.right should be(2)
 
     Thread.sleep(2000) //wait for persist
 
@@ -98,23 +104,29 @@ with SprayJsonSupport with DefaultJsonProtocol {
     val receipt = Await.result(Source.single(RequestBuilding.Post("/v1/certified", marshalledBatch))
       .via(selfConnectionFlow).runWith(Sink.head).map(_.entity).flatMap(receiptUnmarshaller.apply), 3.seconds)
 
-    Thread.sleep(2000) //wait for persist
+    Thread.sleep(2000)
+
+    smtpService.underlyingActor.wrong should be(0)
+    smtpService.underlyingActor.right should be(5)
 
     import driver.api._
     val count = Await.result(db.run(
       sql"SELECT status FROM email_requests WHERE recipient = 'ernest+ravenbatch@tokbox.com'".as[String]
     ), 5.seconds)
     count.length shouldBe nBatch
+    receipt.success shouldBe (true)
     count.filter(_ == EmailRequest.Succeeded.toString.toLowerCase).length shouldBe nBatch
 
-    receipt.success shouldBe (true)
   }
 
   "Send an prebuilt email via certified service, persist results to DB and reply back to requester with success" in {
     val receipt = Await.result(Source.single(RequestBuilding.Post("/v1/certified", marshalledEmail))
       .via(selfConnectionFlow).runWith(Sink.head).map(_.entity).flatMap(receiptUnmarshaller.apply), 3.seconds)
 
-    Thread.sleep(2000) //wait for persist
+    Thread.sleep(2000)
+
+    smtpService.underlyingActor.wrong should be(0)
+    smtpService.underlyingActor.right should be(6)
 
     val dbRecord = Await.result(emailRequestDao.retrieveRequest(receipt.requestId.get), 5.seconds).get
     dbRecord.id shouldBe receipt.requestId
@@ -129,7 +141,10 @@ with SprayJsonSupport with DefaultJsonProtocol {
     val receipt = Await.result(Source.single(RequestBuilding.Post("/v1/certified", marshalledBatchEmail))
       .via(selfConnectionFlow).runWith(Sink.head).map(_.entity).flatMap(receiptUnmarshaller.apply), 3.seconds)
 
-    Thread.sleep(2000) //wait for persist
+    Thread.sleep(2000)
+
+    smtpService.underlyingActor.wrong should be(0)
+    smtpService.underlyingActor.right should be(9)
 
     import driver.api._
     val count = Await.result(db.run(
