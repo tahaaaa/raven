@@ -39,6 +39,7 @@ object RavenBuild extends Build {
           "org.scala-lang"                     % "scala-compiler"                         % scalaV,
           "com.typesafe.play"                 %%  "twirl-api"                             % playTwirlV,
           "com.typesafe.akka"                 %% "akka-actor"                             % akkaV,
+          "com.typesafe.akka"                 %% "akka-slf4j"                             % akkaV,
           "com.typesafe.akka"                 %% "akka-stream-experimental"               % akkaStreamV,
           "com.typesafe.akka"                 %% "akka-http-spray-json-experimental"      % akkaStreamV,
           "com.typesafe.akka"                 %% "akka-http-experimental"                 % akkaStreamV,
@@ -50,8 +51,8 @@ object RavenBuild extends Build {
           "mysql"                              % "mysql-connector-java"                   % "5.1.6",
           "joda-time"                          % "joda-time"                              % "2.5",
           "org.joda"                           % "joda-convert"                           % "1.7",
+          "org.slf4j"                          % "slf4j-log4j12"                          % "1.7.12",
           "com.zaxxer"                         % "HikariCP"                               % "2.3.9",
-          "ch.qos.logback"                     % "logback-classic"                        % "1.1.3",
           "com.h2database"                     % "h2"                                     % "1.3.175",
           "org.scalatest"                     %% "scalatest"                              % "2.2.5" % "test",
           "com.typesafe.akka"                 %% "akka-testkit"                           % akkaV % "test"

@@ -36,9 +36,11 @@ trait AkkaApi extends Api {
     materializer = materializer, routingLog = RoutingLog(system.log),
     routingSettings = RoutingSettings.default)
 
-  val routeTree = Route.seal(pathPrefix("v1") {
-    handleExceptions(receiptExceptionHandler) {
-      priority.route ~ certified.route ~ monitoring.route ~ debugging.route
-    }
-  })(customRoutingSettings)
+  val routeTree = logRequest("raven") {
+    Route.seal(pathPrefix("v1") {
+      handleExceptions(receiptExceptionHandler) {
+        priority.route ~ certified.route ~ monitoring.route ~ debugging.route
+      }
+    })(customRoutingSettings)
+  }
 }
