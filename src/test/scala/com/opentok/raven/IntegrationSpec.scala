@@ -59,7 +59,7 @@ with SprayJsonSupport with DefaultJsonProtocol {
   }
 
   "Expose in-flight emails information" in {
-    val resp = Await.result(Source.single(RequestBuilding.Get("/v1/monitoring/inflight"))
+    val resp = Await.result(Source.single(RequestBuilding.Get("/v1/monitoring/pending"))
       .via(selfConnectionFlow).runWith(Sink.head), 3.seconds)
     resp.status.isSuccess() should be(true)
   }

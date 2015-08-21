@@ -20,7 +20,7 @@ GET /v1/monitoring/health?component=<component>
 ← <receipt>
 
 
-GET /v1/monitoring/inflight
+GET /v1/monitoring/pending
 
   {
     <request_id> : <tries>,

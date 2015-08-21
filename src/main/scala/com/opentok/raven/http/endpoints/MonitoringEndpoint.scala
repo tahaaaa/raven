@@ -32,7 +32,7 @@ class MonitoringEndpoint(handler: ActorRef, t: Timeout)(implicit val mat: Materi
   override val route: Route =
     get {
       pathPrefix("monitoring") {
-        path("inflight") {
+        path("pending") {
           complete {
             handler.ask(MonitoringActor.InFlightEmailsCheck)
               .mapTo[Map[String, Int]]

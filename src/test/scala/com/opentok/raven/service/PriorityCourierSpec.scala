@@ -115,13 +115,5 @@ with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
 
       serv.underlyingActor.received shouldBe 1
     }
-
-
-
-
-
-
   }
-
-
 }

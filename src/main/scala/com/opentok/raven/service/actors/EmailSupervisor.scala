@@ -16,7 +16,8 @@ import scala.concurrent.duration._
  * @param pool number of actors to supervise and create using props
  * @param emailDao
  */
-class EmailSupervisor(superviseeProps: Props, pool: Int, emailDao: EmailRequestDao, maxRetries: Int) extends Actor with ActorLogging {
+class EmailSupervisor(superviseeProps: Props, pool: Int, emailDao: EmailRequestDao, maxRetries: Int)
+  extends Actor with ActorLogging {
 
   case class SupervisedRequest(request: EmailRequest, requester: ActorRef, handler: ActorRef)
 
@@ -30,7 +31,7 @@ class EmailSupervisor(superviseeProps: Props, pool: Int, emailDao: EmailRequestD
   override def supervisorStrategy: SupervisorStrategy = OneForOneStrategy() {
     case anyEx if sender().path.name.contains("supervisee") ⇒
       val routee = sender()
-      inFlight.find(_._1.handler == routee)
+      pending.find(_._1.handler == routee)
         .map(retryOrReplyBack(None))
         .getOrElse(logNotFound("Routee not handling any in flight requests. Resuming.."))
       SupervisorStrategy.Resume
@@ -49,7 +50,7 @@ class EmailSupervisor(superviseeProps: Props, pool: Int, emailDao: EmailRequestD
   }
 
   //uuid -> n tries
-  val inFlight: scala.collection.mutable.Map[SupervisedRequest, Int] = scala.collection.mutable.Map.empty
+  val pending: scala.collection.mutable.Map[SupervisedRequest, Int] = scala.collection.mutable.Map.empty
 
   def retryOrReplyBack(receipt: Option[Receipt]): PartialFunction[(SupervisedRequest, Int), Unit] = {
     case (supervisedRequest, retries) if retries < retries ⇒
@@ -90,24 +91,24 @@ class EmailSupervisor(superviseeProps: Props, pool: Int, emailDao: EmailRequestD
   }
 
   def superviseRequest(req: EmailRequest, requester: ActorRef) {
-    val handler: ActorRef = inFlight.find(_._1.request.id == req.id).map {
+    val handler: ActorRef = pending.find(_._1.request.id == req.id).map {
       //already registered, update retries
       request ⇒
         log.info(s"EmailRequest already registered, currently with ${request._2} retries")
-        inFlight.update(request._1, request._2 + 1)
+        pending.update(request._1, request._2 + 1)
         request._1.handler
     }.getOrElse {
       // first try
       log.info(s"Supervising EmailRequest with id ${req.id}")
       val routee = supervisee(poolN(new scala.util.Random nextInt pool))
-      inFlight.update(SupervisedRequest(req, requester, routee), 1)
+      pending.update(SupervisedRequest(req, requester, routee), 1)
       routee
     }
     handler ! req
   }
 
   val logNotFound = { reason: String ⇒
-    log.debug("Control map {}", inFlight)
+    log.debug("Control map {}", pending)
     log.error(s"Could not send receipt back to original requester. $reason")
   }
 
@@ -115,7 +116,7 @@ class EmailSupervisor(superviseeProps: Props, pool: Int, emailDao: EmailRequestD
 
     //monitoring
     case InFlightEmailsCheck ⇒
-      val stats = inFlight.toMap.map( kv ⇒ kv._1.request.id.getOrElse("") → kv._2) //make immutable before sending
+      val stats = pending.toMap.map( kv ⇒ kv._1.request.id.getOrElse("") → kv._2) //make immutable before sending
       sender() ! stats
 
     case reqs: List[_] ⇒
@@ -136,17 +137,17 @@ class EmailSupervisor(superviseeProps: Props, pool: Int, emailDao: EmailRequestD
 
     case rec: Receipt if rec.success ⇒
       rec.requestId.map { id ⇒
-        inFlight.find(_._1.request.id.getOrElse("") == id).map { request ⇒
+        pending.find(_._1.request.id.getOrElse("") == id).map { request ⇒
           //reply to requester
           request._1.requester ! rec
           //remove from control map
-          inFlight.remove(request._1).get
+          pending.remove(request._1).get
         }.getOrElse(logNotFound(s"Request with Id $id not found in control map"))
       }.getOrElse(logNotFound("Receipt did not contain a requestId"))
 
     case rec: Receipt if !rec.success ⇒
       rec.requestId.map { id ⇒
-        inFlight.find(_._1.request.id.getOrElse("") == id)
+        pending.find(_._1.request.id.getOrElse("") == id)
           .map(retryOrReplyBack(Some(rec)))
           .getOrElse(logNotFound("This is impossible! Unsuccessful receipt has a receipt id but id not present in control map.."))
       }.getOrElse(logNotFound(s"Unable to retry because receipt doesn't have a requestId!! Dropping $rec"))
