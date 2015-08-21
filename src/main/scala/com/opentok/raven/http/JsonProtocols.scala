@@ -4,24 +4,33 @@ import akka.http.scaladsl.marshallers.sprayjson._
 import akka.http.scaladsl.marshalling.{Marshaller, ToEntityMarshaller}
 import akka.http.scaladsl.model.ContentType
 import akka.http.scaladsl.model.MediaTypes._
-import com.opentok.raven.model.EmailRequest
+import com.opentok.raven.model.{Email, Requestable, EmailRequest}
 import play.twirl.api.Html
 import spray.json.{JsArray, JsValue, RootJsonFormat}
 
 trait JsonProtocols extends SprayJsonSupport {
 
   implicit object EmailRequestJsonFormat
-    extends RootJsonFormat[Either[List[EmailRequest], EmailRequest]] {
-    override def write(obj: Either[List[EmailRequest], EmailRequest]): JsValue =
+    extends RootJsonFormat[Either[List[Requestable], Requestable]] {
+    override def write(obj: Either[List[Requestable], Requestable]): JsValue =
       obj match {
-        case Right(req) ⇒ EmailRequest.requestJsonFormat.write(req)
-        case Left(lReq) ⇒ JsArray(lReq.map(EmailRequest.requestJsonFormat.write).toSeq: _*)
+        case Right(e: EmailRequest) ⇒ EmailRequest.requestJsonFormat.write(e)
+        case Right(e: Email) ⇒ Email.emailJsonFormat.write(e)
+        case Left(lReq) if lReq.isEmpty ⇒ JsArray(Vector.empty)
+        case Left(lReq) ⇒ JsArray(lReq.map {
+          case e: EmailRequest ⇒ EmailRequest.requestJsonFormat.write(e)
+          case e: Email ⇒ Email.emailJsonFormat.write(e)
+        }.toSeq: _*)
       }
 
-    override def read(json: JsValue): Either[List[EmailRequest], EmailRequest] =
+
+    override def read(json: JsValue): Either[List[Requestable], Requestable] =
       json match {
-        case JsArray(lReq) ⇒ Left(lReq.map(EmailRequest.requestJsonFormat.read).toList)
-        case obj: JsValue ⇒ Right(EmailRequest.requestJsonFormat.read(obj))
+        case JsArray(lReq) if lReq.isEmpty ⇒ Left(List.empty[Requestable])
+        case JsArray(lReq) if lReq.head.asJsObject.fields.exists(_._1.toLowerCase == "inject") ⇒ Left(lReq.map(EmailRequest.requestJsonFormat.read).toList)
+        case JsArray(lReq) ⇒ Left(lReq.map(Email.emailJsonFormat.read).toList)
+        case obj: JsValue if obj.asJsObject.fields.exists(_._1.toLowerCase == "inject") ⇒ Right(EmailRequest.requestJsonFormat.read(obj))
+        case obj: JsValue ⇒ Right(Email.emailJsonFormat.read(obj))
       }
   }
 

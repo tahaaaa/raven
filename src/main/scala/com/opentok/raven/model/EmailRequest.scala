@@ -18,7 +18,7 @@ case class EmailRequest(
   inject: Option[JsObject],
   status: Option[EmailRequest.Status],
   id: Option[String]
-) {
+) extends Requestable {
 
   @transient
   lazy val json: JsObject = {
@@ -44,6 +44,9 @@ object EmailRequest {
   case object Succeeded extends Status
 
   case object Failed extends Status
+
+  implicit def emailToEmailRequest(e: Email): EmailRequest =
+    EmailRequest(e.to, e.fromTemplateId.getOrElse("no_template"), None, Some(EmailRequest.Pending), e.id)
 
   implicit object EmailRequestStatusFormat extends RootJsonFormat[EmailRequest.Status] {
     def write(obj: EmailRequest.Status) = JsString(obj.toString)

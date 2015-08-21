@@ -3,23 +3,25 @@ package com.opentok.raven.service.actors
 import akka.actor._
 import akka.event.LoggingAdapter
 import com.opentok.raven.dal.components.EmailRequestDao
-import com.opentok.raven.model.{EmailRequest, Receipt}
+import com.opentok.raven.model.{Requestable, EmailRequest, Receipt}
 import com.opentok.raven.service.actors.MonitoringActor.InFlightEmailsCheck
 
+import scala.collection.TraversableLike
 import scala.concurrent.duration._
+import scala.util.Try
 
 /**
- * Service Supervisor
- * TODO document
+ * Email Service Supervisor
  *
- * @param superviseeProps Actor configuration object used to instantiate new [[Actor]]
- * @param pool number of actors to supervise and create using props
- * @param emailDao
+ * @param superviseeProps Actor configuration object used to instantiate new supervisees
+ * @param pool number of actors to create and monitor using props
+ * @param emailDao data access object to emails table in db to verify certain conditions
+ * @param maxRetries maximum number of retries allowed per failed request
  */
 class EmailSupervisor(superviseeProps: Props, pool: Int, emailDao: EmailRequestDao, maxRetries: Int)
   extends Actor with ActorLogging {
 
-  case class SupervisedRequest(request: EmailRequest, requester: ActorRef, handler: ActorRef)
+  case class SupervisedRequest(request: Requestable, requester: ActorRef, handler: ActorRef)
 
   import context.dispatcher
 
@@ -29,7 +31,7 @@ class EmailSupervisor(superviseeProps: Props, pool: Int, emailDao: EmailRequestD
 
   /* The policy to apply when a supervisee crashes */
   override def supervisorStrategy: SupervisorStrategy = OneForOneStrategy() {
-    case anyEx if sender().path.name.contains("supervisee") ⇒
+    case anyEx if sender().path.name.contains(superviseeProps.actorClass().getSimpleName) ⇒
       val routee = sender()
       pending.find(_._1.handler == routee)
         .map(retryOrReplyBack(None))
@@ -42,6 +44,8 @@ class EmailSupervisor(superviseeProps: Props, pool: Int, emailDao: EmailRequestD
   implicit val logger: LoggingAdapter = log
 
   val poolN = 0 until pool
+
+  val rdm = new scala.util.Random
 
   val supervisee: Vector[ActorRef] = poolN.foldLeft(Vector.empty[ActorRef]) { (vec, i) ⇒
     val routee = context.actorOf(superviseeProps, s"${superviseeProps.actorClass().getSimpleName}-$i")
@@ -90,7 +94,7 @@ class EmailSupervisor(superviseeProps: Props, pool: Int, emailDao: EmailRequestD
         requestId = supervisedRequest.request.id)
   }
 
-  def superviseRequest(req: EmailRequest, requester: ActorRef) {
+  def superviseRequest(req: Requestable, requester: ActorRef) {
     val handler: ActorRef = pending.find(_._1.request.id == req.id).map {
       //already registered, update retries
       request ⇒
@@ -100,7 +104,7 @@ class EmailSupervisor(superviseeProps: Props, pool: Int, emailDao: EmailRequestD
     }.getOrElse {
       // first try
       log.info(s"Supervising EmailRequest with id ${req.id}")
-      val routee = supervisee(poolN(new scala.util.Random nextInt pool))
+      val routee = Try(supervisee(poolN(rdm nextInt pool))).getOrElse(supervisee.head)
       pending.update(SupervisedRequest(req, requester, routee), 1)
       routee
     }
@@ -108,7 +112,6 @@ class EmailSupervisor(superviseeProps: Props, pool: Int, emailDao: EmailRequestD
   }
 
   val logNotFound = { reason: String ⇒
-    log.debug("Control map {}", pending)
     log.error(s"Could not send receipt back to original requester. $reason")
   }
 
@@ -119,9 +122,9 @@ class EmailSupervisor(superviseeProps: Props, pool: Int, emailDao: EmailRequestD
       val stats = pending.toMap.map( kv ⇒ kv._1.request.id.getOrElse("") → kv._2) //make immutable before sending
       sender() ! stats
 
-    case reqs: List[_] ⇒
+    case reqs: TraversableLike[_, _] ⇒
       val processed = reqs.foldLeft((0, 0)) {
-        case ((accepted, rejected), req: EmailRequest) ⇒
+        case ((accepted, rejected), req: Requestable) ⇒
           superviseRequest(req, sender())
           (accepted + 1, rejected)
         case ((accepted, rejected), smtg) ⇒
@@ -132,7 +135,7 @@ class EmailSupervisor(superviseeProps: Props, pool: Int, emailDao: EmailRequestD
       sender() ! Receipt(success = processed._2 == 0,
         message = Some(s"${processed._1} requests were accepted and ${processed._2} were rejected"))
 
-    case req: EmailRequest ⇒
+    case req: Requestable ⇒
       superviseRequest(req, sender())
 
     case rec: Receipt if rec.success ⇒

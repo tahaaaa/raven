@@ -25,10 +25,10 @@ trait Courier {
     case Success(receipt) if receipt.success ⇒
       log.info(s"Successfully forwarded to sendgrid, request with id ${req.id}")
       emailRequestDaoActor.ask(req.copy(status = Some(EmailRequest.Succeeded)))
-        .mapTo[Int].onComplete(logPersist(req))
+        .mapTo[Int].onComplete(logPersist(req.id))
     case anyElse ⇒
       emailRequestDaoActor.ask(req.copy(status = Some(EmailRequest.Failed)))
-        .mapTo[Int].onComplete(logPersist(req))
+        .mapTo[Int].onComplete(logPersist(req.id))
       anyElse match {
         case Success(failedReceipt) ⇒
           log.error(s"Receipt from sendgrid Actor success is false $failedReceipt")
@@ -51,24 +51,24 @@ trait Courier {
       case (msg, e) ⇒
         emailRequestDaoActor.ask(req)
           .mapTo[Int]
-          .andThen(logPersist(req))
+          .andThen(logPersist(req.id))
           .andThen {
           case _ ⇒ //regardless of persist results, send receipt
             requester ! Receipt.error(e, msg, requestId = req.id)(log)
         }
     }
 
-  def logPersist(req: EmailRequest): PartialFunction[Try[Int], Unit] = {
+  def logPersist(id: Option[String]): PartialFunction[Try[Int], Unit] = {
     case Success(i) ⇒
-      log.info(s"Successfully persisted request with id ${req.id} to database")
+      log.info(s"Successfully persisted request with id $id to database")
     case Failure(e) ⇒
-      log.error(e, s"There was an error when persisting request with id ${req.id} to database")
+      log.error(e, s"There was an error when persisting request with id $id to database")
   }
 
-  def exceptionToReceipt(req: EmailRequest): PartialFunction[Throwable, Receipt] = {
+  def exceptionToReceipt(id: Option[String]): PartialFunction[Throwable, Receipt] = {
     case e: Exception ⇒
-      Receipt(success = false, requestId = req.id,
-        message = Some(s"There was a problem when processing email request with id ${req.id}"),
+      Receipt(success = false, requestId = id,
+        message = Some(s"There was a problem when processing email request with id $id"),
         errors = e.getMessage :: Nil)
   }
 }
