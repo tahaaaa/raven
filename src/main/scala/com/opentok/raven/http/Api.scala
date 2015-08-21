@@ -7,7 +7,7 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import akka.util.CompactByteString
 import com.opentok.raven.RavenConfig
-import com.opentok.raven.http.endpoints.{CertifiedEmailEndpoint, MonitoringEndpoint, PriorityEmailEndpoint}
+import com.opentok.raven.http.endpoints.{DebugEndpoint, CertifiedEmailEndpoint, MonitoringEndpoint, PriorityEmailEndpoint}
 import com.opentok.raven.model.Receipt
 import com.opentok.raven.service.Service
 
@@ -30,13 +30,15 @@ trait AkkaApi extends Api {
 
   val monitoring = new MonitoringEndpoint(monitoringService, ENDPOINT_TIMEOUT)
 
+  val debugging = new DebugEndpoint
+
   val customRoutingSettings = RoutingSetup(exceptionHandler = receiptExceptionHandler,
     materializer = materializer, routingLog = RoutingLog(system.log),
     routingSettings = RoutingSettings.default)
 
   val routeTree = Route.seal(pathPrefix("v1") {
     handleExceptions(receiptExceptionHandler) {
-      priority.route ~ certified.route ~ monitoring.route
+      priority.route ~ certified.route ~ monitoring.route ~ debugging.route
     }
   })(customRoutingSettings)
 }

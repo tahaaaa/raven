@@ -10,7 +10,7 @@ import spray.json.{JsArray, JsValue, RootJsonFormat}
 
 trait JsonProtocols extends SprayJsonSupport {
 
-  implicit object EmailRequestJsonFormat
+  implicit object RequestableJsonFormat
     extends RootJsonFormat[Either[List[Requestable], Requestable]] {
     override def write(obj: Either[List[Requestable], Requestable]): JsValue =
       obj match {
@@ -23,13 +23,12 @@ trait JsonProtocols extends SprayJsonSupport {
         }.toSeq: _*)
       }
 
-
     override def read(json: JsValue): Either[List[Requestable], Requestable] =
       json match {
         case JsArray(lReq) if lReq.isEmpty ⇒ Left(List.empty[Requestable])
-        case JsArray(lReq) if lReq.head.asJsObject.fields.exists(_._1.toLowerCase == "inject") ⇒ Left(lReq.map(EmailRequest.requestJsonFormat.read).toList)
+        case JsArray(lReq) if lReq.head.asJsObject.fields.exists(_._1.toLowerCase == "template_id") ⇒ Left(lReq.map(EmailRequest.requestJsonFormat.read).toList)
         case JsArray(lReq) ⇒ Left(lReq.map(Email.emailJsonFormat.read).toList)
-        case obj: JsValue if obj.asJsObject.fields.exists(_._1.toLowerCase == "inject") ⇒ Right(EmailRequest.requestJsonFormat.read(obj))
+        case obj: JsValue if obj.asJsObject.fields.exists(_._1.toLowerCase == "template_id") ⇒ Right(EmailRequest.requestJsonFormat.read(obj))
         case obj: JsValue ⇒ Right(Email.emailJsonFormat.read(obj))
       }
   }
