@@ -4,7 +4,7 @@ import akka.actor._
 import akka.event.LoggingAdapter
 import com.opentok.raven.dal.components.EmailRequestDao
 import com.opentok.raven.model.{Requestable, EmailRequest, Receipt}
-import com.opentok.raven.service.actors.MonitoringActor.InFlightEmailsCheck
+import com.opentok.raven.service.actors.MonitoringActor.PendingEmailsCheck
 
 import scala.collection.TraversableLike
 import scala.concurrent.duration._
@@ -118,7 +118,7 @@ class EmailSupervisor(superviseeProps: Props, pool: Int, emailDao: EmailRequestD
   override def receive: Receive = {
 
     //monitoring
-    case InFlightEmailsCheck ⇒
+    case PendingEmailsCheck ⇒
       val stats = pending.toMap.map( kv ⇒ kv._1.request.id.getOrElse("") → kv._2) //make immutable before sending
       sender() ! stats
 

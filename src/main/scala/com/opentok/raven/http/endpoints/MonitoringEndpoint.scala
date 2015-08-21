@@ -34,7 +34,7 @@ class MonitoringEndpoint(handler: ActorRef, t: Timeout)(implicit val mat: Materi
       pathPrefix("monitoring") {
         path("pending") {
           complete {
-            handler.ask(MonitoringActor.InFlightEmailsCheck)
+            handler.ask(MonitoringActor.PendingEmailsCheck)
               .mapTo[Map[String, Int]]
           }
         } ~

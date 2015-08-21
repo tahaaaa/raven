@@ -5,7 +5,7 @@ import akka.event.LoggingAdapter
 import akka.pattern.{ask, pipe}
 import akka.util.Timeout
 import com.opentok.raven.model.Receipt
-import com.opentok.raven.service.actors.MonitoringActor.{ComponentHealthCheck, InFlightEmailsCheck}
+import com.opentok.raven.service.actors.MonitoringActor.{ComponentHealthCheck, PendingEmailsCheck}
 import slick.driver.JdbcProfile
 import slick.jdbc.JdbcBackend
 
@@ -14,7 +14,7 @@ import scala.util.Try
 object MonitoringActor {
 
   case class ComponentHealthCheck(component: String)
-  case object InFlightEmailsCheck
+  case object PendingEmailsCheck
 
 }
 
@@ -29,9 +29,9 @@ class MonitoringActor(certifiedService: ActorRef, priorityService: ActorRef,
 
   override def receive: Receive = {
 
-    case check @ InFlightEmailsCheck ⇒
-      val cf = certifiedService.ask(InFlightEmailsCheck).mapTo[Map[String, Int]]
-      val pf = priorityService.ask(InFlightEmailsCheck).mapTo[Map[String, Int]]
+    case check @ PendingEmailsCheck ⇒
+      val cf = certifiedService.ask(PendingEmailsCheck).mapTo[Map[String, Int]]
+      val pf = priorityService.ask(PendingEmailsCheck).mapTo[Map[String, Int]]
 
       (for {
         certifiedEmails ← cf
