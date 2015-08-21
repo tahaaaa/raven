@@ -1,5 +1,5 @@
 # Opentok Raven
-
+![](http://orig01.deviantart.net/11fe/f/2010/217/7/8/giant_raven_flying_by_furansu.gif)
 ## Service
 
 ```javascript
