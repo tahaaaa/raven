@@ -11,7 +11,7 @@ POST /v1/priority
 
 POST /v1/certified
 
-→ <EmailRequest> || [ <EmailRequest> .. N ]
+→ <EmailRequest> || [ <EmailRequest> .. N ] || <Email> || [ <Email> .. N ]
 ← <Receipt>
 
 
@@ -29,6 +29,19 @@ GET /v1/monitoring/pending
   }
 
 
+GET /v1/debug/template
+
+← [ <template_id> .. N ]
+
+
+GET /v1/debug/template/<template_id>
+
+← Template
+
+
+GET /v1/debug/template/<template_id>?[injections]
+
+← Html
 ```
 
 ## Model
@@ -50,6 +63,17 @@ EmailRequest
     "inject": {
        <key>:<value>
     }
+}
+```
+
+Email
+```javascript
+{
+  "from" : str,
+  "recipients" : [ str ],
+  "subject" : str,
+  "categories" [ str ],
+  "html" : str
 }
 ```
 
