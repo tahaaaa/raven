@@ -110,7 +110,7 @@ with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
 
     "If EmailRequest contains an invalid template, should reply with unsuccessful receipt and persist attempt" in {
       val testRequest2 = testRequest.copy(template_id = "¬…¬…¬…˚ø∆µ¬≤…¬")
-      val dao = new MockEmailRequestDao(Some(testRequest2), persistanceFails = true)
+      val dao = new MockEmailRequestDao(Some(testRequest2))
       val serv = sendgridService
       val courier = certifiedCourier(dao, serv)
 
@@ -121,6 +121,8 @@ with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
           r.success should be(false)
           r.message.get.toLowerCase.contains("not found") should be(true)
       }
+
+      dao.received.head.status should be(Some(EmailRequest.Failed))
     }
 
   }

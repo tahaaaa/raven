@@ -29,13 +29,14 @@ trait Courier {
 
   //makes sure that saved requests status is success
   def persistSuccess(req: EmailRequest) = {
-    log.info(s"Successfully forwarded to sendgrid, request with id ${req.id}")
+    log.info(s"Changing request with id ${req.id} status to Success")
     emailRequestDaoActor.ask(req.copy(status = Some(EmailRequest.Succeeded)))
       .onComplete(logPersist(req.id))
   }
 
   //makes sure that saved requests status is failed
   def persistFailure(req: EmailRequest, anyElse: Any) = {
+    log.info(s"Changing request with id ${req.id} status to Failed")
     emailRequestDaoActor.ask(req.copy(status = Some(EmailRequest.Failed)))
       .onComplete(logPersist(req.id))
     anyElse match {
@@ -71,7 +72,7 @@ trait Courier {
     }.andThen {
       //persist attempt to db,
       case (msg, e) ⇒
-        emailRequestDaoActor.ask(req)
+        emailRequestDaoActor.ask(req.copy(status = Some(EmailRequest.Failed)))
           .andThen(logPersist(req.id))
           .andThen {
           case _ ⇒ //regardless of persist results, send receipt
@@ -104,7 +105,9 @@ class RequestPersister(emailsDao: EmailRequestDao) extends Actor with ActorLoggi
   val errMsg = "Request persister received unacceptable request"
 
   val singleMessageRecv: PartialFunction[Any, Future[Int]] = {
-    case req: EmailRequest ⇒ emailsDao.persistRequest(req)
+    case req: EmailRequest ⇒
+      log.info(s"Upserting request with id ${req.id} to database")
+      emailsDao.persistRequest(req)
     case req ⇒ log.error(errMsg); Future.failed(new Exception(errMsg))
   }
 
