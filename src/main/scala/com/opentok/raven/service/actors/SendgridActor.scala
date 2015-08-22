@@ -42,6 +42,7 @@ object SendgridActor {
       .setHtml(tmp.html)
     tmp.toName.map(l ⇒ m.setToName(Array(l)))
     tmp.fromName.map(m.setFromName)
+    tmp.categories.map(_.map(m.addCategory))
     tmp.setReply.map(m.setReplyTo)
     tmp.cc.map(cc ⇒ m.setCc(cc.toArray))
     tmp.bcc.map(bcc ⇒ m.setBcc(bcc.toArray))
