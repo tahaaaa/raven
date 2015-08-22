@@ -10,7 +10,7 @@ import scala.util.Try
 case class Email(
   id: Option[String],
   subject: String,
-  to: EmailAddress,
+  recipients: List[EmailAddress],
   from: EmailAddress,
   html: HTML,
   fromTemplateId: Option[String] = None,
@@ -26,26 +26,24 @@ case class Email(
 
 object Email {
 
+  type HTML = String
+  type EmailAddress = String
+  type Injections = JsObject
+  
   import DefaultJsonProtocol._
 
   implicit val emailJsonFormat: RootJsonFormat[Email] = jsonFormat14(Email.apply)
 
-  def fillInEmail(e: Email): Email = e.copy(id = Some(UUID.randomUUID.toString))
-
-  type HTML = String
-  type EmailAddress = String
-  type Injections = JsObject
-
   //decoupled from build to check at runtime what templates are available
-  def buildPF(requestId: Option[String], recipient: String, fields: Map[String, JsValue]): PartialFunction[String, Email] = {
+  def buildPF(requestId: Option[String], recipients: List[String], fields: Map[String, JsValue]): PartialFunction[String, Email] = {
     case templateId @ "twirl_test" ⇒
-      Email(requestId, "Test email", recipient, "ba@tokbox.com",
+      Email(requestId, "Test email", recipients, "ba@tokbox.com",
         html.twirl_test(fields("a").convertTo[String], fields("b").convertTo[String].toInt).body,
         fromName = Some("Business Analytics"), fromTemplateId = Some(templateId), setReply = Some("no-reply@tokbox.com"))
   }
 
-  def build(requestId: Option[String], templateId: String, injections: Injections, recipient: String): Try[Email] = Try {
+  def build(requestId: Option[String], templateId: String, injections: Injections, recipients: List[String]): Try[Email] = Try {
     val fields = injections.fields
-    buildPF(requestId, recipient, fields)(templateId)
+    buildPF(requestId, recipients, fields)(templateId)
   }
 }

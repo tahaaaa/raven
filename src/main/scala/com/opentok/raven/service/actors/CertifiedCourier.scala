@@ -4,7 +4,7 @@ import akka.actor.{Actor, ActorLogging, ActorRef}
 import akka.pattern._
 import akka.util.Timeout
 import com.opentok.raven.dal.components.EmailRequestDao
-import com.opentok.raven.model.{EmailRequest, Receipt, Email}
+import com.opentok.raven.model.{Requestable, EmailRequest, Receipt, Email}
 import spray.json.{JsObject, JsValue}
 
 /**
@@ -21,10 +21,11 @@ class CertifiedCourier(val emailsDao: EmailRequestDao, sendridService: ActorRef,
 
   implicit val timeout: Timeout = t
 
-  def send(email: Email) = {
+  def send(email: Email, lReq: List[EmailRequest]) = {
     //persist request attempt
-    emailRequestDaoActor.ask(email: EmailRequest).flatMap { i ⇒
-      //then pass template to sendgrid service
+    emailRequestDaoActor.ask(lReq).flatMap { i ⇒
+      log.info(s"Upserted $i records into db")
+      //then pass email to sendgrid service
       sendridService.ask(email).mapTo[Receipt]
         //map receipt to include id
         .map(_.copy(requestId = email.id))
@@ -41,7 +42,7 @@ class CertifiedCourier(val emailsDao: EmailRequestDao, sendridService: ActorRef,
           errors = e.getMessage :: Nil)
         ).recover(exceptionToReceipt(email.id))
     } //install side effecting persist to db, guaranteeing order of callbacks
-      .andThen(persistSuccessOrFailure(email: EmailRequest))
+      .andThen(persistSuccessOrFailure(email))
       //install pipe of future receipt to sender
       .pipeTo(sender())
     //template not found, reply and persist attempt
@@ -50,12 +51,11 @@ class CertifiedCourier(val emailsDao: EmailRequestDao, sendridService: ActorRef,
   override def receive: Receive = {
     case em: Email ⇒
       log.info(s"Received email with id ${em.id}")
-      log.debug("Received {}", em)
-      send(em)
+      //direct email, so we generate a pending email request from every recipient
+      send(em, emailToPendingEmailRequests(em))
 
     case r: EmailRequest ⇒
       log.info(s"Received request with id ${r.id}")
-      log.debug("Received {}", r)
 
       val req = //at this point, no request should have empty status
         if (r.status.isEmpty) r.copy(status = Some(EmailRequest.Pending))
@@ -63,9 +63,9 @@ class CertifiedCourier(val emailsDao: EmailRequestDao, sendridService: ActorRef,
 
       val templateMaybe =
         Email.build(req.id, req.template_id,
-          req.inject.getOrElse(JsObject(Map.empty[String, JsValue])), req.to)
+          req.inject.getOrElse(JsObject(Map.empty[String, JsValue])), req.to :: Nil)
 
-      templateMaybe.map(send).recover(recoverTemplateNotFound(req, sender()))
+      templateMaybe.map(send(_, req :: Nil)).recover(recoverTemplateNotFound(req, sender()))
 
     case anyElse ⇒ log.warning(s"Not an acceptable request $anyElse")
   }

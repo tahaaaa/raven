@@ -131,7 +131,7 @@ with SprayJsonSupport with DefaultJsonProtocol {
     val dbRecord = Await.result(emailRequestDao.retrieveRequest(receipt.requestId.get), 5.seconds).get
     dbRecord.id shouldBe receipt.requestId
     dbRecord.status shouldBe Some(EmailRequest.Succeeded)
-    dbRecord.to shouldBe testEmail.get.to
+    dbRecord.to shouldBe testEmail.get.recipients.head
     dbRecord.template_id shouldBe testEmail.get.fromTemplateId.get
 
     receipt.success shouldBe (true)

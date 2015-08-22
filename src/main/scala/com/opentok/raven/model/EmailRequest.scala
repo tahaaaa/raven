@@ -45,8 +45,6 @@ object EmailRequest {
 
   case object Failed extends Status
 
-  implicit def emailToEmailRequest(e: Email): EmailRequest =
-    EmailRequest(e.to, e.fromTemplateId.getOrElse("no_template"), None, Some(EmailRequest.Pending), e.id)
 
   implicit object EmailRequestStatusFormat extends RootJsonFormat[EmailRequest.Status] {
     def write(obj: EmailRequest.Status) = JsString(obj.toString)

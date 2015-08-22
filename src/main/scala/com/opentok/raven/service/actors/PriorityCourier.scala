@@ -9,8 +9,8 @@ import spray.json.{JsObject, JsValue}
 
 /**
  * Upon receiving an email request, this actor will attempt to forward it
- * to sendgrid straight away and persist the request results after delivering
- * the receipt to the requester.
+ * to sendgrid straight away and deliver the receipt to the requester after
+ * persisting the request results.
  *
  * @param emailsDao email requests data access object
  * @param sendgridService actor instance
@@ -35,13 +35,12 @@ class PriorityCourier(val emailsDao: EmailRequestDao, sendgridService: ActorRef,
   }
 
   override def receive: Receive = {
-    case e: Email ⇒
+    case e: Email ⇒ //not used at the moment
       log.info(s"Received email with id ${e.id}")
       send(e, e.id)
 
     case r: EmailRequest ⇒
       log.info(s"Received request with id ${r.id}")
-      log.debug("Received {}", r)
 
       val req = //at this point, no request should have empty status
         if (r.status.isEmpty) r.copy(status = Some(EmailRequest.Pending))
@@ -49,7 +48,7 @@ class PriorityCourier(val emailsDao: EmailRequestDao, sendgridService: ActorRef,
 
       val templateMaybe =
         Email.build(req.id, req.template_id,
-          req.inject.getOrElse(JsObject(Map.empty[String, JsValue])), req.to)
+          req.inject.getOrElse(JsObject(Map.empty[String, JsValue])), req.to :: Nil)
 
       templateMaybe.map(send(_, req.id))
         //template not found, reply and persist attempt

@@ -60,13 +60,17 @@ package object fixture {
     Some(JsObject(Map("a" → JsString(s"INTEGRATION TEST RUN AT ${new DateTime().toString}"),
       "b" → JsString("1")))), None, None)
 
+  lazy val testRequest3 = EmailRequest("ernest+raven@tokbox.com", "twirl_test",
+    Some(JsObject(Map("a" → JsString(s"UNIT TEST RUN AT ${new DateTime().toString}"),
+      "b" → JsString("1")))), None, Some("aaaaa"))
+
   lazy val testEmail =
-    Email.build(testRequest2.id, testRequest2.template_id, testRequest2.inject.get, testRequest2.to)
+    Email.build(testRequest2.id, testRequest2.template_id, testRequest2.inject.get, testRequest2.to :: Nil)
 
   lazy val nBatch = 3
 
   lazy val marshalledBatchEmail: JsValue = JsArray(Vector.fill(nBatch)(
-    Email.emailJsonFormat.write(testEmail.get.copy(to = "BATCH@tokbox.com"))).toSeq: _*)
+    Email.emailJsonFormat.write(testEmail.get.copy(recipients = "BATCH@tokbox.com" :: Nil))).toSeq: _*)
 
   lazy val marshalledEmail = Email.emailJsonFormat.write(testEmail.get)
 

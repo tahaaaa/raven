@@ -52,7 +52,7 @@ class EmailRequestSlickDao()(implicit driver: JdbcProfile, db: JdbcBackend#Datab
     val status: Option[String] = req.status.map(statusToString)
     //only works with mysql drivers
     db.run( sqlu"""
-  INSERT INTO email_requests (id, recipient, template_id, status, inject)
+  INSERT INTO email_requests (request_id, recipient, template_id, status, inject)
   VALUES (${req.id}, ${req.to}, ${req.template_id}, $status, $inject)
   ON DUPLICATE KEY UPDATE
   recipient = ${req.to},
@@ -65,9 +65,9 @@ class EmailRequestSlickDao()(implicit driver: JdbcProfile, db: JdbcBackend#Datab
   def retrieveRequest(id: String)(implicit ctx: ExecutionContext): Future[Option[EmailRequest]] = {
     log.info(s"Attempting to retrieve request with id $id")
     db.run(sql"""
-      SELECT recipient, template_id, inject, status, id
+      SELECT recipient, template_id, inject, status, request_id
       FROM email_requests
-      WHERE id = $id""".as[(String, String, Option[String], Option[String], Option[String])])
+      WHERE request_id = $id""".as[(String, String, Option[String], Option[String], Option[String])])
       .map(_.headOption.map {
       case (recipient, template_id, inject ,status, _) ⇒
         EmailRequest.apply(recipient, template_id, stringToInject(inject),

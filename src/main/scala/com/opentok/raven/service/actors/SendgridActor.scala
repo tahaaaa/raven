@@ -17,7 +17,7 @@ class SendgridActor(apiKey: String) extends Actor with ActorLogging {
 
   override def receive: Receive = {
     case tmp: Email ⇒
-      log.debug("Received template {}", tmp)
+      log.info(s"Received Email with id ${tmp.id}")
       val receipt: Receipt = Try(client.send(tmp)).map { rsp ⇒
         Receipt(rsp.getStatus)
       }.recover {
@@ -37,7 +37,7 @@ object SendgridActor {
   implicit def templateToSendgridEmail(tmp: Email): com.sendgrid.SendGrid.Email = {
     val m = new com.sendgrid.SendGrid.Email()
       .setSubject(tmp.subject)
-      .setTo(Array(tmp.to))
+      .setTo(tmp.recipients.toArray)
       .setFrom(tmp.from)
       .setHtml(tmp.html)
     tmp.toName.map(l ⇒ m.setToName(Array(l)))
