@@ -11,6 +11,7 @@ trait RavenConfig {
   val PORT: Int
   val SENDGRID_API_KEY: String
   val MAX_RETRIES: Int
+  val DEFERRER: Int
   val CERTIFIED_POOL: Int
   val PRIORITY_POOL: Int
   val ACTOR_TIMEOUT: Timeout
@@ -24,10 +25,12 @@ abstract class FromResourcesConfig(config: Config) extends RavenConfig {
   val HOST = config.getString("raven.host")
 
   val PORT = config.getInt("raven.port")
-  
+
   val SENDGRID_API_KEY = config.getString("raven.sendgrid.api-key")
 
   val MAX_RETRIES = config.getInt("raven.max-retries")
+
+  val DEFERRER = config.getInt("raven.deferrer")
 
   val CERTIFIED_POOL = config.getInt("raven.certified-pool")
 

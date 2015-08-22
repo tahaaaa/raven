@@ -39,14 +39,14 @@ trait AkkaService extends Service {
   lazy val certifiedService = system.actorOf(
     Props(classOf[EmailSupervisor],
       Props(classOf[CertifiedCourier], emailRequestDao, smtpService, ACTOR_INNER_TIMEOUT),
-      CERTIFIED_POOL, emailRequestDao, MAX_RETRIES),
+      CERTIFIED_POOL, emailRequestDao, MAX_RETRIES, DEFERRER),
     "certified-service"
   )
 
   lazy val priorityService = system.actorOf(
     Props(classOf[EmailSupervisor],
       Props(classOf[PriorityCourier], emailRequestDao, smtpService, ACTOR_INNER_TIMEOUT),
-      PRIORITY_POOL, emailRequestDao, MAX_RETRIES).withDispatcher("akka.actor.priority-dispatcher"),
+      PRIORITY_POOL, emailRequestDao, MAX_RETRIES, DEFERRER).withDispatcher("akka.actor.priority-dispatcher"),
     "priority-service")
 
   lazy val monitoringService = system.actorOf(Props(classOf[MonitoringActor], certifiedService, priorityService, db, driver,

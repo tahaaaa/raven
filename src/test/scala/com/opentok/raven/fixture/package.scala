@@ -5,6 +5,7 @@ import akka.testkit.TestActorRef
 import com.opentok.raven.dal.components.EmailRequestDao
 import com.opentok.raven.model.{Email, Receipt, EmailRequest}
 import org.joda.time.DateTime
+import org.slf4j.LoggerFactory
 import spray.json._
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -24,21 +25,28 @@ package object fixture {
                             persistanceFails: Boolean = false,
                             persistanceTimesOut: Boolean = false) extends EmailRequestDao {
 
+    val log = LoggerFactory.getLogger("MockEmailRequestDao")
+
     import scala.concurrent.ExecutionContext.Implicits.global
 
     lazy val timeout = 20000
 
     lazy val received = scala.collection.mutable.ListBuffer.empty[EmailRequest]
 
-    def retrieveRequest(id: String)(implicit ctx: ExecutionContext): Future[Option[EmailRequest]] =
+    def retrieveRequest(id: String)(implicit ctx: ExecutionContext): Future[Option[EmailRequest]] = {
+      log.debug("{}", id)
       if (persistanceFails) Future.failed(new Exception("Could not fetch request"))
       else if (persistanceTimesOut) Future {
         Thread.sleep(timeout)
         testRequest
       }
-      else Future(testRequest)
+      else {
+        Future(testRequest)
+      }
+    }
 
-    def persistRequest(req: EmailRequest): Future[Int] =
+    def persistRequest(req: EmailRequest): Future[Int] = {
+      log.debug("")
       if (persistanceFails) Future.failed(new Exception("BOOM"))
       else if (persistanceTimesOut) Future {
         received += req
@@ -48,6 +56,7 @@ package object fixture {
         received += req
         0
       }
+    }
   }
 
   lazy val testRequest = EmailRequest("ernest+raven@tokbox.com", "twirl_test",
@@ -79,7 +88,7 @@ package object fixture {
       Some(JsObject(Map("a" → JsString(s"INTEGRATION TEST RUN AT ${new DateTime().toString}"),
         "b" → JsString("1")))), None, None))).toSeq: _*)
 
-  class TestActor[T](reference: Class[T], t: ClassTag[T]) extends Actor with ActorLogging {
+  class TestActor[T](t: ClassTag[T]) extends Actor with ActorLogging {
     var right = 0
     var wrong = 0
 
@@ -97,8 +106,7 @@ package object fixture {
   }
 
   def sendgridService(implicit system: ActorSystem): TestActorRef[TestActor[Email]] =
-    TestActorRef(Props(classOf[TestActor[Email]], classOf[Email],
-      implicitly[ClassTag[Email]]))
+    TestActorRef(Props(classOf[TestActor[Email]], implicitly[ClassTag[Email]]))
 
   def unresponsiveSendgridService(implicit system: ActorSystem): TestActorRef[UnresponsiveActor] =
     TestActorRef(Props[UnresponsiveActor])

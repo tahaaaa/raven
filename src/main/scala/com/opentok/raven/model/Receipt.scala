@@ -51,7 +51,7 @@ object Receipt {
   def reduce(s: Seq[Receipt]): Receipt = s.reduce { (a, b) ⇒
     Receipt(
       success = a.success && b.success,
-      message = Some(a.message.getOrElse("") + "-" + b.message.getOrElse("")),
+      message = Some(a.message.getOrElse("") + "; " + b.message.getOrElse("")),
       errors = a.errors ::: b.errors
     )
   }

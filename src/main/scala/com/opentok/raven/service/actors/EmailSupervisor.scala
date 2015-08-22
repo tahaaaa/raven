@@ -16,9 +16,10 @@ import scala.util.Try
  * @param superviseeProps Actor configuration object used to instantiate new supervisees
  * @param pool number of actors to create and monitor using props
  * @param emailDao data access object to emails table in db to verify certain conditions
- * @param maxRetries maximum number of retries allowed per failed request
+ * @param MAX_RETRIES maximum number of retries allowed per failed request
  */
-class EmailSupervisor(superviseeProps: Props, pool: Int, emailDao: EmailRequestDao, maxRetries: Int)
+class EmailSupervisor(superviseeProps: Props, pool: Int,
+                      emailDao: EmailRequestDao, MAX_RETRIES: Int, DEFERRER: Int)
   extends Actor with ActorLogging {
 
   case class SupervisedRequest(request: Requestable, requester: ActorRef, handler: ActorRef)
@@ -26,7 +27,8 @@ class EmailSupervisor(superviseeProps: Props, pool: Int, emailDao: EmailRequestD
   import context.dispatcher
 
   override def preStart(): Unit = {
-    log.info(s"Supervisor up and monitoring $superviseeProps with a pool of $pool actors")
+    log.info(s"Supervisor up and monitoring $superviseeProps with a pool of $pool " +
+      s"actors and with a max number of retries of $MAX_RETRIES")
   }
 
   /* The policy to apply when a supervisee crashes */
@@ -57,21 +59,21 @@ class EmailSupervisor(superviseeProps: Props, pool: Int, emailDao: EmailRequestD
   val pending: scala.collection.mutable.Map[SupervisedRequest, Int] = scala.collection.mutable.Map.empty
 
   def retryOrReplyBack(receipt: Option[Receipt]): PartialFunction[(SupervisedRequest, Int), Unit] = {
-    case (supervisedRequest, retries) if retries < retries ⇒
+    case (supervisedRequest, retries) if retries < MAX_RETRIES ⇒
       //check that email was not really sent and only if status in db is not completed, retry again
       supervisedRequest.request.id.map { id ⇒
         emailDao.retrieveRequest(id).map {
           case Some(req) ⇒ req.status match {
             case Some(status) if status == EmailRequest.Failed || status == EmailRequest.Pending ⇒
               log.warning(s"It looks like request with id $id is failed or still pending. Retrying now..")
-              context.system.scheduler.scheduleOnce((5 * retries).seconds, self, supervisedRequest.request)
+              context.system.scheduler.scheduleOnce((DEFERRER * retries).seconds, self, supervisedRequest.request)
             case Some(status) if status == EmailRequest.Succeeded ⇒
-              val msg = "Request with id appears to have succeded. Aborting retry mechanism"
+              val msg = s"Request with id $id appears to have succeded. Aborting retry mechanism"
               supervisedRequest.requester ! receipt.getOrElse(Receipt(success = true,
                 requestId = Some(id), message = Some(msg)))
               log.warning(msg)
             case None ⇒
-              val msg = "Request not found in database. Unable to determine status. Aborting retry mechanism!"
+              val msg = s"Request with id $id status' is not set in the database. Aborting retry mechanism!"
               supervisedRequest.requester ! receipt.getOrElse(Receipt(success = false,
                 requestId = Some(id), message = Some(msg)))
               log.error(msg)
@@ -83,15 +85,16 @@ class EmailSupervisor(superviseeProps: Props, pool: Int, emailDao: EmailRequestD
             log.error(msg)
         }
       }.getOrElse {
-        log.error("Could use retry mechanism because request doesn't have a request id")
+        log.error("Could not use retry mechanism because request doesn't have a request id")
       }
 
     case (supervisedRequest, retries) ⇒
       //keeps request_id in map
       val msg = s"Retried request ${supervisedRequest.request} $retries times unsuccessfully"
       log.error(msg)
-      supervisedRequest.requester ! Receipt.error(new Exception(s"Maximum number of retries reached"), msg,
-        requestId = supervisedRequest.request.id)
+      lazy val err = Receipt.error(new Exception(s"Maximum number of retries reached $MAX_RETRIES"), msg, requestId = supervisedRequest.request.id)
+      val combined = receipt.map(r ⇒ Receipt.reduce(err :: r :: Nil)).getOrElse(err)
+      supervisedRequest.requester ! combined
   }
 
   def superviseRequest(req: Requestable, requester: ActorRef) {
@@ -119,7 +122,7 @@ class EmailSupervisor(superviseeProps: Props, pool: Int, emailDao: EmailRequestD
 
     //monitoring
     case PendingEmailsCheck ⇒
-      val stats = pending.toMap.map( kv ⇒ kv._1.request.id.getOrElse("") → kv._2) //make immutable before sending
+      val stats = pending.toMap.map(kv ⇒ kv._1.request.id.getOrElse("") → kv._2) //make immutable before sending
       sender() ! stats
 
     case reqs: TraversableLike[_, _] ⇒

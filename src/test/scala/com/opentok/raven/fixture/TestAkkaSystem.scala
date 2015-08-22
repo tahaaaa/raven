@@ -11,7 +11,6 @@ trait TestAkkaSystem extends AkkaService {
   this: H2Dal with TestConfig with com.opentok.raven.service.System ⇒
 
   override lazy val smtpService: TestActorRef[TestActor[Email]] =
-    TestActorRef(Props(classOf[TestActor[Email]], classOf[Email],
-      implicitly[ClassTag[Email]]))
+    TestActorRef(Props(classOf[TestActor[Email]], implicitly[ClassTag[Email]]))
 
 }
