@@ -2,6 +2,7 @@ import play.twirl.sbt.SbtTwirl
 import sbt._
 import Keys._
 import play.twirl.sbt.Import.TwirlKeys._
+import sbtassembly.AssemblyKeys._
 import spray.revolver.RevolverPlugin._
 
 
@@ -14,7 +15,6 @@ object RavenBuild extends Build {
 
   val commonSettings = Seq(
     organization := "com.opentok",
-    version := "0.1.0",
     scalaVersion := scalaV,
     scalacOptions := Seq(
       "-unchecked",
@@ -29,11 +29,13 @@ object RavenBuild extends Build {
     sourceDirectories in(Compile, compileTemplates) := Seq((resourceDirectory in Compile).value / "templates")
   )
 
-  lazy val core: Project = Project("raven-core", file("."))
+  lazy val core: Project = Project("raven", file("."))
     .settings(commonSettings: _*)
     .settings(twirlSettings: _*)
     .settings(Revolver.settings: _*)
     .settings(
+      assemblyJarName in assembly := "raven-assembly.jar",
+      test in assembly := {},
       libraryDependencies ++= {
         Seq(
           "org.scala-lang"                     % "scala-compiler"                         % scalaV,

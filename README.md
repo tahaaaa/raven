@@ -53,11 +53,11 @@ EmailRequest
 }
 ```
 
-## Templates 
-|template_id|inject| 
+## Templates
+|template_id|inject|
 |---|---|
 |charged_successfully|cents: float|
-|billing_failure|next_payment_attempt: int or null| 
+|billing_failure|next_payment_attempt: int or null|
 |suspended_for_billing_failure|N/A|
 |cancel_subscription|N/A|
 |cancel_with_prorate| prorate_ammount: float in cents |
@@ -70,3 +70,10 @@ EmailRequest
 |signup_confirmation|first_api_key: str, <br> confirmation_link: str|
 |reset_password_instruction|reset_password_link: str|
 
+
+## Run
+`sbt run` or `sbt reStart`
+
+## Deploy
+Do ` sbt clean assembly && docker build -t opentok/raven:latest . `, then `docker run -d -p 8000:9911 --restart=always --name raven -v path/to/host/resources/folder:/etc/opentok/raven/ -v path/to/host/logs:/var/log/raven opentok/raven:latest`
+Make sure you place in `path/to/host/resources/folder/` an `application.conf` configuration file to override all default values, including the db ip and port.
