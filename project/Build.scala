@@ -3,6 +3,7 @@ import sbt._
 import Keys._
 import play.twirl.sbt.Import.TwirlKeys._
 import sbtassembly.AssemblyKeys._
+import sbtassembly.{PathList, MergeStrategy}
 import spray.revolver.RevolverPlugin._
 
 
@@ -34,6 +35,12 @@ object RavenBuild extends Build {
     .settings(twirlSettings: _*)
     .settings(Revolver.settings: _*)
     .settings(
+      assemblyMergeStrategy in assembly := {
+        case PathList("application.conf") => MergeStrategy.discard
+        case x =>
+          val oldStrategy = (assemblyMergeStrategy in assembly).value
+          oldStrategy(x)
+      },
       assemblyJarName in assembly := "raven-assembly.jar",
       test in assembly := {},
       libraryDependencies ++= {

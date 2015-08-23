@@ -18,7 +18,7 @@ import com.opentok.raven.model.Email
 import spray.json._
 
 import scala.collection.JavaConversions._
-import scala.util.{Failure, Success, Try}
+import scala.util.Try
 
 class DebugEndpoint(implicit val mat: Materializer, system: ActorSystem) extends Endpoint with DefaultJsonProtocol {
   implicit val logger: LoggingAdapter = system.log
@@ -29,14 +29,13 @@ class DebugEndpoint(implicit val mat: Materializer, system: ActorSystem) extends
     pathPrefix("debug") {
       path("template" / Segment) {
         case templateId if Email.buildPF(None, "" :: Nil, Map.empty).isDefinedAt(templateId) ⇒ parameterMap {
-          case params if params.nonEmpty ⇒ complete {
-            HttpEntity.Strict(ContentType(`text/html`), CompactByteString(Email.build(None,
-              templateId, params.toJson.asJsObject, "" :: Nil) match {
-              case Success(email) ⇒ email.html
-              case Failure(e) ⇒ "There was an error when building template: " + e
-            }))
-          }
-          case _ ⇒ reject
+          params ⇒ Try {
+            HttpEntity.Strict(
+              ContentType(`text/html`), CompactByteString(
+                Email.build(None, templateId, params.toJson.asJsObject, "" :: Nil).get.html
+              )
+            )
+          }.map(em ⇒ complete(em)).recover { case e ⇒ reject }.get
         }
         case notAvailable ⇒ reject
       } ~

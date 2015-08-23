@@ -6,6 +6,7 @@ import akka.pattern.{ask, pipe}
 import akka.util.Timeout
 import com.opentok.raven.model.Receipt
 import com.opentok.raven.service.actors.MonitoringActor.{ComponentHealthCheck, PendingEmailsCheck}
+import com.typesafe.config.ConfigFactory
 import slick.driver.JdbcProfile
 import slick.jdbc.JdbcBackend
 
@@ -26,6 +27,9 @@ class MonitoringActor(certifiedService: ActorRef, priorityService: ActorRef,
 
   implicit val logger: LoggingAdapter = log
   implicit val timeout: Timeout = t
+  val config = ConfigFactory.load()
+  val dbHost= config.getString("raven.database.properties.serverName")
+  val dbPort= config.getInt("raven.database.properties.portNumber")
 
   override def receive: Receive = {
 
@@ -48,15 +52,17 @@ class MonitoringActor(certifiedService: ActorRef, priorityService: ActorRef,
 
     case ComponentHealthCheck("dal") ⇒ sender() ! Try {
       val conn = db.source.createConnection()
-      val r = Receipt(conn.createStatement().execute(conn.nativeSQL(dbCheck)), Some("OK"))
+      val r = Receipt(conn.createStatement().execute(conn.nativeSQL(dbCheck)), Some("Ok"))
       conn.close()
       r
     }.recover {
-      case e: Exception ⇒ Receipt.error(e, s"Unable to establish communication with db $db using driver $driver")
+      case e: Exception ⇒
+        Receipt.error(e, "Unable to establish communication with " +
+          s"db $dbHost:$dbPort using driver $driver")
     }.get
 
     case ComponentHealthCheck(_) ⇒ sender() ! Receipt.error(
-      new Exception("Not a valid component. Try 'dal', 'service' or 'api')"), "Error when processing request")
+      new Exception("Not a valid component. Try 'dal' or 'service')"), "Error when processing request")
 
     case msg ⇒ sender() ! Receipt.error(
       new Exception(s"Unable to understand message $msg"), "Not a valid monitoring request")
