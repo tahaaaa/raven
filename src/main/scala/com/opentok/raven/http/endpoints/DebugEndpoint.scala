@@ -1,11 +1,14 @@
 package com.opentok.raven.http.endpoints
 
 import java.io.File
+import java.net.URI
+import java.nio.file.{FileSystems, Files}
+import java.util.Collections
 
 import akka.actor.ActorSystem
 import akka.event.LoggingAdapter
-import akka.http.scaladsl.model.{HttpEntity, ContentType}
 import akka.http.scaladsl.model.MediaTypes._
+import akka.http.scaladsl.model.{ContentType, HttpEntity}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.stream.Materializer
@@ -14,7 +17,8 @@ import com.opentok.raven.http.Endpoint
 import com.opentok.raven.model.Email
 import spray.json._
 
-import scala.util.{Success, Failure}
+import scala.collection.JavaConversions._
+import scala.util.{Failure, Success, Try}
 
 class DebugEndpoint(implicit val mat: Materializer, system: ActorSystem) extends Endpoint with DefaultJsonProtocol {
   implicit val logger: LoggingAdapter = system.log
@@ -42,8 +46,17 @@ class DebugEndpoint(implicit val mat: Materializer, system: ActorSystem) extends
         } ~
         path("template") {
           pathEndOrSingleSlash {
-            val files = new File(classLoader.getResource("templates").toURI).listFiles().map(_.getName.replaceAllLiterally(".scala.html", ""))
-            val available = files.filter(Email.buildPF(None, "" :: Nil, Map.empty).isDefinedAt)
+            val uri: URI = classLoader.getResource("templates").toURI
+            val files: List[File] = uri.getScheme match {
+              case "jar" ⇒
+                val fs = FileSystems.newFileSystem(uri, Collections.emptyMap[String, Any]())
+                val files = Files.walk(fs.getPath("templates"), 1).iterator().toList.map(p ⇒ new File(p.toString))
+                fs.close()
+                files
+              case _ ⇒ new File(uri).listFiles.toList
+            }
+            val available = files.map(_.getName.replaceAllLiterally(".scala.html", ""))
+              .filter(Email.buildPF(None, "" :: Nil, Map.empty).isDefinedAt)
             complete(available)
           }
         }
