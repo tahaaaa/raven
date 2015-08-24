@@ -24,6 +24,8 @@ class PriorityCourier(val emailsDao: EmailRequestDao, sendgridService: ActorRef,
   implicit val timeout: Timeout = t
 
   def send(em: Email, id: Option[String]) = {
+    val sdr = sender()
+    log.info("Forwarding email to sendgrid actor with timeout {}", timeout)
     //query sendgrid via sendgridActor and map/recover HttpResponse to Receipt
     sendgridService.ask(em).mapTo[Receipt]
       .map(_.copy(requestId = id))
@@ -31,7 +33,7 @@ class PriorityCourier(val emailsDao: EmailRequestDao, sendgridService: ActorRef,
       //install side effecting persist to db, guaranteeing order of callbacks
       .andThen(persistSuccessOrFailure(em))
       //install pipe of future receipt to sender
-      .pipeTo(sender())
+      .pipeTo(sdr)
   }
 
   override def receive: Receive = {

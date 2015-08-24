@@ -89,8 +89,10 @@ trait Courier {
 
   def exceptionToReceipt(id: Option[String]): PartialFunction[Throwable, Receipt] = {
     case e: Exception ⇒
+      val msg = s"There was a problem when processing email request with id $id"
+      log.error(e, msg)
       Receipt(success = false, requestId = id,
-        message = Some(s"There was a problem when processing email request with id $id"),
+        message = Some(msg),
         errors = e.getMessage :: Nil)
   }
 }

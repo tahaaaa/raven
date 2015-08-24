@@ -83,6 +83,15 @@ class EmailSupervisor(superviseeProps: Props, pool: Int,
             supervisedRequest.requester ! receipt.getOrElse(Receipt(success = false,
               requestId = Some(id), message = Some(msg)))
             log.error(msg)
+        }.recover {
+          //there was an exception when retrieving request from db
+          case e: Exception ⇒
+            val msg = "There was an error when retrieving request from db. Skipping retry mechanism"
+            log.error(e, msg)
+            supervisedRequest.requester ! receipt.map(
+              r ⇒ r.copy(errors = msg + ":" + e.getMessage :: r.errors)
+            ).getOrElse(Receipt(success = false, requestId = Some(id), message = Some(msg),
+              errors = msg + ":" + e.getMessage :: Nil))
         }
       }.getOrElse {
         log.error("Could not use retry mechanism because request doesn't have a request id")
@@ -122,10 +131,12 @@ class EmailSupervisor(superviseeProps: Props, pool: Int,
 
     //monitoring
     case PendingEmailsCheck ⇒
+      log.info("Checking pending emails now..")
       val stats = pending.toMap.map(kv ⇒ kv._1.request.id.getOrElse("") → kv._2) //make immutable before sending
       sender() ! stats
 
     case reqs: TraversableLike[_, _] ⇒
+      log.info("Received collection of requests.. Attempting to load balance to supervisees")
       val processed = reqs.foldLeft((0, 0)) {
         case ((accepted, rejected), req: Requestable) ⇒
           superviseRequest(req, sender())
@@ -139,9 +150,11 @@ class EmailSupervisor(superviseeProps: Props, pool: Int,
         message = Some(s"${processed._1} requests were accepted and ${processed._2} were rejected"))
 
     case req: Requestable ⇒
+      log.info("Received request.. Attempting to assign now to a supervisee")
       superviseRequest(req, sender())
 
     case rec: Receipt if rec.success ⇒
+      log.info("Received successful receipt from supervisees. Attempting to forward back to requester...")
       rec.requestId.map { id ⇒
         pending.find(_._1.request.id.getOrElse("") == id).map { request ⇒
           //reply to requester
@@ -152,6 +165,7 @@ class EmailSupervisor(superviseeProps: Props, pool: Int,
       }.getOrElse(logNotFound("Receipt did not contain a requestId"))
 
     case rec: Receipt if !rec.success ⇒
+      log.info("Received UNSUCCESSFUL receipt from supervisees. Attempting to forward back to requester...")
       rec.requestId.map { id ⇒
         pending.find(_._1.request.id.getOrElse("") == id)
           .map(retryOrReplyBack(Some(rec)))

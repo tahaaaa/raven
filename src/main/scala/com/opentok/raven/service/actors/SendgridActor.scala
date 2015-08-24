@@ -15,16 +15,21 @@ class SendgridActor(apiKey: String) extends Actor with ActorLogging {
 
   val client = new SendGrid(apiKey)
 
+  val errorMsg = "Error when connecting with SendGrid client"
+
   override def receive: Receive = {
     case tmp: Email ⇒
       log.info(s"Received Email with id ${tmp.id}")
-      val receipt: Receipt = Try(client.send(tmp)).map { rsp ⇒
-        Receipt(rsp.getStatus)
+      val receipt: Receipt = Try(client.send(tmp)).map {
+        case rsp if rsp.getStatus ⇒ Receipt(rsp.getStatus, requestId = tmp.id)
+        case rsp ⇒
+          val combined = errorMsg + " " + rsp.getMessage
+          log.error(combined)
+          Receipt.error(new Exception(combined), errorMsg, tmp.id)
       }.recover {
         case e: Exception ⇒
-          val msg = "Error when connecting with SendGrid client"
-          log.error(e, msg)
-          Receipt.error(e, msg)
+          log.error(e, errorMsg)
+          Receipt.error(e, errorMsg)
       }.get
       sender() ! receipt
     case anyElse ⇒ log.warning(s"Not an acceptable request $anyElse")
