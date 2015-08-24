@@ -99,8 +99,8 @@ package object fixture {
         right += 1
         log.info(s"RIGHT MESSAGES RECEIVED $right")
       case _ ⇒
-        sender() ! Receipt.error(new Exception("Wrong message"), "OOPS")(context.system.log)
-        log.error(s"WRONG MESSAGES RECEIVED $wrong")
+        sender() ! Receipt(false, message = Some("Wrong message"))
+        log.warning(s"WRONG MESSAGES RECEIVED $wrong")
         wrong += 1
     }
   }

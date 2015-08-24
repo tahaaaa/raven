@@ -6,7 +6,7 @@ import akka.util.Timeout
 import com.opentok.raven.fixture._
 import com.opentok.raven.model.{EmailRequest, Receipt, Email}
 import com.opentok.raven.service.actors.CertifiedCourier
-import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
+import org.scalatest.{Sequential, BeforeAndAfterAll, Matchers, WordSpecLike}
 
 import scala.concurrent.duration._
 import scala.reflect.ClassTag

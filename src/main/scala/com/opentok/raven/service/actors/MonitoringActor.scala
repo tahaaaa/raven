@@ -52,7 +52,8 @@ class MonitoringActor(certifiedService: ActorRef, priorityService: ActorRef,
 
     case ComponentHealthCheck("dal") ⇒ sender() ! Try {
       val conn = db.source.createConnection()
-      val r = Receipt(conn.createStatement().execute(conn.nativeSQL(dbCheck)), Some("Ok"))
+      val r = Receipt(conn.createStatement().execute(conn.nativeSQL(dbCheck)),
+        message = Some("Ok"))
       conn.close()
       r
     }.recover {

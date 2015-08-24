@@ -36,9 +36,9 @@ with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
 
     "Load balance request to supervisees correctly" in {
       val rdm = new Random(1000)
-      val s = newSupervisor(pool = 100)
-      s.underlyingActor.supervisee.length should be(100)
-      (0 until 10000).foreach(_ ⇒ s ! testRequest.copy(id = Some(rdm.nextInt().toString)))
+      val s = newSupervisor(pool = 2)
+      s.underlyingActor.supervisee.length should be(2)
+      (0 until 10).foreach(_ ⇒ s ! testRequest.copy(id = Some(rdm.nextInt().toString)))
 
       val results = Await.result(Future.sequence(s.underlyingActor.supervisee.map(_.ask("gimme")(3.seconds).mapTo[(Int, Int)])), 4.seconds)
 
@@ -47,14 +47,14 @@ with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
         ab
       }.reduce { (c, v) ⇒
         (c._1 + v._1, c._2 + v._2)
-      } shouldBe(10000, 0)
+      } shouldBe(10, 0)
     }
 
     "Load balance list of requests to supervisees correctly" in {
       val rdm = new Random(1000)
-      val s = newSupervisor(pool = 100)
-      s.underlyingActor.supervisee.length should be(100)
-      (0 until 100).foreach(_ ⇒ s ! Vector.fill(10)(testRequest.copy(id = Some(rdm.nextInt().toString))))
+      val s = newSupervisor(pool = 2)
+      s.underlyingActor.supervisee.length should be(2)
+      (0 until 2).foreach(_ ⇒ s ! Vector.fill(2)(testRequest.copy(id = Some(rdm.nextInt().toString))))
 
       val results = Await.result(Future.sequence(s.underlyingActor.supervisee.map(_.ask("gimme")(3.seconds).mapTo[(Int, Int)])), 4.seconds)
       results.map { ab ⇒
@@ -62,7 +62,7 @@ with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
         ab
       }.reduce { (c, v) ⇒
         (c._1 + v._1, c._2 + v._2)
-      } shouldBe(1000, 0)
+      } shouldBe(4, 0)
     }
 
     "report with pending requests" in {

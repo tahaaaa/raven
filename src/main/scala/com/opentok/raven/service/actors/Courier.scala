@@ -28,20 +28,20 @@ trait Courier {
       None, Some(EmailRequest.Pending), em.id))
 
   //makes sure that saved requests status is success
-  def persistSuccess(req: EmailRequest) = {
+  def persistSuccess(req: EmailRequest): Unit = {
     log.info(s"Changing request with id ${req.id} status to Success")
     emailRequestDaoActor.ask(req.copy(status = Some(EmailRequest.Succeeded)))
       .onComplete(logPersist(req.id))
   }
 
   //makes sure that saved requests status is failed
-  def persistFailure(req: EmailRequest, anyElse: Any) = {
+  def persistFailure(req: EmailRequest, anyElse: Any): Unit = {
     log.info(s"Changing request with id ${req.id} status to Failed")
     emailRequestDaoActor.ask(req.copy(status = Some(EmailRequest.Failed)))
       .onComplete(logPersist(req.id))
     anyElse match {
       case Success(failedReceipt) ⇒
-        log.error(s"Receipt from sendgrid Actor success is false $failedReceipt")
+        log.warning(s"Receipt from sendgrid Actor success is false $failedReceipt")
       case Failure(e) ⇒
         log.error(e, s"There was a failure in the request with id ${req.id} pipe to sendgridActor")
     }

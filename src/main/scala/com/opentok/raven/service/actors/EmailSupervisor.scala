@@ -17,6 +17,7 @@ import scala.util.Try
  * @param pool number of actors to create and monitor using props
  * @param emailDao data access object to emails table in db to verify certain conditions
  * @param MAX_RETRIES maximum number of retries allowed per failed request
+ * @param DEFERRER Time to wait for next retry (will be multiplied by current reply no.)
  */
 class EmailSupervisor(superviseeProps: Props, pool: Int,
                       emailDao: EmailRequestDao, MAX_RETRIES: Int, DEFERRER: Int)
@@ -76,13 +77,13 @@ class EmailSupervisor(superviseeProps: Props, pool: Int,
               val msg = s"Request with id $id status' is not set in the database. Aborting retry mechanism!"
               supervisedRequest.requester ! receipt.getOrElse(Receipt(success = false,
                 requestId = Some(id), message = Some(msg)))
-              log.error(msg)
+              log.warning(msg)
           }
           case None ⇒
             val msg = s"Weird. Request with id $id was not persisted first time. Aborting retry mechanism!"
             supervisedRequest.requester ! receipt.getOrElse(Receipt(success = false,
               requestId = Some(id), message = Some(msg)))
-            log.error(msg)
+            log.warning(msg)
         }.recover {
           //there was an exception when retrieving request from db
           case e: Exception ⇒
