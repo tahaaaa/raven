@@ -99,5 +99,5 @@ Email
 `sbt run` or `sbt reStart`
 
 ## Deploy
-Do ` sbt clean assembly && docker build -t opentok/raven:latest . `, then `docker run -d -p 8000:9911 --restart=always --name raven -v path/to/host/resources/folder:/etc/opentok/raven/ -v path/to/host/logs:/var/log/raven opentok/raven:latest`
+Do ` sbt clean assembly && docker build -t opentok/raven:latest . `, then `docker run -d -p 8000:9911 --restart=always --name raven -v path/to/host/resources/folder:/etc/opentok/ -v path/to/host/logs:/var/log/opentok opentok/raven:latest`
 Make sure you place in `path/to/host/resources/folder/` an `application.conf` configuration file to override all default values, including the db ip and port.
