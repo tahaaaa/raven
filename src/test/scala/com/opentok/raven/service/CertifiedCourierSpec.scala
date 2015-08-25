@@ -41,6 +41,8 @@ with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
       serv.underlyingActor.right shouldBe 1
       serv.underlyingActor.wrong shouldBe 0
 
+      Thread.sleep(2000)
+
       dao.received.head.status shouldBe Some(EmailRequest.Pending) //first save with status pending
       dao.received.tail.head.status shouldBe Some(EmailRequest.Succeeded) //then save success
     }
@@ -83,6 +85,8 @@ with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
       r.success should be(false)
       r.errors.exists(_.toLowerCase.contains("timeout"))
 
+      Thread.sleep(2000)
+
       dao.received.length should be(2) //first and second try
       dao.received.head.status should be(Some(EmailRequest.Pending)) //first save with pending
       dao.received.tail.head.status should be(Some(EmailRequest.Failed)) //then save failed
@@ -100,6 +104,8 @@ with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
       r.success should be(false)
       r.errors.exists(_.toLowerCase.contains("timeout"))
       r.errors.exists(_.toLowerCase.contains("problem"))
+
+      Thread.sleep(2000)
 
       dao.received.length should be(2) //first and second try
       dao.received.head.status should be(Some(EmailRequest.Pending)) //first save with pending
@@ -121,6 +127,8 @@ with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
           r.success should be(false)
           r.message.get.toLowerCase.contains("not found") should be(true)
       }
+
+      Thread.sleep(2000)
 
       dao.received.head.status should be(Some(EmailRequest.Failed))
     }

@@ -39,9 +39,6 @@ with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
 
       serv.underlyingActor.right shouldBe 1
       serv.underlyingActor.wrong shouldBe 0
-
-      dao.received.length shouldBe 1
-      dao.received.head.status shouldBe Some(EmailRequest.Succeeded)
     }
 
     "Timeout/failing persist should not block forward to Sendgrid or replying success/failure to requester" in {
@@ -112,6 +109,8 @@ with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
 
       dao.received.length should be(1) //only one save
       dao.received.head.status should be(Some(EmailRequest.Failed))
+
+      Thread.sleep(2000)
 
       serv.underlyingActor.received shouldBe 1
     }

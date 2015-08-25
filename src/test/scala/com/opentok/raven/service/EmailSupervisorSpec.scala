@@ -40,7 +40,7 @@ with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
       s.underlyingActor.supervisee.length should be(2)
       (0 until 10).foreach(_ ⇒ s ! testRequest.copy(id = Some(rdm.nextInt().toString)))
 
-      val results = Await.result(Future.sequence(s.underlyingActor.supervisee.map(_.ask("gimme")(3.seconds).mapTo[(Int, Int)])), 4.seconds)
+      val results = Await.result(Future.sequence(s.underlyingActor.supervisee.map(_.ask("gimme")(6.seconds).mapTo[(Int, Int)])), 6.seconds)
 
       results.map { ab ⇒
         ab._1 + ab._2 should not be (0)
@@ -56,7 +56,7 @@ with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
       s.underlyingActor.supervisee.length should be(2)
       (0 until 2).foreach(_ ⇒ s ! Vector.fill(2)(testRequest.copy(id = Some(rdm.nextInt().toString))))
 
-      val results = Await.result(Future.sequence(s.underlyingActor.supervisee.map(_.ask("gimme")(3.seconds).mapTo[(Int, Int)])), 4.seconds)
+      val results = Await.result(Future.sequence(s.underlyingActor.supervisee.map(_.ask("gimme")(6.seconds).mapTo[(Int, Int)])), 6.seconds)
       results.map { ab ⇒
         ab._1 + ab._2 should not be (0)
         ab
@@ -68,7 +68,7 @@ with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
     "report with pending requests" in {
       //this is going to reply with receipt false so we should have time to chech on pending emails
       val s = newSupervisor(superviseeProps = Props(classOf[TestActor[Int]], implicitly[ClassTag[Int]]), retries = 50)
-      val pre = Await.result(s.ask(PendingEmailsCheck)(2.second), 2.seconds)
+      val pre = Await.result(s.ask(PendingEmailsCheck)(5.second), 5.seconds)
       pre.isInstanceOf[Map[_, _]] should be(true)
       pre.asInstanceOf[Map[String, Int]].isEmpty should be(true)
 
@@ -79,7 +79,7 @@ with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
       s.underlyingActor.pending.exists(_._1.request.id == testRequest3.id) should be(true)
       s.underlyingActor.pending.exists(_._1.request.id == testRequest.id) should be(true)
 
-      val after = Await.result(s.ask(PendingEmailsCheck)(2.second).mapTo[Map[String, Int]], 2.seconds)
+      val after = Await.result(s.ask(PendingEmailsCheck)(5.second).mapTo[Map[String, Int]], 5.seconds)
       after.isEmpty should be(false)
       after.exists(_._1 == testRequest.id.get) should be(true)
       after.exists(_._1 == testRequest3.id.get) should be(true)
@@ -97,11 +97,11 @@ with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
         }
       }), retries = 3, pool = 10, mockRequestDao = dao)
 
-      val r = Await.result(s.ask(testRequest3)(7.seconds).mapTo[Receipt], 7.seconds) //1 * 1 + 2 * 1 + 3 * 1 = 6
+      val r = Await.result(s.ask(testRequest3)(10.seconds).mapTo[Receipt], 10.seconds) //1 * 1 + 2 * 1 + 3 * 1 = 6
 
       r.success should be(false)
 
-      val called = Await.result(Future.sequence(s.underlyingActor.supervisee.map(_.ask("ß")(2.seconds).mapTo[Int])), 2.seconds)
+      val called = Await.result(Future.sequence(s.underlyingActor.supervisee.map(_.ask("ß")(5.seconds).mapTo[Int])), 5.seconds)
 
       called.sum should be(3)
 
@@ -120,7 +120,7 @@ with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
     "bubble up exceptions from supervisees correctly" in {
       val s = newSupervisor(superviseeProps = Props(classOf[CertifiedCourier],
         new MockEmailRequestDao(Some(testRequest3)), system.deadLetters, 1.seconds: Timeout), retries = 1)
-      val r = Await.result(s.ask(testRequest3)(1.second).mapTo[Receipt], 2.seconds)
+      val r = Await.result(s.ask(testRequest3)(4.second).mapTo[Receipt], 2.seconds)
       r.errors.length > 1 should be(true) //retry error + ask Timeout error
       r.errors.exists(_.toLowerCase.contains("timeout"))
     }

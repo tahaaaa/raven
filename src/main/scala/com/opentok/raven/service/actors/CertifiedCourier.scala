@@ -42,6 +42,7 @@ class CertifiedCourier(val emailsDao: EmailRequestDao, sendridService: ActorRef,
           errors = e.getMessage :: Nil)
         ).recover(exceptionToReceipt(email.id))
     } //install side effecting persist to db, guaranteeing order of callbacks
+      //todo flatAndThen here to wait for success or failure of inner future
       .andThen(persistSuccessOrFailure(email))
       //install pipe of future receipt to sender
       .pipeTo(sender())
