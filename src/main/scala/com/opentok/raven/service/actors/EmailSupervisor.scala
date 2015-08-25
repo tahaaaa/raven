@@ -3,7 +3,7 @@ package com.opentok.raven.service.actors
 import akka.actor._
 import akka.event.LoggingAdapter
 import com.opentok.raven.dal.components.EmailRequestDao
-import com.opentok.raven.model.{Requestable, EmailRequest, Receipt}
+import com.opentok.raven.model.{EmailRequest, Receipt, Requestable}
 import com.opentok.raven.service.actors.MonitoringActor.PendingEmailsCheck
 
 import scala.collection.TraversableLike
@@ -11,7 +11,15 @@ import scala.concurrent.duration._
 import scala.util.Try
 
 /**
- * Email Service Supervisor
+ * Email Service Supervisor. This actor will take an arbitrary [[akka.actor.Props]],
+ * manually instantiate and supervise a pool of actors and load balance new requests to it.
+ *
+ * This actor implements a safe retry mechanism which is triggered when receiving unsuccessful
+ * receipts from its supevisees, of requests that appear as  [[com.opentok.raven.model.EmailRequest.Failed]]
+ * or [[com.opentok.raven.model.EmailRequest.Pending]] in the database.
+ *
+ * Note that this actor doesn't use [[akka.pattern.ask]] and this is to make its internal state
+ * thread safe (the mutable value that stores the pending requests).
  *
  * @param superviseeProps Actor configuration object used to instantiate new supervisees
  * @param pool number of actors to create and monitor using props

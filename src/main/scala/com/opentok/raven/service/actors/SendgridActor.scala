@@ -7,6 +7,10 @@ import com.sendgrid.SendGrid
 
 import scala.util.Try
 
+/**
+ * Processes [[com.opentok.raven.model.Email]] and sends it via SendGrid SMTPAPI
+ * @param apiKey to authenticate client
+ */
 class SendgridActor(apiKey: String) extends Actor with ActorLogging {
 
   import SendgridActor._
@@ -38,7 +42,9 @@ class SendgridActor(apiKey: String) extends Actor with ActorLogging {
 
 object SendgridActor {
 
-  //translates com.opentok.raven.model.Template to com.sendgrid.SendGrid.Email
+  /**
+   * transforms [[com.opentok.raven.model.Email]] to [[com.sendgrid.SendGrid.Email]]
+   */
   implicit def templateToSendgridEmail(tmp: Email): com.sendgrid.SendGrid.Email = {
     val m = new com.sendgrid.SendGrid.Email()
       .setSubject(tmp.subject)

@@ -5,7 +5,9 @@ import spray.json.DefaultJsonProtocol._
 import spray.json.{JsObject, RootJsonFormat}
 
 /**
- * Service Task receipt
+ * Service Task receipt. Used for basic communication between actors
+ * and from the actor system to the outside world.
+ *
  * @param success Boolean if whether task was successful or not
  * @param requestId Optional request id value
  * @param message Optional reply message

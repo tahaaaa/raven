@@ -8,12 +8,19 @@ import com.opentok.raven.model.{Requestable, EmailRequest, Receipt, Email}
 import spray.json.{JsObject, JsValue}
 
 /**
- * Upon receiving an email request, this actor will first
- * persist an attempt in the db, then forward request to sendgridActor
- * to finally update previously saved record to success or failure.
+ * * Upon receiving a [[com.opentok.raven.model.Requestable]],
+ * this actor will attempt to first construct an email, if it's not
+ * constructed yet, then it will try to persist an attempt in the db.
+ *
+ * Regardless of the results of the previous operation but after
+ * completed (or timeout), this actor will forward the email to
+ * [[com.opentok.raven.service.actors.SendgridActor]], then it will
+ * deliver a [[com.opentok.raven.model.Receipt]] with the results
+ * back to the requester and finally, as a non-blocking side effect,
+ * persist it to the DB.
  *
  * @param emailsDao email requests data access object
- * @param sendridService actor instance
+ * @param sendridService SendGrid actor instance
  */
 class CertifiedCourier(val emailsDao: EmailRequestDao, sendridService: ActorRef, t: Timeout) extends Actor with ActorLogging with Courier {
 

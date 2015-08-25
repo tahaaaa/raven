@@ -19,6 +19,17 @@ object MonitoringActor {
 
 }
 
+/**
+ * Handles db connectivity check, service uptime check
+ * and failed/pending emails with its retries.
+ *
+ * @param certifiedService certified actor/router instance
+ * @param priorityService priority actor/router instance
+ * @param db database object instance, used to check db connectivity
+ * @param driver db driver
+ * @param dbCheck query to use when checking for connectivity
+ * @param t timeout to apply to dal/service checks
+ */
 class MonitoringActor(certifiedService: ActorRef, priorityService: ActorRef,
                       db: JdbcBackend#Database, driver: JdbcProfile, dbCheck: String, t: Timeout)
   extends Actor with ActorLogging {

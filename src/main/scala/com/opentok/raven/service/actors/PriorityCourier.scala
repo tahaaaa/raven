@@ -8,12 +8,16 @@ import com.opentok.raven.model.{EmailRequest, Receipt, Email}
 import spray.json.{JsObject, JsValue}
 
 /**
- * Upon receiving an email request, this actor will attempt to forward it
- * to sendgrid straight away and deliver the receipt to the requester after
- * persisting the request results.
+ * Upon receiving a [[com.opentok.raven.model.Requestable]],
+ * this actor will attempt to first construct an email, if it's not
+ * constructed yet, then it will try to forward it to
+ * [[com.opentok.raven.service.actors.SendgridActor]], then it will
+ * deliver a [[com.opentok.raven.model.Receipt]] with the results
+ * back to the requester and finally, as a non-blocking side effect,
+ * persist it to the DB.
  *
  * @param emailsDao email requests data access object
- * @param sendgridService actor instance
+ * @param sendgridService sendgrid actor instance
  */
 
 class PriorityCourier(val emailsDao: EmailRequestDao, sendgridService: ActorRef, t: Timeout)

@@ -1,9 +1,7 @@
 package com.opentok.raven.model
 
-import java.util.UUID
-
 import com.opentok.raven.model.Email._
-import spray.json.{JsValue, DefaultJsonProtocol, JsObject, RootJsonFormat}
+import spray.json.{DefaultJsonProtocol, JsObject, JsValue, RootJsonFormat}
 
 import scala.util.Try
 

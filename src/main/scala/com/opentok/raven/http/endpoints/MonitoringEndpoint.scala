@@ -11,11 +11,6 @@ import com.opentok.raven.http.Endpoint
 import com.opentok.raven.model.Receipt
 import com.opentok.raven.service.actors.MonitoringActor
 
-/**
- * Exposes status checks and stats about ongoing email deliveries
- * @param handler instance of [[com.opentok.raven.service.actors.MonitoringActor]]
- * @param mat ticktick
- */
 class MonitoringEndpoint(handler: ActorRef, t: Timeout)(implicit val mat: Materializer, system: ActorSystem) extends Endpoint {
 
   import mat.executionContext

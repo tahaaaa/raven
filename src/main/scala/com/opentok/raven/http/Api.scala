@@ -15,6 +15,13 @@ trait Api {
   val routeTree: Route
 }
 
+/**
+ * The REST API layer. It exposes the REST services, but does not provide any
+ * web server interface.
+ *
+ * Notice that it requires to be mixed in with ``Service`` which provides access
+ * to the top-level actors that make up the system.
+ */
 trait AkkaApi extends Api {
   this: com.opentok.raven.service.System with Service with RavenConfig ⇒
 

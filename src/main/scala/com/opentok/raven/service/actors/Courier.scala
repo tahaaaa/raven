@@ -10,7 +10,8 @@ import scala.concurrent.{Future, ExecutionContext}
 import scala.util.{Failure, Success, Try}
 
 /**
- * Common courier methods
+ * Common methods used by [[com.opentok.raven.service.actors.PriorityCourier]] and
+ * [[com.opentok.raven.service.actors.CertifiedCourier]]
  */
 trait Courier {
   this: Actor with ActorLogging ⇒
