@@ -4,7 +4,7 @@ import akka.actor.{Actor, ActorLogging, ActorRef}
 import akka.pattern._
 import akka.util.Timeout
 import com.opentok.raven.dal.components.EmailRequestDao
-import com.opentok.raven.model.{Requestable, EmailRequest, Receipt, Email}
+import com.opentok.raven.model.{Email, EmailRequest, Receipt}
 import spray.json.{JsObject, JsValue}
 
 /**
@@ -71,7 +71,7 @@ class CertifiedCourier(val emailsDao: EmailRequestDao, sendridService: ActorRef,
 
       val templateMaybe =
         Email.build(req.id, req.template_id,
-          req.inject.getOrElse(JsObject(Map.empty[String, JsValue])), req.to :: Nil)
+          req.inject.getOrElse(JsObject(Map.empty[String, JsValue])), req.to)
 
       templateMaybe.map(send(_, req :: Nil)).recover(recoverTemplateNotFound(req, sender()))
 

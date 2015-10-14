@@ -28,11 +28,11 @@ class DebugEndpoint(implicit val mat: Materializer, system: ActorSystem) extends
   override val route: Route = get {
     pathPrefix("debug") {
       path("template" / Segment) {
-        case templateId if Email.buildPF(None, "" :: Nil, Map.empty).isDefinedAt(templateId) ⇒ parameterMap {
+        case templateId if Email.buildPF(None, "", Map.empty).isDefinedAt(templateId) ⇒ parameterMap {
           params ⇒ Try {
             HttpEntity.Strict(
               ContentType(`text/html`), CompactByteString(
-                Email.build(None, templateId, params.toJson.asJsObject, "" :: Nil).get.html
+                Email.build(None, templateId, params.toJson.asJsObject, "").get.html
               )
             )
           }.map(em ⇒ complete(em)).recover { case e ⇒ reject }.get
@@ -55,7 +55,7 @@ class DebugEndpoint(implicit val mat: Materializer, system: ActorSystem) extends
               case _ ⇒ new File(uri).listFiles.toList
             }
             val available = files.map(_.getName.replaceAllLiterally(".scala.html", ""))
-              .filter(Email.buildPF(None, "" :: Nil, Map.empty).isDefinedAt)
+              .filter(Email.buildPF(None, "", Map.empty).isDefinedAt)
             complete(available)
           }
         }

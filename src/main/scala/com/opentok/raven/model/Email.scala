@@ -1,5 +1,6 @@
 package com.opentok.raven.model
 
+import com.opentok.raven.Implicits._
 import com.opentok.raven.model.Email._
 import spray.json.{DefaultJsonProtocol, JsObject, JsValue, RootJsonFormat}
 
@@ -27,21 +28,45 @@ object Email {
   type HTML = String
   type EmailAddress = String
   type Injections = JsObject
-  
+
   import DefaultJsonProtocol._
 
   implicit val emailJsonFormat: RootJsonFormat[Email] = jsonFormat14(Email.apply)
 
+  //convenience template constructor that uses html.wrap_email_v1
+  def wrapTemplate(requestId: Option[String], subject: String, recipient: String,
+                   from: String, template: play.twirl.api.Html, fromTemplateId: String,
+                   toName: Option[EmailAddress] = None,
+                   fromName: Option[String] = None,
+                   categories: Option[List[String]] = None,
+                   setReply: Option[EmailAddress] = None,
+                   cc: Option[List[EmailAddress]] = None,
+                   bcc: Option[List[EmailAddress]] = None,
+                   attachments: Option[List[(String, String)]] = None,
+                   headers: Option[Map[String, String]] = None): Email =
+    Email(requestId, subject, recipient :: Nil, from, html.wrap_email_v1(recipient, template).body,
+      Some(fromTemplateId), toName, fromName, categories, setReply, cc, bcc, attachments, headers)
+
   //decoupled from build to check at runtime what templates are available
-  def buildPF(requestId: Option[String], recipients: List[String], fields: Map[String, JsValue]): PartialFunction[String, Email] = {
+  def buildPF(requestId: Option[String], recipient: String,
+              fields: Map[String, JsValue]): PartialFunction[String, Email] = {
+
     case templateId @ "twirl_test" ⇒
-      Email(requestId, "Test email", recipients, "ba@tokbox.com",
-        html.twirl_test(fields("a").convertTo[String], fields("b").convertTo[String].toInt).body,
+      Email(requestId, "Test email", recipient :: Nil, "ba@tokbox.com",
+        html.twirl_test(fields %> "a", fields %> "b" toInt).body,
         fromName = Some("Business Analytics"), fromTemplateId = Some(templateId), setReply = Some("no-reply@tokbox.com"))
+
+    case templateId @ "confirmation_instructions" ⇒
+      wrapTemplate(requestId, "Confirmation Instructions", recipient, "messages@tokbox.com",
+        html.confirmation_instructions(fields %> "api_key", fields %> "confirmation_instructions"),
+        templateId, fromName = Some("TokBox"))
+
+
+
   }
 
-  def build(requestId: Option[String], templateId: String, injections: Injections, recipients: List[String]): Try[Email] = Try {
+  def build(requestId: Option[String], templateId: String, injections: Injections, recipient: String): Try[Email] = Try {
     val fields = injections.fields
-    buildPF(requestId, recipients, fields)(templateId)
+    buildPF(requestId, recipient, fields)(templateId)
   }
 }

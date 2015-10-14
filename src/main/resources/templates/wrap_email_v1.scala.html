@@ -1,0 +1,199 @@
+@(recipient: String, content: play.twirl.api.Html)
+<html xmlns="http://www.w3.org/1999/xhtml">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>OpenTok Dashboard</title>
+
+        <style type="text/css">
+        body {
+        background: #f9f9f9;
+        font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;
+        text-align: center;
+        }
+        table{
+        margin: 0;
+        width: 100%;
+        max-width: 740px;
+        }
+        a, p, div {
+        color: #4C4C4C;
+        font-size: 18px;
+        font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;
+        }
+        h1 {
+        font-size: 48px;
+        line-height: 48px;
+        font-weight: 300;
+        color: #1F9AC8;
+        font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;
+        }
+        h2 {
+        font-size: 18px;
+        font-weight: bold;
+        }
+        p {
+        margin-bottom: 18px;
+        line-height: 1.5;
+        line-height: 28px;
+        color: #5F6062;
+        padding: 0;
+        font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;
+        }
+        a {
+        color: #0099cc;
+        text-decoration: none;
+        font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;
+        }
+        a.link_blue {
+        padding-right: 10px;
+        cursor: pointer;
+        display: inline-block;
+        }
+        .header{
+        background: white;
+        padding: 20px 0;
+        }
+        .body{
+        text-align: left;
+        padding: 0 100px;
+        }
+        .light{
+        color: #5F6062;
+        font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;
+        }
+        .center{
+        width: 100%;
+        text-align: center;
+        padding: 20px 0 ;
+        }
+        .link_blue_arrow {
+        background-repeat: no-repeat;
+        background: url("http://static.opentok.com/img/ctaarrow_blue.png");
+        width: 8px;
+        height: 13px;
+        }
+        .strong {
+        font-weight: bold;
+        }
+        .image_fix{
+        width: 30px;
+        }
+        #backgroundTable{
+        background-color:#F0F0F0;
+        font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;
+        }
+        .btn,
+        .btn-padding {
+        display: inline-block;
+        border-radius: 0px;
+        text-align: center;
+        line-height: 50px;
+        transition: all 0.5s ease-out;
+        font-size: 16px;
+        height: 50px;
+        border: 0;
+        padding: 0 20px;
+        }
+        .btn-blue {
+        background-color: #0099cb;
+        box-shadow: 0 0 0 1px #0099cb;
+        color: #fff;
+        border-radius: 1px;
+        }
+        .btn-blue:hover {
+        color: #fff;
+        background-color: #007ba3;
+        box-shadow: 0 0 0 2px #0099cb;
+        }
+
+        </style>
+    </head>
+    <body style="">
+        <table cellpadding="0" cellspacing="0" border="0" id="backgroundTable">
+            <tbody>
+                <tr>
+                    <td>
+                        <table cellpadding="0" cellspacing="0" border="0" align="center" style="background-color:#303032;">
+                            <tbody>
+                                <tr>
+                                    <td width="60px"></td>
+                                    <td width="440px" valign="top" style="text-align:left;" style="background-color:#F0F0F0;">
+                                        <img src="https://dl.dropboxusercontent.com/u/15674851/tb/img/footer-tokbox_logo%402x.png" style="margin-top:20px; margin-bottom:20px;" alt="" id="logo" width=150>
+                                    </td>
+                                    <td width="200px">
+                                        <a href="https://tokbox.com/contact/bd" style=" color: white; float:right; text-decoration:none; font-family:'Helvetica Neue', Helvetica, Arial, sans-serif; font-size:16px; ">Contact sales</a>
+                                    </td>
+                                    <td width="60px"></td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <table cellpadding="0" cellspacing="0" border="0" align="center">
+                            <tbody>
+                                @content
+                            </tbody>
+                        </table>
+
+
+                        <table cellpadding="0" cellspacing="0" border="0" align="center" style="background: #303032;">
+                            <tbody >
+                                <tr>
+                                    <td width="60px"></td>
+                                    <td width="300px" valign="top" style="text-align:left;">
+                                        <img src="https://dl.dropboxusercontent.com/u/15674851/tb/img/footer-tokbox_logo%402x.png" style="margin-top:20px; " alt="" width=100>
+                                        <span style="display:inline-block; width:30px;"></span>
+                                        <img src="https://dl.dropboxusercontent.com/u/15674851/tb/img/footer-telefonica_logo%402x.png" style="position:relative; top:-5px;" alt="" width=80>
+                                    </td>
+                                    <td width="80px" valign="top"></td>
+                                    <td width="260px" valign="top" style="text-align:right;">
+                                        <a href="http://tokbox.com/blog/" class="fb" style="text-decoration:none;">
+                                            <img  src="https://dl.dropboxusercontent.com/u/15674851/tb/img/icons/socials/footer-social-rss%402x.png" alt="" style="margin-top:20px; margin-left:0; margin-right:0;padding:0;" width=30>
+                                        </a>
+
+                                        <a href="https://twitter.com/tokbox" style="text-decoration:none;">
+                                            <img  src="https://dl.dropboxusercontent.com/u/15674851/tb/img/icons/socials/footer-social-twitter%402x.png" alt="" width=30>
+                                        </a>
+
+                                        <a href="https://www.linkedin.com/company/tokbox" class="fb" style="text-decoration:none;">
+                                            <img  src="https://dl.dropboxusercontent.com/u/15674851/tb/img/icons/socials/footer-social-linkedin%402x.png" alt="" style="margin-top:20px; margin-left:0; margin-right:0;padding:0;" width=30>
+                                        </a>
+
+                                        <a href="https://www.facebook.com/tokbox" class="fb" style="text-decoration:none;">
+                                            <img src="https://dl.dropboxusercontent.com/u/15674851/tb/img/icons/socials/footer-social-facebook%402x.png" alt="" style="margin-top:20px; margin-left:0; margin-right:0;padding:0;" width=30>
+                                        </a>
+
+                                        <a href="https://plus.google.com/+tokbox/posts" target="_blank" title="TokBox Blog" style="text-decoration:none;">
+                                            <img src="https://dl.dropboxusercontent.com/u/15674851/tb/img/icons/socials/footer-social-google_plus%402x.png" alt="" width=30>
+                                        </a>
+                                        <a href="https://dl.dropboxusercontent.com/u/15674851/tb/img/icons/socials/footer-social-youtube%402x.png" target="_blank" title="TokBox Blog" style="text-decoration:none;">
+                                            <img src="https://dl.dropboxusercontent.com/u/15674851/tb/img/icons/socials/footer-social-youtube%402x.png" alt="" width=30>
+                                        </a>
+                                    </td>
+                                    <td width="60px"></td>
+                                </tr>
+                                <tr >
+                                    <td width="60px"></td>
+                                    <td width="300px" valign="top">
+                                        <p style="margin-top:10px;margin-bottom:50px;line-height:100%; font-size:11px; font-family:'Lucida Grande'; color:#1F9AC8;text-align:left;">501 2nd Street, Suite 310, San Francisco, CA 94107</p>
+                                    </td>
+                                    <td width="80px" valign="top"></td>
+                                    <td width="260px" valign="top">
+                                        <p style="color:white; font-size:10px;float:right; margin-bottom:0; line-height:10px;text-align:right; font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;">Don't want to continue receiving TokBox emails?</p>
+                                        <a href="https://api.opentok.com/hl/misc/unsubscribe/@recipient" style="font-size:11px; float:right; text-decoration:none;font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;  color: #0099cc;">Unsubscribe here.</a>
+                                    </td>
+                                    <td width="60px"></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <table cellpadding="0" cellspacing="0" border="0" align="center" style="background: #fff;">
+                            <tr>
+                                <td width="60px"></td>
+                                <td width="233px" style="padding-top:20px;padding-bottom:30px;"></td>
+                                <td width="244px" valign="top"></td>
+                                <td width="223px" valign="top"></td>
+                            </tr>
+                        </table>
+                            <!-- End of wrapper table -->
+    </body>
+</html>

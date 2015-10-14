@@ -54,7 +54,7 @@ class PriorityCourier(val emailsDao: EmailRequestDao, sendgridService: ActorRef,
 
       val templateMaybe =
         Email.build(req.id, req.template_id,
-          req.inject.getOrElse(JsObject(Map.empty[String, JsValue])), req.to :: Nil)
+          req.inject.getOrElse(JsObject(Map.empty[String, JsValue])), req.to)
 
       templateMaybe.map(send(_, req.id))
         //template not found, reply and persist attempt
