@@ -1,5 +1,9 @@
 # Opentok Raven
 ![](http://orig01.deviantart.net/11fe/f/2010/217/7/8/giant_raven_flying_by_furansu.gif)
+
+To see the list of available templates go to [https://raven-tbdev.tokbox.com/v1/debug/template](https://raven-tbdev.tokbox.com/v1/debug/template) or
+jump to [Run](#Run) section and boot up a local instance. Check [Exploring templates](##Exploring templates) section to find out how to use them.
+
 ## Service
 
 ```javascript
@@ -77,27 +81,12 @@ Email
 }
 ```
 
-## Templates 
-|template_id|inject| 
-|---|---|
-|charged_successfully|cents: float|
-|billing_failure|next_payment_attempt: int or null|
-|suspended_for_billing_failure|N/A|
-|cancel_subscription|N/A|
-|cancel_with_prorate| prorate_ammount: float in cents |
-|activate_with_cc|N/A|
-|repeat_registration_attempt|N/A|
-|archive_upload_failed|session_id: str,<br> archive_id: str, <br> archive_name: str,<br> archive_created: unix timestamp |
-|invite_developer|name: str,<br> message: str|
-|invite_developer_notification| name: str |
-|change_email_confirmation|unconfirmed_email: str, <br> old_email: str, <br>confirmation_link: str|
-|signup_confirmation|first_api_key: str, <br> confirmation_link: str|
-|reset_password_instruction|reset_password_link: str|
-
+## Exploring templates
+After booting up go to [http://localhost:9911/v1/debug/template](http://localhost:9911/v1/debug/template) to see a list of available templates. Complete path with a `template_id` to find out how to use template i.e. [http://localhost:9911/v1/debug/template/twirl_test](http://localhost:9911/v1/debug/template/twirl_test). At the top of the html document, there will be a list of parameters and their types; if there are none, it means that the template doesn't require any parameters. Pass them in query string to see compiled template i.e. [http://localhost:9911/v1/debug/template/twirl_test?a=hello&b=1](http://localhost:9911/v1/debug/template/twirl_test?a=hello&b=1).
 
 ## Run
-`sbt run` or `sbt reStart`
+Create the db in your preferred mysql instance with [src/test/resources/schema.sql](schema.sql). Do `cp src/main/resources/reference.conf src/main/resources/application.conf` and override db values in application.conf. Install sbt if you don't have it already and do `sbt run` or `sbt reStart`.
 
 ## Deploy
-Do ` sbt clean assembly && docker build -t opentok/raven:latest . `, then `docker run -d -p 8000:9911 --restart=always --name raven -v path/to/host/resources/folder:/etc/opentok/raven/ -v path/to/host/logs:/var/log/raven opentok/raven:latest`
+Do ` sbt clean assembly && docker build -t opentok/raven:latest . `, then `docker run -d -p 8000:9911 --restart=always --name raven -v path/to/host/resources/folder:/etc/opentok/ -v path/to/host/logs:/var/log/opentok opentok/raven:latest`
 Make sure you place in `path/to/host/resources/folder/` an `application.conf` configuration file to override all default values, including the db ip and port.
