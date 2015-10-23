@@ -20,6 +20,9 @@ case class EmailRequest(
   id: Option[String]
 ) extends Requestable {
 
+  require(Email.buildPF(None, "", Map.empty).isDefinedAt(template_id),
+    s"Template not found with template_id $template_id")
+
   @transient
   lazy val json: JsObject = {
     EmailRequest.requestJsonFormat.write(this).asJsObject

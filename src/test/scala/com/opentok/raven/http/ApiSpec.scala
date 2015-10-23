@@ -37,7 +37,7 @@ class ApiSpec extends WordSpec with Matchers with ScalatestRouteTest with JsonPr
   }
 
   val testEmail = Email.build(testRequest.id, testRequest.template_id,
-    testRequest.inject.get,testRequest.to :: Nil)
+    testRequest.inject.get,testRequest.to)
 
   val marshalledRequest = EmailRequest.requestJsonFormat.write(testRequest)
 

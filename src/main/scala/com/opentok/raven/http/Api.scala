@@ -25,6 +25,18 @@ trait Api {
 trait AkkaApi extends Api {
   this: com.opentok.raven.service.System with Service with RavenConfig ⇒
 
+  def completeWithMessage(msg: String, rejection: Rejection) = {
+    complete(HttpResponse(BadRequest,
+      entity = HttpEntity.Strict(ContentType(`application/json`),
+        CompactByteString(Receipt.receiptJsonFormat.write(
+          Receipt.error(new Exception(s"${rejection.toString}"), msg)(system.log)).toString))))
+  }
+
+  val rejectionHandler = RejectionHandler.newBuilder().handle {
+    case rej@MalformedRequestContentRejection(msg, _) ⇒
+      completeWithMessage("There was a problem when unmarshalling body: " + msg, rej)
+    case rej: Rejection ⇒ completeWithMessage("Oops!", rej)
+  }
   val receiptExceptionHandler = ExceptionHandler {
     case e: Exception ⇒ complete(HttpResponse(InternalServerError,
       entity = HttpEntity.Strict(ContentType(`application/json`),
@@ -39,7 +51,9 @@ trait AkkaApi extends Api {
 
   val debugging = new DebugEndpoint
 
-  val customRoutingSettings = RoutingSetup(exceptionHandler = receiptExceptionHandler,
+  val customRoutingSettings = RoutingSetup(
+    rejectionHandler = rejectionHandler.result(),
+    exceptionHandler = receiptExceptionHandler,
     materializer = materializer, routingLog = RoutingLog(system.log),
     routingSettings = RoutingSettings.default)
 

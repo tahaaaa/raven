@@ -65,21 +65,6 @@ with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
       serv2.underlyingActor.right shouldBe 1
     }
 
-    "If EmailRequest contains an invalid template, should reply with unsuccessful receipt and persist attempt" in {
-      val testRequest2 = testRequest.copy(template_id = "¬…¬…¬…˚ø∆µ¬≤…¬")
-      val dao = new MockEmailRequestDao(Some(testRequest2), persistanceFails = true)
-      val serv = sendgridService
-      val courier = priorityCourier(dao, serv)
-
-      courier ! testRequest2
-      //receipt should contain receipt id
-      expectMsgPF(3.seconds){
-        case r: Receipt ⇒
-          r.success should be(false)
-          r.message.get.toLowerCase.contains("not found") should be(true)
-      }
-    }
-
     "If sendgridService request timeouts, should persist failure to db and return an unsuccessful receipt" in {
       val dao = new MockEmailRequestDao(Some(testRequest))
       val serv = unresponsiveSendgridService

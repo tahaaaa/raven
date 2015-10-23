@@ -61,7 +61,17 @@ object Email {
         html.confirmation_instructions(fields %> "api_key", fields %> "confirmation_instructions"),
         templateId, fromName = Some("TokBox"))
 
-
+    case templateId @ "usage_etl_report" ⇒
+      val subject = "[Hubble] - Usage ETL Report"
+      Email(requestId, subject, recipient :: Nil, "analytics@tokbox.com",
+        html.wrap_internal_v1(subject, html.usage_etl_report(
+          Try(fields("streamError").convertTo[String]).toOption,
+          Try(fields("streamStackTrace").convertTo[String]).toOption,
+          fields("hadrosaurErrors").convertTo[List[String]],
+          fields("processingErrors").convertTo[List[String]],
+          fields("hadrosaurSuccesses").convertTo[Int],
+          fields("processingSuccesses").convertTo[Int]
+        )).body, Some(templateId), fromName = Some("Hubble"))
 
   }
 
