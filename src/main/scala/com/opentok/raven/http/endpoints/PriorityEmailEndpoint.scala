@@ -22,7 +22,7 @@ class PriorityEmailEndpoint(handler: ActorRef, t: Timeout)(implicit val mat: Mat
       path("priority") {
         pathEndOrSingleSlash {
           entity(as[EmailRequest]) { req ⇒
-            onComplete(handler.ask(EmailRequest.fillInRequest(req)).mapTo[Receipt]).tapply {
+            onComplete(handler.ask(EmailRequest.fillInRequest(req).validated).mapTo[Receipt]).tapply {
               case Tuple1(Success(rec)) if rec.success ⇒ complete(rec)
               case Tuple1(Success(rec)) ⇒ complete(HttpResponse(InternalServerError,
                 entity = HttpEntity.Strict(ContentType(`application/json`),

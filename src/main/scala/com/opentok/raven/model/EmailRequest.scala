@@ -20,8 +20,11 @@ case class EmailRequest(
   id: Option[String]
 ) extends Requestable {
 
-  require(Email.buildPF(None, "", Map.empty).isDefinedAt(template_id),
-    s"Template not found with template_id $template_id")
+  def validated: EmailRequest = {
+    require(Email.buildPF(None, "", Map.empty).isDefinedAt(template_id),
+      s"Template not found with template_id $template_id")
+    this
+  }
 
   @transient
   lazy val json: JsObject = {
