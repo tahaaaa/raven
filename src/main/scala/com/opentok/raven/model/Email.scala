@@ -58,7 +58,7 @@ object Email {
 
     case templateId @ "confirmation_instructions" ⇒
       wrapTemplate(requestId, "Confirmation Instructions", recipient, "messages@tokbox.com",
-        html.confirmation_instructions(fields %> "api_key", fields %> "confirmation_instructions"),
+        html.confirmation_instructions(fields %> "api_key", fields %> "confirmation_url"),
         templateId, fromName = Some("TokBox"))
 
     case templateId @ "usage_etl_report" ⇒
