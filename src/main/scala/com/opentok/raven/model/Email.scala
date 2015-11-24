@@ -61,6 +61,16 @@ object Email {
         html.confirmation_instructions(fields %> "confirmation_url"),
         templateId, fromName = Some("TokBox"))
 
+    case templateId @ "repeated_email_attempt" ⇒
+      wrapTemplate(requestId, "Repeated Email Attempt", recipient, "messages@tokbox.com",
+        html.repeated_email_attempt(fields %> "reset_password_link"),
+        templateId, fromName = Some("TokBox"))
+
+    case templateId @ "reset_password_instructions" ⇒
+      wrapTemplate(requestId, "Reset Password Instructions", recipient, "messages@tokbox.com",
+        html.reset_password_instructions(fields %> "reset_password_link"),
+        templateId, fromName = Some("TokBox"))
+
     case templateId @ "usage_etl_report" ⇒
       val subject = "[Hubble] - Usage ETL Report"
       Email(requestId, subject, recipient :: Nil, "analytics@tokbox.com",
