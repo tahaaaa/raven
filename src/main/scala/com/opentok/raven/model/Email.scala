@@ -51,11 +51,6 @@ object Email {
   def buildPF(requestId: Option[String], recipient: String,
               fields: Map[String, JsValue]): PartialFunction[String, Email] = {
 
-    case templateId @ "twirl_test" ⇒
-      Email(requestId, "Test email", recipient :: Nil, "ba@tokbox.com",
-        html.twirl_test(fields %> "a", fields %> "b" toInt).body,
-        fromName = Some("Business Analytics"), fromTemplateId = Some(templateId), setReply = Some("no-reply@tokbox.com"))
-
     case templateId @ "confirmation_instructions" ⇒
       wrapTemplate(requestId, "Confirmation Instructions", recipient, "messages@tokbox.com",
         html.confirmation_instructions(fields %> "confirmation_url"),
@@ -69,6 +64,11 @@ object Email {
     case templateId @ "reset_password_instructions" ⇒
       wrapTemplate(requestId, "Reset Password Instructions", recipient, "messages@tokbox.com",
         html.reset_password_instructions(fields %> "reset_password_link"),
+        templateId, fromName = Some("TokBox"))
+
+    case templateId @ "developer_invitation" ⇒
+      wrapTemplate(requestId, "Developer Invitation", recipient, "messages@tokbox.com",
+        html.developer_invitation(fields %> "account_name", fields %> "invitation_link"),
         templateId, fromName = Some("TokBox"))
 
     case templateId @ "usage_etl_report" ⇒

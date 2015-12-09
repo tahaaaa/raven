@@ -1,0 +1,39 @@
+@(account_name: String, invitation_link: String)
+<tr style="background:white;">
+    <td width="60px"></td>
+    <td width=640px style="text-align:center; padding: 30px 0;">
+        <h1>Congratulations! You have been invited @account_name. </h1>
+        <p class="light">
+To get started, please click on the link below:
+        </p>
+    </td>
+    <td width="60px" ></td>
+</tr>
+<tr>
+    <td width="60px"></td>
+    <td width=640px style="text-align:center; padding: 30px 0; font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;">
+
+        <center>
+            <a href="@invitation_link" class="btn btn-blue">Join @account_name</a>
+        </center>
+
+        <p>
+Or, visit this url:
+        </p>
+
+        <center>
+            <a href="@invitation_link"> @invitation_link </a>
+        </center>
+
+        <br>
+        <br>
+        <p>
+Thanks for choosing OpenTok,
+        </p>
+        <strong style="color:#5F6062;font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:18px;line-height:28px;">
+The TokBox Team
+        </strong>
+
+    </td>
+    <td width="60px"></td>
+</tr>
