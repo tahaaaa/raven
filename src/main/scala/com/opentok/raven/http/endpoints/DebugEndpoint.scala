@@ -25,6 +25,17 @@ class DebugEndpoint(implicit val mat: Materializer, system: ActorSystem) extends
 
   val classLoader = this.getClass.getClassLoader
 
+  //builds a spray.json.JsObject (aliased to Email.Injections)
+  def toInjections(params: Map[String, String]): Email.Injections = {
+    val fields = params.foldLeft(Map.empty[String, JsValue]) {
+      case (m, (k, v)) ⇒
+        //try to parse numeric
+        val parsed = Try(v.toDouble).map(_.toJson).getOrElse(v.toJson)
+        m.updated(k, parsed)
+    }
+    JsObject(fields)
+  }
+
   override val route: Route = get {
     pathPrefix("debug") {
       path("template" / Segment) {
@@ -32,7 +43,7 @@ class DebugEndpoint(implicit val mat: Materializer, system: ActorSystem) extends
           params ⇒ Try {
             HttpEntity.Strict(
               ContentType(`text/html`), CompactByteString(
-                Email.build(None, templateId, params.toJson.asJsObject, "").get.html
+                Email.build(None, templateId, toInjections(params), "").get.html
               )
             )
           }.map(em ⇒ complete(em)).recover { case e ⇒ reject }.get

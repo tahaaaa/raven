@@ -7,21 +7,21 @@ import spray.json.{DefaultJsonProtocol, JsObject, JsValue, RootJsonFormat}
 import scala.util.Try
 
 case class Email(
-  id: Option[String],
-  subject: String,
-  recipients: List[EmailAddress],
-  from: EmailAddress,
-  html: HTML,
-  fromTemplateId: Option[String] = None,
-  toName: Option[EmailAddress] = None,
-  fromName: Option[String] = None,
-  categories: Option[List[String]] = None,
-  setReply: Option[EmailAddress] = None,
-  cc: Option[List[EmailAddress]] = None,
-  bcc: Option[List[EmailAddress]] = None,
-  attachments: Option[List[(String, String)]] = None,
-  headers: Option[Map[String, String]] = None
-) extends Requestable
+                  id: Option[String],
+                  subject: String,
+                  recipients: List[EmailAddress],
+                  from: EmailAddress,
+                  html: HTML,
+                  fromTemplateId: Option[String] = None,
+                  toName: Option[EmailAddress] = None,
+                  fromName: Option[String] = None,
+                  categories: Option[List[String]] = None,
+                  setReply: Option[EmailAddress] = None,
+                  cc: Option[List[EmailAddress]] = None,
+                  bcc: Option[List[EmailAddress]] = None,
+                  attachments: Option[List[(String, String)]] = None,
+                  headers: Option[Map[String, String]] = None
+                  ) extends Requestable
 
 object Email {
 
@@ -82,6 +82,11 @@ object Email {
           fields("hadrosaurSuccesses").convertTo[Int],
           fields("processingSuccesses").convertTo[Int]
         )).body, Some(templateId), fromName = Some("Hubble"))
+
+    case templateId@"test" ⇒
+      wrapTemplate(requestId, "Raven Test", recipient, "analytics@tokbox.com",
+        html.test(fields %> "a", fields.extract[Int]("b")),
+        templateId, fromName = Some("TokBox"))
 
   }
 

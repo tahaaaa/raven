@@ -59,19 +59,19 @@ package object fixture {
     }
   }
 
-  lazy val testRequest = EmailRequest("ernest+raven@tokbox.com", "twirl_test",
+  lazy val testRequest = EmailRequest("ernest+raven@tokbox.com", "test",
     Some(JsObject(Map("a" → JsString(s"INTEGRATION TEST RUN AT ${new DateTime().toString}"),
-      "b" → JsString("1")))), None, Some("1"))
+      "b" → JsNumber(1)))), None, Some("1"))
 
   lazy val marshalledRequest = EmailRequest.requestJsonFormat.write(testRequest)
 
-  lazy val testRequest2 = EmailRequest("ernest+ravenbatchEmail@tokbox.com", "twirl_test",
+  lazy val testRequest2 = EmailRequest("ernest+ravenbatchEmail@tokbox.com", "test",
     Some(JsObject(Map("a" → JsString(s"INTEGRATION TEST RUN AT ${new DateTime().toString}"),
-      "b" → JsString("1")))), None, None)
+      "b" → JsNumber(1)))), None, None)
 
-  lazy val testRequest3 = EmailRequest("ernest+raven@tokbox.com", "twirl_test",
+  lazy val testRequest3 = EmailRequest("ernest+raven@tokbox.com", "test",
     Some(JsObject(Map("a" → JsString(s"UNIT TEST RUN AT ${new DateTime().toString}"),
-      "b" → JsString("1")))), None, Some("aaaaa"))
+      "b" → JsNumber(1)))), None, Some("aaaaa"))
 
   lazy val testEmail =
     Email.build(testRequest2.id, testRequest2.template_id, testRequest2.inject.get, testRequest2.to)
@@ -84,9 +84,9 @@ package object fixture {
   lazy val marshalledEmail = Email.emailJsonFormat.write(testEmail.get)
 
   lazy val marshalledBatch: JsValue = JsArray(Vector.fill(nBatch)(EmailRequest.requestJsonFormat.write(
-    EmailRequest("ernest+ravenbatch@tokbox.com", "twirl_test",
+    EmailRequest("ernest+ravenbatch@tokbox.com", "test",
       Some(JsObject(Map("a" → JsString(s"INTEGRATION TEST RUN AT ${new DateTime().toString}"),
-        "b" → JsString("1")))), None, None))).toSeq: _*)
+        "b" → JsNumber(1)))), None, None))).toSeq: _*)
 
   class TestActor[T](t: ClassTag[T]) extends Actor with ActorLogging {
     var right = 0
