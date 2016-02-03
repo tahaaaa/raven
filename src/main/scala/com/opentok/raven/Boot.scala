@@ -12,4 +12,6 @@ with App with MysqlDal with AkkaSystem with AkkaService with AkkaApi {
 
   Http().bindAndHandle(handler = routeTree, interface = HOST, port = PORT)
 
+  system.log.info(s"Raven service started and listening on $HOST:$PORT; max-retries=$MAX_RETRIES; deferrer=$DEFERRER;")
+
 }
