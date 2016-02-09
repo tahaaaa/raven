@@ -95,13 +95,13 @@ package object fixture {
     override def receive: Receive = {
       case _: String ⇒ sender() !(right, wrong)
       case a if t.runtimeClass.isAssignableFrom(a.getClass) ⇒
-        sender() ! Receipt.success
         right += 1
+        sender() ! Receipt.success
         log.info(s"RIGHT MESSAGES RECEIVED $right")
       case _ ⇒
-        sender() ! Receipt(false, message = Some("Wrong message"))
         log.warning(s"WRONG MESSAGES RECEIVED $wrong")
         wrong += 1
+        sender() ! Receipt(false, message = Some("Wrong message"))
     }
   }
 

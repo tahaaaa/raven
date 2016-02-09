@@ -4,7 +4,10 @@ import akka.actor.{Actor, ActorLogging, ActorRef}
 import akka.pattern._
 import akka.util.Timeout
 import com.opentok.raven.dal.components.EmailRequestDao
-import com.opentok.raven.model.{Email, EmailRequest, Receipt}
+import com.opentok.raven.model.{Requestable, Email, EmailRequest, Receipt}
+
+import scala.concurrent.Future
+import scala.util.Success
 
 /**
  * * Upon receiving a [[com.opentok.raven.model.Requestable]],
@@ -27,6 +30,19 @@ class CertifiedCourier(val emailsDao: EmailRequestDao, sendridService: ActorRef,
 
   implicit val timeout: Timeout = t
 
+  //matches given requestable and applies the right transformations, but returns receipt
+  //it flattens (therefore chaining the future) but returning the initial receipt
+  def persist(req: Requestable, rec: Receipt): Future[Receipt] = {
+    (req, rec) match {
+      case (req: EmailRequest, receipt) if receipt.success ⇒ persistSuccess(req)
+      case (req: EmailRequest, receipt) ⇒ persistFailure(req, Success(receipt))
+      case (em: Email, receipt) if receipt.success ⇒
+        Future.sequence(emailToPendingEmailRequests(em).map(persistSuccess))
+      case (em: Email, receipt) ⇒
+        Future.sequence(emailToPendingEmailRequests(em).map(persistFailure(_, Success(receipt))))
+    }
+  }.map(_ ⇒ rec)
+
   def send(email: Email, lReq: List[EmailRequest]) = {
     //persist request attempt
     emailRequestDaoActor.ask(lReq).flatMap { i ⇒
@@ -38,18 +54,24 @@ class CertifiedCourier(val emailsDao: EmailRequestDao, sendridService: ActorRef,
         //recover exception on sending by mapping exception to unsuccessful receipt
         .recover(exceptionToReceipt(email.id))
     }.recoverWith {
-      //we only enter here if emailsDao fails to persist request
+      //we only enter this block if emailsDao fails to persist request
       //in which case, we skip persistance step and try to send anyway
       case e: Exception ⇒
-        log.warning("There was a problem when trying to save request before forwarding it to sendgridActor. Skipping persist..")
+        log.warning("There was a problem when trying to save request BEFORE forwarding it to sendgridActor. Skipping persist..")
         sendridService.ask(email).mapTo[Receipt].map(_.copy(
           requestId = email.id,
           message = Some("Email delivered but there was a problem when persisting request to db"),
           errors = e.getMessage :: Nil)
         ).recover(exceptionToReceipt(email.id))
-    } //install side effecting persist to db, guaranteeing order of callbacks
-      //todo flatAndThen here to wait for success or failure of inner future
-      .andThen(persistSuccessOrFailure(email))
+    } //install side effect persist to db, guaranteeing order of callbacks
+      .flatMap{ receipt ⇒
+        persist(email, receipt).recover{
+        //recover failed persist, but maintain success to be if whether email was sent or not
+          case e: Exception ⇒
+            log.warning("There was a problem when trying to save request AFTER sending it to sengridActor")
+            receipt.copy(errors = receipt.errors :+ e.toString)
+        }
+      }
       //install pipe of future receipt to sender
       .pipeTo(sender())
     //template not found, reply and persist attempt

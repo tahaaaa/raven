@@ -95,8 +95,6 @@ with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
       dao.received.length should be(1) //only one save
       dao.received.head.status should be(Some(EmailRequest.Failed))
 
-      Thread.sleep(2000)
-
       serv.underlyingActor.received shouldBe 1
     }
   }

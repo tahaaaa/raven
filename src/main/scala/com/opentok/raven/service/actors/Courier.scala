@@ -29,37 +29,25 @@ trait Courier {
       None, Some(EmailRequest.Pending), em.id))
 
   //makes sure that saved requests status is success
-  def persistSuccess(req: EmailRequest): Unit = {
+  def persistSuccess(req: EmailRequest): Future[_] = {
     log.info(s"Changing request with id ${req.id} status to Success")
     emailRequestDaoActor.ask(req.copy(status = Some(EmailRequest.Succeeded)))
-      .onComplete(logPersist(req.id))
+      .andThen(logPersist(req.id))
   }
 
   //makes sure that saved requests status is failed
-  def persistFailure(req: EmailRequest, anyElse: Any): Unit = {
+  def persistFailure(req: EmailRequest, receipt: Try[Receipt]): Future[_] = {
     log.info(s"Changing request with id ${req.id} status to Failed")
-    emailRequestDaoActor.ask(req.copy(status = Some(EmailRequest.Failed)))
-      .onComplete(logPersist(req.id))
-    anyElse match {
+    val f = emailRequestDaoActor.ask(req.copy(status = Some(EmailRequest.Failed)))
+      .andThen(logPersist(req.id))
+    receipt match {
       case Success(failedReceipt) ⇒
         log.warning(s"Receipt from sendgrid Actor success is false $failedReceipt")
       case Failure(e) ⇒
         log.error(e, s"There was a failure in the request with id ${req.id} pipe to sendgridActor")
     }
+    f
   }
-
-  //matches given requestable and applies the right transformations
-  def persistSuccessOrFailure(req: Requestable): PartialFunction[Try[Receipt], Unit] =
-    req match {
-      case req: EmailRequest ⇒ {
-        case Success(receipt) if receipt.success ⇒ persistSuccess(req)
-        case anyElse ⇒ persistFailure(req, anyElse)
-      }
-      case em: Email ⇒ {
-        case Success(receipt) if receipt.success ⇒ emailToPendingEmailRequests(em).foreach(persistSuccess)
-        case anyElse ⇒ emailToPendingEmailRequests(em).foreach(persistFailure(_, anyElse))
-      }
-    }
 
   def logPersist(id: Option[String]): PartialFunction[Try[Any], Unit] = {
     case Success(i) ⇒

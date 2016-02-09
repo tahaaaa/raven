@@ -6,6 +6,8 @@ import akka.util.Timeout
 import com.opentok.raven.dal.components.EmailRequestDao
 import com.opentok.raven.model.{Email, EmailRequest, Receipt}
 
+import scala.util.{Failure, Success}
+
 /**
  * Upon receiving a [[com.opentok.raven.model.Requestable]],
  * this actor will attempt to first construct an email, if it's not
@@ -30,19 +32,22 @@ class PriorityCourier(val emailsDao: EmailRequestDao, sendgridService: ActorRef,
     val sdr = sender()
     log.info("Forwarding email to sendgrid actor with timeout {}", timeout)
     //query sendgrid via sendgridActor and map/recover HttpResponse to Receipt
-    sendgridService.ask(em).mapTo[Receipt]
+    val receipt = sendgridService.ask(em).mapTo[Receipt]
       .map(_.copy(requestId = id))
       .recover(exceptionToReceipt(id))
-      //install side effecting persist to db, guaranteeing order of callbacks
-      .andThen(persistSuccessOrFailure(em))
-      //install pipe of future receipt to sender
-      .pipeTo(sdr)
+
+    //pipe future receipt to sender
+    receipt pipeTo sdr
+
+    //install side effecting persist to db, guaranteeing order of callbacks
+    receipt.andThen {
+      case Success(r) if r.success ⇒ emailToPendingEmailRequests(em).foreach(persistSuccess)
+      case tr@Success(r) ⇒ emailToPendingEmailRequests(em).foreach(persistFailure(_, tr))
+      case tr@Failure(error) ⇒ emailToPendingEmailRequests(em).foreach(persistFailure(_, tr))
+    }
   }
 
   override def receive: Receive = {
-    case e: Email ⇒ //not used at the moment
-      log.info(s"Received email with id ${e.id}")
-      send(e, e.id)
 
     case r: EmailRequest ⇒
       log.info(s"Received request with id ${r.id}")

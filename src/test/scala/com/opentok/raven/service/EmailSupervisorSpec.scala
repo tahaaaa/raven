@@ -32,7 +32,7 @@ with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
                     deferrer: Int = 1): TestActorRef[EmailSupervisor] =
     TestActorRef(Props(classOf[EmailSupervisor], superviseeProps, pool, mockRequestDao, retries, deferrer))
 
-  "An EmailSupervisor" must {
+  "An EmailSupervisor" should {
 
     "Load balance request to supervisees correctly" in {
       val rdm = new Random(1000)
@@ -42,10 +42,7 @@ with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
 
       val results = Await.result(Future.sequence(s.underlyingActor.supervisee.map(_.ask("gimme")(6.seconds).mapTo[(Int, Int)])), 6.seconds)
 
-      results.map { ab ⇒
-        ab._1 + ab._2 should not be (0)
-        ab
-      }.reduce { (c, v) ⇒
+      results.reduce { (c, v) ⇒
         (c._1 + v._1, c._2 + v._2)
       } shouldBe(10, 0)
     }
@@ -57,10 +54,7 @@ with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
       (0 until 2).foreach(_ ⇒ s ! Vector.fill(2)(testRequest.copy(id = Some(rdm.nextInt().toString))))
 
       val results = Await.result(Future.sequence(s.underlyingActor.supervisee.map(_.ask("gimme")(6.seconds).mapTo[(Int, Int)])), 6.seconds)
-      results.map { ab ⇒
-        ab._1 + ab._2 should not be (0)
-        ab
-      }.reduce { (c, v) ⇒
+      results.reduce { (c, v) ⇒
         (c._1 + v._1, c._2 + v._2)
       } shouldBe(4, 0)
     }
