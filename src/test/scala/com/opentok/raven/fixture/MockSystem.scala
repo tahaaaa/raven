@@ -20,8 +20,8 @@ abstract class WorkingMockSystem extends MockSystem(Props(new Actor {
   implicit val log: LoggingAdapter = context.system.log
 
   override def receive: Receive = {
-    case req: EmailRequest ⇒ sender() ! Receipt.success(None, req.id)(log)
-    case em: Email ⇒ sender() ! Receipt.success(None, em.id)(log)
+    case req: EmailRequest ⇒ sender() ! Receipt.success(None, req.id)
+    case em: Email ⇒ sender() ! Receipt.success(None, em.id)
     case msg ⇒ sender() ! Receipt.success
       received = msg
   }

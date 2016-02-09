@@ -74,7 +74,7 @@ package object fixture {
       "b" → JsNumber(1)))), None, Some("aaaaa"))
 
   lazy val testEmail =
-    Email.build(testRequest2.id, testRequest2.template_id, testRequest2.inject.get, testRequest2.to)
+    Email.build(testRequest2.id, testRequest2.template_id, testRequest2.$inject, testRequest2.to)
 
   lazy val nBatch = 3
 

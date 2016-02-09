@@ -31,8 +31,7 @@ object Receipt {
 
   def success: Receipt = Receipt(success = true)
 
-  def success(message: Option[String], requestId: Option[String])(implicit log: LoggingAdapter): Receipt = {
-    message.map(log.info)
+  def success(message: Option[String], requestId: Option[String]): Receipt = {
     Receipt(
       success = true,
       requestId = requestId,
@@ -40,8 +39,7 @@ object Receipt {
     )
   }
 
-  def error(e: Throwable, message: String, requestId:Option[String] = None)(implicit log: LoggingAdapter): Receipt = {
-    log.error(e, message)
+  def error(e: Throwable, message: String, requestId:Option[String] = None): Receipt = {
     Receipt(
       success = false,
       requestId = requestId,

@@ -1,11 +1,10 @@
 package com.opentok.raven.service.actors
 
-import akka.actor.{Props, Actor, ActorLogging, ActorRef}
+import akka.actor.{Actor, ActorLogging, ActorRef}
 import akka.pattern._
 import akka.util.Timeout
 import com.opentok.raven.dal.components.EmailRequestDao
-import com.opentok.raven.model.{EmailRequest, Receipt, Email}
-import spray.json.{JsObject, JsValue}
+import com.opentok.raven.model.{Email, EmailRequest, Receipt}
 
 /**
  * Upon receiving a [[com.opentok.raven.model.Requestable]],
@@ -53,13 +52,20 @@ class PriorityCourier(val emailsDao: EmailRequestDao, sendgridService: ActorRef,
         else r
 
       val templateMaybe =
-        Email.build(req.id, req.template_id,
-          req.inject.getOrElse(JsObject(Map.empty[String, JsValue])), req.to)
+        Email.build(req.id, req.template_id, req.$inject, req.to)
 
       templateMaybe.map(send(_, req.id))
         //template not found, reply and persist attempt
-        .recover(recoverTemplateNotFound(req, sender()))
-
+        .recover {
+        //persist attempt to db,
+        case e: Exception ⇒
+          emailRequestDaoActor.ask(req.copy(status = Some(EmailRequest.Failed)))
+            .andThen(logPersist(req.id))
+            .andThen {
+              case _ ⇒ //regardless of persist results, send receipt
+                sender() ! Receipt.error(e, "unexpected error", requestId = req.id)
+            }
+      }
 
     case anyElse ⇒ log.warning(s"Not an acceptable request $anyElse")
   }

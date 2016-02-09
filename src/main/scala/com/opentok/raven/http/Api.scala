@@ -7,7 +7,8 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import akka.util.CompactByteString
 import com.opentok.raven.RavenConfig
-import com.opentok.raven.http.endpoints.{DebugEndpoint, CertifiedEmailEndpoint, MonitoringEndpoint, PriorityEmailEndpoint}
+import com.opentok.raven.http.endpoints.{CertifiedEmailEndpoint, DebugEndpoint, MonitoringEndpoint, PriorityEmailEndpoint}
+import com.opentok.raven.model.EmailRequest.{InvalidTemplate, MissingInjections}
 import com.opentok.raven.model.Receipt
 import com.opentok.raven.service.Service
 
@@ -29,19 +30,31 @@ trait AkkaApi extends Api {
     complete(HttpResponse(BadRequest,
       entity = HttpEntity.Strict(ContentType(`application/json`),
         CompactByteString(Receipt.receiptJsonFormat.write(
-          Receipt.error(new Exception(s"${rejection.toString}"), msg)(system.log)).toString))))
+          Receipt.error(new Exception(s"${rejection.toString}"), msg)).toString()))))
   }
 
   val rejectionHandler = RejectionHandler.newBuilder().handle {
     case rej@MalformedRequestContentRejection(msg, _) ⇒
       completeWithMessage("There was a problem when unmarshalling body: " + msg, rej)
-    case rej: Rejection ⇒ completeWithMessage("Oops!", rej)
+    case rej: Rejection ⇒ completeWithMessage("rejection", rej)
   }
+
   val receiptExceptionHandler = ExceptionHandler {
-    case e: Exception ⇒ complete(HttpResponse(InternalServerError,
-      entity = HttpEntity.Strict(ContentType(`application/json`),
-        CompactByteString(Receipt.receiptJsonFormat.write(
-          Receipt.error(e, "Oops! There was an unexpected Error")(system.log)).toString()))))
+    case e: InvalidTemplate ⇒
+      val msg = e.getCause.getMessage
+      system.log.warning(e.getCause.getMessage)
+      reject(new ValidationRejection(msg, Some(e)))
+    case e: MissingInjections ⇒
+      val msg = e.getCause.getMessage
+      system.log.warning(e.getCause.getMessage)
+      reject(new ValidationRejection(msg, Some(e)))
+    //rest of exceptions
+    case e: Exception ⇒
+      system.log.error(e, "unexpected error")
+      complete(HttpResponse(InternalServerError,
+        entity = HttpEntity.Strict(ContentType(`application/json`),
+          CompactByteString(Receipt.receiptJsonFormat.write(
+            Receipt.error(e, "Oops! There was an unexpected Error")).toString()))))
   }
 
   val certified = new CertifiedEmailEndpoint(certifiedService, ENDPOINT_TIMEOUT)

@@ -5,7 +5,6 @@ import akka.pattern._
 import akka.util.Timeout
 import com.opentok.raven.dal.components.EmailRequestDao
 import com.opentok.raven.model.{Email, EmailRequest, Receipt}
-import spray.json.{JsObject, JsValue}
 
 /**
  * * Upon receiving a [[com.opentok.raven.model.Requestable]],
@@ -70,10 +69,18 @@ class CertifiedCourier(val emailsDao: EmailRequestDao, sendridService: ActorRef,
         else r
 
       val templateMaybe =
-        Email.build(req.id, req.template_id,
-          req.inject.getOrElse(JsObject(Map.empty[String, JsValue])), req.to)
+        Email.build(req.id, req.template_id, req.$inject, req.to)
 
-      templateMaybe.map(send(_, req :: Nil)).recover(recoverTemplateNotFound(req, sender()))
+      templateMaybe.map(send(_, req :: Nil)).recover {
+        //persist attempt to db,
+        case e: Exception ⇒
+          emailRequestDaoActor.ask(req.copy(status = Some(EmailRequest.Failed)))
+            .andThen(logPersist(req.id))
+            .andThen {
+              case _ ⇒ //regardless of persist results, send receipt
+                sender() ! Receipt.error(e, "unexpected error", requestId = req.id)
+            }
+      }
 
     case anyElse ⇒ log.warning(s"Not an acceptable request $anyElse")
   }

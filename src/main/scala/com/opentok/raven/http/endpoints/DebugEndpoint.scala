@@ -27,13 +27,12 @@ class DebugEndpoint(implicit val mat: Materializer, system: ActorSystem) extends
 
   //builds a spray.json.JsObject (aliased to Email.Injections)
   def toInjections(params: Map[String, String]): Email.Injections = {
-    val fields = params.foldLeft(Map.empty[String, JsValue]) {
+    params.foldLeft(Map.empty[String, JsValue]) {
       case (m, (k, v)) ⇒
         //try to parse numeric
         val parsed = Try(v.toDouble).map(_.toJson).getOrElse(v.toJson)
         m.updated(k, parsed)
     }
-    JsObject(fields)
   }
 
   override val route: Route = get {

@@ -2,21 +2,26 @@ package com.opentok.raven.http
 
 import akka.actor.{Actor, Props}
 import akka.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
-import com.opentok.raven.fixture.{H2Dal, TestConfig, MockSystem, WorkingMockSystem}
+import com.opentok.raven.fixture.{H2Dal, MockSystem, TestConfig, WorkingMockSystem, _}
 import com.opentok.raven.model.{Email, EmailRequest, Receipt}
 import org.joda.time.DateTime
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.{ConfigMap, Matchers, WordSpec}
 import spray.json._
-import com.opentok.raven.fixture._
 
 import scala.concurrent.duration._
 
 class ApiSpec extends WordSpec with Matchers with ScalatestRouteTest with JsonProtocols {
 
   //uses mock system, so db is irrelevant in this test, but still needs to be mixed in
-  val workingTree = (new WorkingMockSystem with TestConfig with H2Dal with AkkaApi).routeTree
+  val raven = new WorkingMockSystem with TestConfig with H2Dal with AkkaApi
+  val workingTree = raven.routeTree
 
-  val treeWithIrresponsiveService = (new MockSystem(Props(new Actor{
+
+  override protected def afterAll(): Unit = {
+    raven.system.shutdown()
+  }
+
+  val treeWithIrresponsiveService = (new MockSystem(Props(new Actor {
     override def receive: Receive = {
       case _ ⇒ //does not reply at all
     }
@@ -37,7 +42,7 @@ class ApiSpec extends WordSpec with Matchers with ScalatestRouteTest with JsonPr
   }
 
   val testEmail = Email.build(testRequest.id, testRequest.template_id,
-    testRequest.inject.get,testRequest.to)
+    testRequest.$inject, testRequest.to)
 
   val marshalledRequest = EmailRequest.requestJsonFormat.write(testRequest)
 
@@ -97,6 +102,37 @@ class ApiSpec extends WordSpec with Matchers with ScalatestRouteTest with JsonPr
     }
     Post("/v1/certified", marshalledEmail) ~> workingTree ~> check {
       responseAs[Receipt].requestId should not be None
+    }
+  }
+
+  "Reject request if a template_id is not valid" in {
+    val invalidTemplateId = EmailRequest("ernest+raven@tokbox.com", "potato",
+      Some(JsObject(Map("a" → JsString(s"INTEGRATION TEST RUN AT ${new DateTime().toString}"),
+        "b" → JsNumber(1)))), None, Some("1"))
+
+    val marshalledRequest = EmailRequest.requestJsonFormat.write(invalidTemplateId)
+
+    Post("/v1/priority", marshalledRequest) ~> workingTree ~> check {
+      response.status.intValue() shouldBe 400
+    }
+
+    Post("/v1/certified", marshalledRequest) ~> workingTree ~> check {
+      response.status.intValue() shouldBe 400
+    }
+  }
+
+  "Reject request if missing injection parameters for a given template id" in {
+    val missingInjections = EmailRequest("ernest+raven@tokbox.com", "test",
+      Some(JsObject(Map("potatoes" → JsNull))), None, Some("1"))
+
+    val marshalledRequest = EmailRequest.requestJsonFormat.write(missingInjections)
+
+    Post("/v1/priority", marshalledRequest) ~> workingTree ~> check {
+      response.status.intValue() shouldBe 400
+    }
+
+    Post("/v1/certified", marshalledRequest) ~> workingTree ~> check {
+      response.status.intValue() shouldBe 400
     }
   }
 

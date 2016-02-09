@@ -2,6 +2,7 @@ package com.opentok.raven.model
 
 import java.util.UUID
 
+import com.opentok.raven.model.EmailRequest.{InvalidTemplate, MissingInjections}
 import spray.json._
 
 
@@ -12,27 +13,48 @@ import spray.json._
  * @param status status of the request. Check sealed trait [[com.opentok.raven.model.EmailRequest.Status]]
  * @param inject map of key value pairs to inject to the template
  */
-case class EmailRequest(
-  to: String,
-  template_id: String,
-  inject: Option[JsObject],
-  status: Option[EmailRequest.Status],
-  id: Option[String]
-) extends Requestable {
+case class EmailRequest(to: String,
+                        template_id: String,
+                        inject: Option[JsObject],
+                        status: Option[EmailRequest.Status],
+                        id: Option[String]) extends Requestable {
 
-  def validated: EmailRequest = {
-    require(Email.buildPF(None, "", Map.empty).isDefinedAt(template_id),
-      s"Template not found with template_id $template_id")
-    this
-  }
+  @transient
+  lazy val $inject = inject.map(_.fields).getOrElse(Map.empty)
 
   @transient
   lazy val json: JsObject = {
     EmailRequest.requestJsonFormat.write(this).asJsObject
   }
+
+  def validate[T](block: () ⇒ T) =
+    try {
+      block()
+    } catch {
+      //missing injection parameter
+      case e: NoSuchElementException ⇒ throw new MissingInjections($inject, e)
+      //invalid template id
+      case e: MatchError ⇒ throw new InvalidTemplate(template_id, e)
+      case e: Exception ⇒ throw e
+    }
+
+  def validated: EmailRequest = {
+    val email = Email.buildPF(None, "trash@tokbox.com", $inject)
+    validate(() ⇒ email.isDefinedAt(template_id))
+    validate(() ⇒ email.apply(template_id))
+    this
+  }
+
 }
 
 object EmailRequest {
+
+  class InvalidTemplate(template_id: String, cause: Throwable)
+    extends Exception(s"invalid template id '$template_id'", cause)
+
+  class MissingInjections(injects: Map[String, JsValue], cause: Throwable)
+    extends Exception(s"missing inject in $injects", cause)
+
   import spray.json.DefaultJsonProtocol._
 
   //transforms an incoming request without id and status
@@ -62,6 +84,7 @@ object EmailRequest {
       case s ⇒ throw new SerializationException(s"Unrecognized EmailReceipt.Status '$s'")
     }
   }
+
   implicit val requestJsonFormat: RootJsonFormat[EmailRequest] = jsonFormat5(EmailRequest.apply)
 
 }

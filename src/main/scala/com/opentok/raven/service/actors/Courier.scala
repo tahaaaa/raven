@@ -1,12 +1,12 @@
 package com.opentok.raven.service.actors
 
-import akka.actor.{Actor, ActorLogging, ActorRef, Props}
+import akka.actor.{Actor, ActorLogging, Props}
 import akka.pattern._
 import akka.util.Timeout
 import com.opentok.raven.dal.components.EmailRequestDao
 import com.opentok.raven.model.{Email, EmailRequest, Receipt, Requestable}
 
-import scala.concurrent.{Future, ExecutionContext}
+import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
 
 /**
@@ -59,26 +59,6 @@ trait Courier {
         case Success(receipt) if receipt.success ⇒ emailToPendingEmailRequests(em).foreach(persistSuccess)
         case anyElse ⇒ emailToPendingEmailRequests(em).foreach(persistFailure(_, anyElse))
       }
-    }
-
-  def recoverTemplateNotFound(req: EmailRequest, requester: ActorRef)
-                             (implicit ctx: ExecutionContext) =
-    PartialFunction.apply[Throwable, (String, Throwable)] {
-      case e: ClassCastException ⇒ (s"One of the injection variables for '${req.template_id}' does not have the right type", e)
-      case e: NoSuchElementException ⇒ (s"Request is missing injection variables for template with id '${req.template_id}'", e)
-      case e: MatchError ⇒
-        (s"Template with id '${req.template_id}' not found", e)
-      case e: Exception ⇒
-        (s"There was a problem when building html template", e)
-    }.andThen {
-      //persist attempt to db,
-      case (msg, e) ⇒
-        emailRequestDaoActor.ask(req.copy(status = Some(EmailRequest.Failed)))
-          .andThen(logPersist(req.id))
-          .andThen {
-          case _ ⇒ //regardless of persist results, send receipt
-            requester ! Receipt.error(e, msg, requestId = req.id)(log)
-        }
     }
 
   def logPersist(id: Option[String]): PartialFunction[Try[Any], Unit] = {

@@ -27,7 +27,7 @@ object Email {
 
   type HTML = String
   type EmailAddress = String
-  type Injections = JsObject
+  type Injections = Map[String, JsValue]
 
   import DefaultJsonProtocol._
 
@@ -91,7 +91,6 @@ object Email {
   }
 
   def build(requestId: Option[String], templateId: String, injections: Injections, recipient: String): Try[Email] = Try {
-    val fields = injections.fields
-    buildPF(requestId, recipient, fields)(templateId)
+    buildPF(requestId, recipient, injections)(templateId)
   }
 }
