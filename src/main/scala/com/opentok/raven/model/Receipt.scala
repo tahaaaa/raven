@@ -1,8 +1,7 @@
 package com.opentok.raven.model
 
-import akka.event.LoggingAdapter
-import spray.json.DefaultJsonProtocol._
-import spray.json.{JsObject, RootJsonFormat}
+import com.opentok.raven.http.JsonProtocol
+import spray.json.JsObject
 
 /**
  * Service Task receipt. Used for basic communication between actors
@@ -21,13 +20,11 @@ case class Receipt(
 
   @transient
   lazy val json: JsObject = {
-    Receipt.receiptJsonFormat.write(this).asJsObject
+    JsonProtocol.receiptJsonFormat.write(this).asJsObject
   }
 }
 
 object Receipt {
-
-  implicit val receiptJsonFormat: RootJsonFormat[Receipt] = jsonFormat4(Receipt.apply)
 
   def success: Receipt = Receipt(success = true)
 

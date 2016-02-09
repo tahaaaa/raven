@@ -3,14 +3,15 @@ package com.opentok.raven.http
 import akka.actor.{Actor, Props}
 import akka.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
 import com.opentok.raven.fixture.{H2Dal, MockSystem, TestConfig, WorkingMockSystem, _}
-import com.opentok.raven.model.{Email, EmailRequest, Receipt}
+import com.opentok.raven.model.{Requestable, Email, EmailRequest, Receipt}
 import org.joda.time.DateTime
-import org.scalatest.{ConfigMap, Matchers, WordSpec}
+import org.scalatest.{Matchers, WordSpec}
 import spray.json._
+import JsonProtocol._
 
 import scala.concurrent.duration._
 
-class ApiSpec extends WordSpec with Matchers with ScalatestRouteTest with JsonProtocols {
+class ApiSpec extends WordSpec with Matchers with ScalatestRouteTest {
 
   //uses mock system, so db is irrelevant in this test, but still needs to be mixed in
   val raven = new WorkingMockSystem with TestConfig with H2Dal with AkkaApi
@@ -18,12 +19,19 @@ class ApiSpec extends WordSpec with Matchers with ScalatestRouteTest with JsonPr
 
 
   override protected def afterAll(): Unit = {
-    raven.system.shutdown()
+    raven.system.terminate()
   }
 
   val treeWithIrresponsiveService = (new MockSystem(Props(new Actor {
     override def receive: Receive = {
       case _ ⇒ //does not reply at all
+    }
+  })) with TestConfig with H2Dal with AkkaApi).routeTree
+
+  val treeWithIrresponsiveEmailProvider = (new MockSystem(Props(new Actor {
+    override def receive: Receive = {
+      case req: Requestable ⇒ sender() ! Receipt.error(new Exception("sendgrid irresponsive"), "oops")
+      case batch: List[_] ⇒ sender() ! Receipt.error(new Exception("sendgrid irresponsive"), "oops")
     }
   })) with TestConfig with H2Dal with AkkaApi).routeTree
 
@@ -44,42 +52,44 @@ class ApiSpec extends WordSpec with Matchers with ScalatestRouteTest with JsonPr
   val testEmail = Email.build(testRequest.id, testRequest.template_id,
     testRequest.$inject, testRequest.to)
 
-  val marshalledRequest = EmailRequest.requestJsonFormat.write(testRequest)
-
-  val marshalledBatch: JsValue = JsArray(Vector.fill(3)(EmailRequest.requestJsonFormat.write(testRequest)).toSeq: _*)
-
   "Unmarshall email request successfully and pass it to priority service" in {
     Post("/v1/priority", marshalledRequest) ~> workingTree ~> check {
+      status.intValue() shouldBe 200
       responseAs[Receipt].success shouldBe true
     }
   }
 
   "Unmarshall email request successfully and pass it to certified service" in {
     Post("/v1/certified", marshalledRequest) ~> workingTree ~> check {
+      status.intValue() shouldBe 200
       responseAs[Receipt].success shouldBe true
     }
   }
 
   "Unmarshall js array of email request successfully and pass it to priority service" in {
     Post("/v1/certified", marshalledBatch) ~> workingTree ~> check {
+      status.intValue() shouldBe 200
       responseAs[Receipt].success shouldBe true
     }
   }
 
   "Unmarshall premade Email successfully and pass it to certified service" in {
     Post("/v1/certified", marshalledEmail) ~> workingTree ~> check {
+      status.intValue() shouldBe 200
       responseAs[Receipt].success shouldBe true
     }
   }
 
   "Unmarshall js array of premade Emails successfully and pass it to priority service" in {
     Post("/v1/certified", marshalledBatchEmail) ~> workingTree ~> check {
+      status.intValue() shouldBe 200
       responseAs[Receipt].success shouldBe true
     }
   }
 
   "Use custom exceptions handler and reply with marshalled receipts, even when the service timeouts due tu an internal problem" in {
     Post("/v1/certified", marshalledRequest) ~> treeWithIrresponsiveService ~> check {
+      status.intValue() shouldBe 500
       val response = responseAs[Receipt]
       response.success shouldBe false
       response.errors.exists(_.contains("AskTimeout"))
@@ -88,6 +98,7 @@ class ApiSpec extends WordSpec with Matchers with ScalatestRouteTest with JsonPr
 
   "Use default rejections handler" in {
     Post("/v1/certified", JsString("OOPS")) ~> workingTree ~> check {
+      status.intValue() shouldBe 400
       response.status.isSuccess() shouldBe false
       response.status.value shouldBe "400 Bad Request"
     }
@@ -110,7 +121,7 @@ class ApiSpec extends WordSpec with Matchers with ScalatestRouteTest with JsonPr
       Some(JsObject(Map("a" → JsString(s"INTEGRATION TEST RUN AT ${new DateTime().toString}"),
         "b" → JsNumber(1)))), None, Some("1"))
 
-    val marshalledRequest = EmailRequest.requestJsonFormat.write(invalidTemplateId)
+    val marshalledRequest = JsonProtocol.requestJsonFormat.write(invalidTemplateId)
 
     Post("/v1/priority", marshalledRequest) ~> workingTree ~> check {
       response.status.intValue() shouldBe 400
@@ -125,7 +136,7 @@ class ApiSpec extends WordSpec with Matchers with ScalatestRouteTest with JsonPr
     val missingInjections = EmailRequest("ernest+raven@tokbox.com", "test",
       Some(JsObject(Map("potatoes" → JsNull))), None, Some("1"))
 
-    val marshalledRequest = EmailRequest.requestJsonFormat.write(missingInjections)
+    val marshalledRequest = JsonProtocol.requestJsonFormat.write(missingInjections)
 
     Post("/v1/priority", marshalledRequest) ~> workingTree ~> check {
       response.status.intValue() shouldBe 400
@@ -133,6 +144,59 @@ class ApiSpec extends WordSpec with Matchers with ScalatestRouteTest with JsonPr
 
     Post("/v1/certified", marshalledRequest) ~> workingTree ~> check {
       response.status.intValue() shouldBe 400
+    }
+  }
+
+  "when requests passes validation but gateway fails status code should be 502 (Bad Gateway)" in {
+    Post("/v1/priority", marshalledRequest) ~> treeWithIrresponsiveEmailProvider ~> check {
+      response.status.intValue() shouldBe 502
+      val rec = responseAs[Receipt]
+      rec.success shouldBe false
+    }
+
+    Post("/v1/certified", marshalledRequest) ~> treeWithIrresponsiveEmailProvider ~> check {
+      response.status.intValue() shouldBe 502
+      val rec = responseAs[Receipt]
+      rec.success shouldBe false
+    }
+
+    Post("/v1/certified", marshalledEmail) ~> treeWithIrresponsiveEmailProvider ~> check {
+      response.status.intValue() shouldBe 502
+      val rec = responseAs[Receipt]
+      rec.success shouldBe false
+    }
+
+    Post("/v1/certified", marshalledBatch) ~> treeWithIrresponsiveEmailProvider ~> check {
+      response.status.intValue() shouldBe 502
+      val rec = responseAs[Receipt]
+      rec.success shouldBe false
+    }
+
+    Post("/v1/certified", marshalledBatchEmail) ~> treeWithIrresponsiveEmailProvider ~> check {
+      response.status.intValue() shouldBe 502
+      val rec = responseAs[Receipt]
+      rec.success shouldBe false
+    }
+  }
+
+  "should return bad request when trying to pass an email, email batch, or request batch through priority endpoint" in {
+
+    Post("/v1/priority", marshalledEmail) ~> workingTree ~> check {
+      response.status.intValue() shouldBe 400
+      val rec = responseAs[Receipt]
+      rec.success shouldBe false
+    }
+
+    Post("/v1/priority", marshalledBatch) ~> workingTree ~> check {
+      response.status.intValue() shouldBe 400
+      val rec = responseAs[Receipt]
+      rec.success shouldBe false
+    }
+
+    Post("/v1/priority", marshalledBatchEmail) ~> workingTree ~> check {
+      response.status.intValue() shouldBe 400
+      val rec = responseAs[Receipt]
+      rec.success shouldBe false
     }
   }
 

@@ -2,6 +2,7 @@ package com.opentok.raven.model
 
 import java.util.UUID
 
+import com.opentok.raven.http.JsonProtocol
 import com.opentok.raven.model.EmailRequest.{InvalidTemplate, MissingInjections}
 import spray.json._
 
@@ -24,7 +25,7 @@ case class EmailRequest(to: String,
 
   @transient
   lazy val json: JsObject = {
-    EmailRequest.requestJsonFormat.write(this).asJsObject
+    JsonProtocol.requestJsonFormat.write(this).asJsObject
   }
 
   def validate[T](block: () ⇒ T) =
@@ -55,8 +56,6 @@ object EmailRequest {
   class MissingInjections(injects: Map[String, JsValue], cause: Throwable)
     extends Exception(s"missing inject in $injects", cause)
 
-  import spray.json.DefaultJsonProtocol._
-
   //transforms an incoming request without id and status
   val fillInRequest = { req: EmailRequest ⇒
     req.copy(
@@ -84,7 +83,5 @@ object EmailRequest {
       case s ⇒ throw new SerializationException(s"Unrecognized EmailReceipt.Status '$s'")
     }
   }
-
-  implicit val requestJsonFormat: RootJsonFormat[EmailRequest] = jsonFormat5(EmailRequest.apply)
 
 }

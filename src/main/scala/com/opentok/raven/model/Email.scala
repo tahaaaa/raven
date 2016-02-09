@@ -2,7 +2,7 @@ package com.opentok.raven.model
 
 import com.opentok.raven.Implicits._
 import com.opentok.raven.model.Email._
-import spray.json.{DefaultJsonProtocol, JsObject, JsValue, RootJsonFormat}
+import spray.json.JsValue
 
 import scala.util.Try
 
@@ -29,9 +29,7 @@ object Email {
   type EmailAddress = String
   type Injections = Map[String, JsValue]
 
-  import DefaultJsonProtocol._
-
-  implicit val emailJsonFormat: RootJsonFormat[Email] = jsonFormat14(Email.apply)
+  import com.opentok.raven.http.JsonProtocol._
 
   //convenience template constructor that uses html.wrap_email_v1
   def wrapTemplate(requestId: Option[String], subject: String, recipient: String,

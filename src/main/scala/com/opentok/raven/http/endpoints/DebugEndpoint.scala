@@ -7,19 +7,21 @@ import java.util.Collections
 
 import akka.actor.ActorSystem
 import akka.event.LoggingAdapter
-import akka.http.scaladsl.model.{HttpCharsets, ContentType, HttpEntity, MediaTypes}
+import akka.http.scaladsl.model.{ContentType, HttpCharsets, HttpEntity, MediaTypes}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.stream.Materializer
 import akka.util.CompactByteString
-import com.opentok.raven.http.Endpoint
 import com.opentok.raven.model.Email
 import spray.json._
 
 import scala.collection.JavaConversions._
 import scala.util.Try
 
-class DebugEndpoint(implicit val mat: Materializer, system: ActorSystem) extends Endpoint with DefaultJsonProtocol {
+class DebugEndpoint(implicit val mat: Materializer, system: ActorSystem) {
+
+  import com.opentok.raven.http.JsonProtocol._
+
   implicit val logger: LoggingAdapter = system.log
 
   val classLoader = this.getClass.getClassLoader
@@ -34,7 +36,7 @@ class DebugEndpoint(implicit val mat: Materializer, system: ActorSystem) extends
     }
   }
 
-  override val route: Route = get {
+  val route: Route = get {
     pathPrefix("debug") {
       path("template" / Segment) {
         case templateId if Email.buildPF(None, "", Map.empty).isDefinedAt(templateId) ⇒ parameterMap {

@@ -29,31 +29,32 @@ trait AkkaApi extends Api {
   def completeWithMessage(msg: String, rejection: Rejection) = {
     complete(HttpResponse(BadRequest,
       entity = HttpEntity.Strict(ContentType(`application/json`),
-        CompactByteString(Receipt.receiptJsonFormat.write(
+        CompactByteString(JsonProtocol.receiptJsonFormat.write(
           Receipt.error(new Exception(s"${rejection.toString}"), msg)).toString()))))
   }
 
   val rejectionHandler = RejectionHandler.newBuilder().handle {
     case rej@MalformedRequestContentRejection(msg, _) ⇒
+      system.log.warning(s"malformed request content rejection: $rej")
       completeWithMessage("There was a problem when unmarshalling body: " + msg, rej)
-    case rej: Rejection ⇒ completeWithMessage("rejection", rej)
+    case rej: Rejection ⇒
+      system.log.warning(s"$rej")
+      completeWithMessage("rejection", rej)
   }
 
   val receiptExceptionHandler = ExceptionHandler {
     case e: InvalidTemplate ⇒
-      val msg = e.getCause.getMessage
-      system.log.warning(e.getCause.getMessage)
+      val msg = s"invalid template: ${e.getCause.getMessage}"
       reject(new ValidationRejection(msg, Some(e)))
     case e: MissingInjections ⇒
-      val msg = e.getCause.getMessage
-      system.log.warning(e.getCause.getMessage)
+      val msg = s"missing injections: ${e.getCause.getMessage}"
       reject(new ValidationRejection(msg, Some(e)))
     //rest of exceptions
     case e: Exception ⇒
       system.log.error(e, "unexpected error")
       complete(HttpResponse(InternalServerError,
         entity = HttpEntity.Strict(ContentType(`application/json`),
-          CompactByteString(Receipt.receiptJsonFormat.write(
+          CompactByteString(JsonProtocol.receiptJsonFormat.write(
             Receipt.error(e, "Oops! There was an unexpected Error")).toString()))))
   }
 

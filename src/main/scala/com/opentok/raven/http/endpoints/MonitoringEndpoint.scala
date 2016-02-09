@@ -7,14 +7,13 @@ import akka.http.scaladsl.server.Route
 import akka.pattern.ask
 import akka.stream.Materializer
 import akka.util.Timeout
-import com.opentok.raven.http.Endpoint
 import com.opentok.raven.model.Receipt
 import com.opentok.raven.service.actors.MonitoringActor
 
-class MonitoringEndpoint(handler: ActorRef, t: Timeout)(implicit val mat: Materializer, system: ActorSystem) extends Endpoint {
+class MonitoringEndpoint(handler: ActorRef, t: Timeout)(implicit val mat: Materializer, system: ActorSystem) {
 
+  import com.opentok.raven.http.JsonProtocol._
   import mat.executionContext
-  import spray.json.DefaultJsonProtocol._
 
   implicit val timeout: Timeout = t
 
@@ -24,7 +23,7 @@ class MonitoringEndpoint(handler: ActorRef, t: Timeout)(implicit val mat: Materi
 
   implicit val logger: LoggingAdapter = system.log
 
-  override val route: Route =
+  val route: Route =
     get {
       pathPrefix("monitoring") {
         path("pending") {

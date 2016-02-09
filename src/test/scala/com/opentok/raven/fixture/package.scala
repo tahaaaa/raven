@@ -3,10 +3,12 @@ package com.opentok.raven
 import akka.actor.{ActorSystem, Props, ActorLogging, Actor}
 import akka.testkit.TestActorRef
 import com.opentok.raven.dal.components.EmailRequestDao
+import com.opentok.raven.http.JsonProtocol._
 import com.opentok.raven.model.{Email, Receipt, EmailRequest}
 import org.joda.time.DateTime
 import org.slf4j.LoggerFactory
 import spray.json._
+
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.reflect.ClassTag
@@ -46,7 +48,6 @@ package object fixture {
     }
 
     def persistRequest(req: EmailRequest): Future[Int] = {
-      log.debug("")
       if (persistanceFails) Future.failed(new Exception("BOOM"))
       else if (persistanceTimesOut) Future {
         received += req
@@ -63,7 +64,7 @@ package object fixture {
     Some(JsObject(Map("a" → JsString(s"INTEGRATION TEST RUN AT ${new DateTime().toString}"),
       "b" → JsNumber(1)))), None, Some("1"))
 
-  lazy val marshalledRequest = EmailRequest.requestJsonFormat.write(testRequest)
+  lazy val marshalledRequest = requestJsonFormat.write(testRequest)
 
   lazy val testRequest2 = EmailRequest("ernest+ravenbatchEmail@tokbox.com", "test",
     Some(JsObject(Map("a" → JsString(s"INTEGRATION TEST RUN AT ${new DateTime().toString}"),
@@ -79,11 +80,11 @@ package object fixture {
   lazy val nBatch = 3
 
   lazy val marshalledBatchEmail: JsValue = JsArray(Vector.fill(nBatch)(
-    Email.emailJsonFormat.write(testEmail.get.copy(recipients = "BATCH@tokbox.com" :: Nil))).toSeq: _*)
+    emailJsonFormat.write(testEmail.get.copy(recipients = "BATCH@tokbox.com" :: Nil))).toSeq: _*)
 
-  lazy val marshalledEmail = Email.emailJsonFormat.write(testEmail.get)
+  lazy val marshalledEmail = emailJsonFormat.write(testEmail.get)
 
-  lazy val marshalledBatch: JsValue = JsArray(Vector.fill(nBatch)(EmailRequest.requestJsonFormat.write(
+  lazy val marshalledBatch: JsValue = JsArray(Vector.fill(nBatch)(requestJsonFormat.write(
     EmailRequest("ernest+ravenbatch@tokbox.com", "test",
       Some(JsObject(Map("a" → JsString(s"INTEGRATION TEST RUN AT ${new DateTime().toString}"),
         "b" → JsNumber(1)))), None, None))).toSeq: _*)

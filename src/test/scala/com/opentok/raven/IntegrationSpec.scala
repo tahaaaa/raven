@@ -3,17 +3,15 @@ package com.opentok.raven
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.client.RequestBuilding
-import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
 import akka.http.scaladsl.testkit.RouteTestTimeout
 import akka.http.scaladsl.unmarshalling._
 import akka.stream.scaladsl.{Flow, Sink, Source}
 import akka.testkit.TestKit
 import com.opentok.raven.fixture.{H2Dal, _}
-import com.opentok.raven.http.{AkkaApi, JsonProtocols}
+import com.opentok.raven.http.AkkaApi
 import com.opentok.raven.model.{EmailRequest, Receipt}
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
-import spray.json.DefaultJsonProtocol
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -22,9 +20,10 @@ import scala.concurrent.duration._
 //and fake sendgrid actor
 class IntegrationSpec extends TestKit(ActorSystem("IntegrationSpec"))
 with com.opentok.raven.service.System with TestConfig
-with WordSpecLike with Matchers with JsonProtocols
-with BeforeAndAfterAll with H2Dal with TestAkkaSystem with AkkaApi
-with SprayJsonSupport with DefaultJsonProtocol {
+with WordSpecLike with Matchers
+with BeforeAndAfterAll with H2Dal with TestAkkaSystem with AkkaApi {
+
+  import com.opentok.raven.http.JsonProtocol._
 
   //start service
   val binding = Await.result(Http().bindAndHandle(handler = routeTree,
@@ -42,7 +41,7 @@ with SprayJsonSupport with DefaultJsonProtocol {
 
   implicit val routeTestTimeout = RouteTestTimeout(5.seconds)
 
-  val receiptUnmarshaller: FromEntityUnmarshaller[Receipt] = Receipt.receiptJsonFormat
+  val receiptUnmarshaller: FromEntityUnmarshaller[Receipt] = receiptJsonFormat
   val mapUnmarshaller: FromEntityUnmarshaller[Map[String, Int]] = mapFormat[String, Int]
 
   "Expose connectivity between service and database" in {

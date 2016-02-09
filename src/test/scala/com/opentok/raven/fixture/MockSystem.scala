@@ -7,7 +7,7 @@ import akka.testkit.TestActorRef
 import com.opentok.raven.model.{Email, EmailRequest, Receipt}
 import com.opentok.raven.service.{AkkaSystem, Service}
 
-abstract class MockSystem[T](handler: Props) extends Service with AkkaSystem {
+abstract class MockSystem(handler: Props) extends Service with AkkaSystem {
 
   override implicit val system: ActorSystem = ActorSystem("raven-test")
   override implicit val materializer: ActorMaterializer = ActorMaterializer()
