@@ -7,8 +7,7 @@ import java.util.Collections
 
 import akka.actor.ActorSystem
 import akka.event.LoggingAdapter
-import akka.http.scaladsl.model.MediaTypes._
-import akka.http.scaladsl.model.{ContentType, HttpEntity}
+import akka.http.scaladsl.model.{HttpCharsets, ContentType, HttpEntity, MediaTypes}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.stream.Materializer
@@ -41,7 +40,7 @@ class DebugEndpoint(implicit val mat: Materializer, system: ActorSystem) extends
         case templateId if Email.buildPF(None, "", Map.empty).isDefinedAt(templateId) ⇒ parameterMap {
           params ⇒ Try {
             HttpEntity.Strict(
-              ContentType(`text/html`), CompactByteString(
+              ContentType(MediaTypes.`text/html`, HttpCharsets.`UTF-8`), CompactByteString(
                 Email.build(None, templateId, toInjections(params), "").get.html
               )
             )

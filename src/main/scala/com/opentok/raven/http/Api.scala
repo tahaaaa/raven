@@ -64,17 +64,12 @@ trait AkkaApi extends Api {
 
   val debugging = new DebugEndpoint
 
-  val customRoutingSettings = RoutingSetup(
-    rejectionHandler = rejectionHandler.result(),
-    exceptionHandler = receiptExceptionHandler,
-    materializer = materializer, routingLog = RoutingLog(system.log),
-    routingSettings = RoutingSettings.default)
-
   val routeTree = logRequest("raven") {
     Route.seal(pathPrefix("v1") {
       handleExceptions(receiptExceptionHandler) {
         priority.route ~ certified.route ~ monitoring.route ~ debugging.route
       }
-    })(customRoutingSettings)
+    })(RoutingSettings.default, rejectionHandler.result(), receiptExceptionHandler)
   }
+
 }

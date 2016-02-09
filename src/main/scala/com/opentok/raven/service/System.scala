@@ -16,6 +16,6 @@ trait System {
 trait AkkaSystem extends System {
   implicit val system = ActorSystem("raven")
 
-  sys.addShutdownHook(system.shutdown())
+  sys.addShutdownHook(system.terminate())
 
 }

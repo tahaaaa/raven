@@ -2,9 +2,8 @@ package com.opentok.raven.http
 
 import akka.http.scaladsl.marshallers.sprayjson._
 import akka.http.scaladsl.marshalling.{Marshaller, ToEntityMarshaller}
-import akka.http.scaladsl.model.ContentType
-import akka.http.scaladsl.model.MediaTypes._
-import com.opentok.raven.model.{Email, Requestable, EmailRequest}
+import akka.http.scaladsl.model.{MediaType, MediaTypes}
+import com.opentok.raven.model.{Email, EmailRequest, Requestable}
 import play.twirl.api.Html
 import spray.json.{JsArray, JsValue, RootJsonFormat}
 
@@ -34,9 +33,9 @@ trait JsonProtocols extends SprayJsonSupport {
   }
 
 
-  protected def twirlMarshaller[A <: AnyRef : Manifest](contentType: ContentType): ToEntityMarshaller[A] =
+  protected def twirlMarshaller[A <: AnyRef : Manifest](contentType: MediaType): ToEntityMarshaller[A] =
     Marshaller.StringMarshaller.wrap(contentType)(_.toString)
 
-  implicit val twirlHtmlMarshaller = twirlMarshaller[Html](`text/html`)
+  implicit val twirlHtmlMarshaller = twirlMarshaller[Html](MediaTypes.`text/html`)
 
 }

@@ -36,11 +36,17 @@ abstract class FromResourcesConfig(config: Config) extends RavenConfig {
 
   val PRIORITY_POOL = config.getInt("raven.priority-pool")
 
-  implicit val ACTOR_TIMEOUT: Timeout = config.getDuration("raven.actor-timeout", TimeUnit.MILLISECONDS)
+  implicit val ACTOR_TIMEOUT: Timeout = {
+    val dur = config.getDuration("raven.actor-timeout")
+    Timeout(dur.toMillis, TimeUnit.MILLISECONDS)
+  }
 
   implicit val ACTOR_INNER_TIMEOUT: Timeout = ACTOR_TIMEOUT.duration * 2
 
-  implicit val ENDPOINT_TIMEOUT: Timeout = config.getDuration("raven.endpoint-timeout", TimeUnit.MILLISECONDS)
+  implicit val ENDPOINT_TIMEOUT: Timeout = {
+    val dur = config.getDuration("raven.endpoint-timeout")
+    Timeout(dur.toMillis, TimeUnit.MILLISECONDS)
+  }
 
   implicit val DB_CHECK: String = config.getString("raven.database.connectionTestQuery")
 

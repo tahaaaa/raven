@@ -9,9 +9,9 @@ import spray.revolver.RevolverPlugin._
 
 object RavenBuild extends Build {
 
-  val scalaV = "2.11.6"
-  val akkaStreamV = "1.0"
-  val akkaV = "2.3.12"
+  val scalaV = "2.11.7"
+  val akkaStreamV = "2.0.2"
+  val akkaV = "2.4.1"
   val playTwirlV = "1.1.1"
 
   val commonSettings = Seq(
