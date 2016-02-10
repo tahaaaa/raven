@@ -2,9 +2,6 @@ package com.opentok.raven
 
 import spray.json._
 
-/**
- * Created by ernest on 10/13/15.
- */
 object Implicits {
 
   //helper methods to extract values out of the fields to be injected in the template
@@ -16,5 +13,4 @@ object Implicits {
     def extract[T: JsonFormat](value: String): T = fields(value).convertTo[T]
 
   }
-
 }

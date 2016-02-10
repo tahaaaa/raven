@@ -125,6 +125,7 @@ class EmailSupervisor(superviseeProps: Props, pool: Int,
     }.getOrElse {
       // first try
       log.info(s"Supervising EmailRequest with id ${req.id}")
+      //randomly pick one of the supervisees
       val routee = Try(supervisee(poolN(rdm nextInt pool))).getOrElse(supervisee.head)
       pending.update(SupervisedRequest(req, requester, routee), 1)
       routee

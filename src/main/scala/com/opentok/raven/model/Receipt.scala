@@ -1,7 +1,12 @@
 package com.opentok.raven.model
 
+import java.io.{PrintWriter, StringWriter}
+
 import com.opentok.raven.http.JsonProtocol
 import spray.json.JsObject
+
+import scala.collection.TraversableLike
+import scala.util.Try
 
 /**
  * Service Task receipt. Used for basic communication between actors
@@ -13,10 +18,10 @@ import spray.json.JsObject
  * @param errors List of errors, if any.
  */
 case class Receipt(
-  success: Boolean,
-  requestId: Option[String] = None,
-  message: Option[String] = None,
-  errors: List[String] = List.empty) {
+                    success: Boolean,
+                    requestId: Option[String] = None,
+                    message: Option[String] = None,
+                    errors: List[String] = List.empty) {
 
   @transient
   lazy val json: JsObject = {
@@ -36,16 +41,24 @@ object Receipt {
     )
   }
 
-  def error(e: Throwable, message: String, requestId:Option[String] = None): Receipt = {
+  def error(e: Throwable, message: String, requestId: Option[String] = None): Receipt = {
+    val cause = Try(e.getCause.toString).toOption
+    val stackTrace = {
+      val sw = new StringWriter()
+      val pw = new PrintWriter(sw)
+      e.printStackTrace(pw)
+      sw.toString
+    }
+    val errors = stackTrace :: Nil
     Receipt(
       success = false,
       requestId = requestId,
       message = Some(message),
-      errors = List(e.getMessage)
+      errors = cause.map(_ :: errors).getOrElse(errors)
     )
   }
 
-  def reduce(s: Seq[Receipt]): Receipt = s.reduce { (a, b) ⇒
+  def reduce(s: Traversable[Receipt]): Receipt = s.reduce { (a, b) ⇒
     Receipt(
       success = a.success && b.success,
       message = Some(a.message.getOrElse("") + "; " + b.message.getOrElse("")),

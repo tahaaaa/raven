@@ -1,13 +1,13 @@
 package com.opentok.raven.service.actors
 
-import akka.actor.{Actor, ActorLogging, ActorRef}
+import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.pattern._
 import akka.util.Timeout
 import com.opentok.raven.dal.components.EmailRequestDao
-import com.opentok.raven.model.{Requestable, Email, EmailRequest, Receipt}
+import com.opentok.raven.model.{Email, EmailRequest, Receipt}
 
-import scala.concurrent.Future
-import scala.util.Success
+import scala.concurrent.{Future, Promise}
+import scala.util.{Failure, Success}
 
 /**
  * * Upon receiving a [[com.opentok.raven.model.Requestable]],
@@ -16,72 +16,55 @@ import scala.util.Success
  *
  * Regardless of the results of the previous operation but after
  * completed (or timeout), this actor will forward the email to
- * [[com.opentok.raven.service.actors.SendgridActor]], then it will
- * deliver a [[com.opentok.raven.model.Receipt]] with the results
- * back to the requester and finally, as a non-blocking side effect,
- * persist it to the DB.
+ * [[com.opentok.raven.service.actors.SendgridActor]], then
+ * as a non-blocking side effect, persist it to the DB and finally,
+ * it willdeliver a [[com.opentok.raven.model.Receipt]] with the results
+ * back to the requester.
  *
  * @param emailsDao email requests data access object
- * @param sendridService SendGrid actor instance
+ * @param emailProvider SendGrid actor instance
  */
-class CertifiedCourier(val emailsDao: EmailRequestDao, sendridService: ActorRef, t: Timeout) extends Actor with ActorLogging with Courier {
+class CertifiedCourier(val emailsDao: EmailRequestDao, val emailProvider: ActorRef, t: Timeout) extends Actor with ActorLogging with Courier {
 
   import context.dispatcher
 
   implicit val timeout: Timeout = t
+  val daoService = context.actorOf(Props(classOf[RequestPersister], emailsDao))
 
-  //matches given requestable and applies the right transformations, but returns receipt
-  //it flattens (therefore chaining the future) but returning the initial receipt
-  def persist(req: Requestable, rec: Receipt): Future[Receipt] = {
-    (req, rec) match {
-      case (req: EmailRequest, receipt) if receipt.success ⇒ persistSuccess(req)
-      case (req: EmailRequest, receipt) ⇒ persistFailure(req, Success(receipt))
-      case (em: Email, receipt) if receipt.success ⇒
-        Future.sequence(emailToPendingEmailRequests(em).map(persistSuccess))
-      case (em: Email, receipt) ⇒
-        Future.sequence(emailToPendingEmailRequests(em).map(persistFailure(_, Success(receipt))))
-    }
-  }.map(_ ⇒ rec)
+  /**
+   * transforms an email into a list of pending email requests (one per recipient)
+   */
+  def emailToPendingEmailRequests(em: Email): List[EmailRequest] = em.recipients.map(
+    EmailRequest(_, em.fromTemplateId.getOrElse("no_template"),
+      None, Some(EmailRequest.Pending), em.id))
 
-  def send(email: Email, lReq: List[EmailRequest]) = {
+  def sendEmail(reqs: List[EmailRequest], email: Email): Future[Receipt] = {
     //persist request attempt
-    emailRequestDaoActor.ask(lReq).flatMap { i ⇒
-      log.info(s"Upserted $i records into db")
-      //then pass email to sendgrid service
-      sendridService.ask(email).mapTo[Receipt]
-        //map receipt to include id
-        .map(_.copy(requestId = email.id))
-        //recover exception on sending by mapping exception to unsuccessful receipt
-        .recover(exceptionToReceipt(email.id))
+    persistRequests(reqs).flatMap { _ ⇒
+      //then send email to email provider
+      send(None, email)
     }.recoverWith {
       //we only enter this block if emailsDao fails to persist request
+      //because send recovers itself with an error receipt
       //in which case, we skip persistance step and try to send anyway
       case e: Exception ⇒
-        log.warning("There was a problem when trying to save request BEFORE forwarding it to sendgridActor. Skipping persist..")
-        sendridService.ask(email).mapTo[Receipt].map(_.copy(
-          requestId = email.id,
-          message = Some("Email delivered but there was a problem when persisting request to db"),
+        log.warning("There was a problem when trying to save request BEFORE forwarding it to provider. Skipping persist..")
+        //add error in errors but leave receipt success as it is
+        send(None, email).map(_.copy(
+          message = Some("email delivered but there was a problem when persisting request to db"),
           errors = e.getMessage :: Nil)
-        ).recover(exceptionToReceipt(email.id))
-    } //install side effect persist to db, guaranteeing order of callbacks
-      .flatMap{ receipt ⇒
-        persist(email, receipt).recover{
-        //recover failed persist, but maintain success to be if whether email was sent or not
-          case e: Exception ⇒
-            log.warning("There was a problem when trying to save request AFTER sending it to sengridActor")
-            receipt.copy(errors = receipt.errors :+ e.toString)
-        }
-      }
-      //install pipe of future receipt to sender
-      .pipeTo(sender())
-    //template not found, reply and persist attempt
+        )
+    }.recover {
+      //we only enter this block if the send after recovering the failed persist fails (recoverWith future fails)
+      case e: Exception ⇒ Receipt.error(e, "failed to recover failed persist attempt into send: send failed", None)
+    } andThenPersistResult reqs
   }
 
   override def receive: Receive = {
     case em: Email ⇒
       log.info(s"Received email with id ${em.id}")
-      //direct email, so we generate a pending email request from every recipient
-      send(em, emailToPendingEmailRequests(em))
+      //direct email, so we generate a pending email request for every recipient
+      sendEmail(emailToPendingEmailRequests(em), em) pipeTo sender()
 
     case r: EmailRequest ⇒
       log.info(s"Received request with id ${r.id}")
@@ -93,17 +76,25 @@ class CertifiedCourier(val emailsDao: EmailRequestDao, sendridService: ActorRef,
       val templateMaybe =
         Email.build(req.id, req.template_id, req.$inject, req.to)
 
-      templateMaybe.map(send(_, req :: Nil)).recover {
-        //persist attempt to db,
-        case e: Exception ⇒
-          emailRequestDaoActor.ask(req.copy(status = Some(EmailRequest.Failed)))
-            .andThen(logPersist(req.id))
-            .andThen {
-              case _ ⇒ //regardless of persist results, send receipt
-                sender() ! Receipt.error(e, "unexpected error", requestId = req.id)
+      val receipt: Future[Receipt] = templateMaybe match {
+        //successfully built template
+        case Success(email) ⇒ sendEmail(req :: Nil, email)
+        //persist failed attempt to db,
+        case Failure(e) ⇒
+          val msg = "unexpected error when building template"
+          log.error(e, msg)
+          val p = Promise[Receipt]()
+          persistRequest(req.copy(status = Some(EmailRequest.Failed)))
+            .onComplete { _ ⇒
+              //regardless of persist results, send receipt
+              p complete Success(Receipt.error(e, msg, requestId = req.id))
             }
+          p.future
       }
+
+      receipt pipeTo sender()
 
     case anyElse ⇒ log.warning(s"Not an acceptable request $anyElse")
   }
+
 }
