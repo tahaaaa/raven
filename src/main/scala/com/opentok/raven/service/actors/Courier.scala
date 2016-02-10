@@ -4,7 +4,7 @@ import akka.actor.{Actor, ActorLogging, ActorRef}
 import akka.pattern._
 import akka.util.Timeout
 import com.opentok.raven.dal.components.EmailRequestDao
-import com.opentok.raven.model.{Email, EmailRequest, Receipt}
+import com.opentok.raven.model.{Requestable, Email, EmailRequest, Receipt}
 
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.{Failure, Success, Try}
@@ -23,6 +23,20 @@ trait Courier {
 
   val daoService: ActorRef
   val emailProvider: ActorRef
+
+  @throws[Exception](classOf[Exception])
+  override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
+    message match {
+      //send receipt to supervisor so that it can retry
+      case Some(req: Requestable) ⇒ context.parent ! Receipt.error(reason, "courier crashed", req.id)
+      case _ ⇒ log.error(s"${self.path} could not recover $reason: message was not a requestable")
+    }
+    context.children foreach { child ⇒
+      context.unwatch(child)
+      context.stop(child)
+    }
+    postStop()
+  }
 
   /**
    * Persists request to database and logs op results
@@ -122,7 +136,7 @@ class RequestPersister(emailsDao: EmailRequestDao) extends Actor with ActorLoggi
 
   import context.dispatcher
 
-  val errMsg = "Request persister received unacceptable request"
+  val errMsg = " received unacceptable request"
 
   val singleMessageRecv: PartialFunction[Any, Future[Int]] = {
     case req: EmailRequest ⇒
@@ -132,9 +146,6 @@ class RequestPersister(emailsDao: EmailRequestDao) extends Actor with ActorLoggi
   }
 
   def receive: Actor.Receive = {
-    case lMsg: List[_] ⇒
-      val f: Future[Int] = Future.sequence(lMsg.map(singleMessageRecv)).map(_.sum)
-      f pipeTo sender()
     case id: String ⇒ emailsDao.retrieveRequest(id) pipeTo sender()
     case msg ⇒ singleMessageRecv(msg) pipeTo sender()
   }

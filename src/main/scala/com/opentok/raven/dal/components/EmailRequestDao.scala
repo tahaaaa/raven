@@ -45,13 +45,13 @@ class EmailRequestSlickDao()(implicit driver: JdbcProfile, db: JdbcBackend#Datab
 
 
   def persistRequest(req: EmailRequest): Future[Int] = {
-    log.info(s"Persisting request with id ${req.id}")
-    log.debug("{}", req)
+    log.debug(s"persisting request with id {}", req.id)
 
     val inject: Option[String] = req.inject.flatMap(injectToString)
     val status: Option[String] = req.status.map(statusToString)
     //only works with mysql drivers
-    db.run( sqlu"""
+    db.run(
+      sqlu"""
   INSERT INTO email_requests (request_id, recipient, template_id, status, inject)
   VALUES (${req.id}, ${req.to}, ${req.template_id}, $status, $inject)
   ON DUPLICATE KEY UPDATE
@@ -63,16 +63,15 @@ class EmailRequestSlickDao()(implicit driver: JdbcProfile, db: JdbcBackend#Datab
   }
 
   def retrieveRequest(id: String)(implicit ctx: ExecutionContext): Future[Option[EmailRequest]] = {
-    log.info(s"Attempting to retrieve request with id $id")
+    log.debug("attempting to retrieve request with id {}", id)
     db.run(sql"""
       SELECT recipient, template_id, inject, status, request_id
       FROM email_requests
       WHERE request_id = $id""".as[(String, String, Option[String], Option[String], Option[String])])
       .map(_.headOption.map {
-      case (recipient, template_id, inject ,status, _) ⇒
-        EmailRequest.apply(recipient, template_id, stringToInject(inject),
-          Some(stringToStatus(status)), Some(id))
-    })
+        case (recipient, template_id, inject, status, _) ⇒
+          EmailRequest.apply(recipient, template_id, stringToInject(inject),
+            Some(stringToStatus(status)), Some(id))
+      })
   }
-
 }

@@ -6,7 +6,7 @@ import akka.testkit.{ImplicitSender, TestActorRef, TestKit}
 import akka.util.Timeout
 import com.opentok.raven.fixture._
 import com.opentok.raven.model.{EmailRequest, Receipt}
-import com.opentok.raven.service.actors.MonitoringActor.PendingEmailsCheck
+import com.opentok.raven.service.actors.MonitoringActor.FailedEmailsCheck
 import com.opentok.raven.service.actors.{CertifiedCourier, EmailSupervisor}
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 
@@ -29,7 +29,7 @@ with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
                     mockRequestDao: MockEmailRequestDao = new MockEmailRequestDao(Some(testRequest)),
                     pool: Int = 1,
                     retries: Int = 3,
-                    deferrer: Int = 1): TestActorRef[EmailSupervisor] =
+                    deferrer: Int = 0): TestActorRef[EmailSupervisor] =
     TestActorRef(Props(classOf[EmailSupervisor], superviseeProps, pool, mockRequestDao, retries, deferrer))
 
   "An EmailSupervisor" should {
@@ -46,39 +46,6 @@ with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
         (c._1 + v._1, c._2 + v._2)
       } shouldBe(10, 0)
     }
-
-    "Load balance list of requests to supervisees correctly" in {
-      val rdm = new Random(1000)
-      val s = newSupervisor(pool = 2)
-      s.underlyingActor.supervisee.length should be(2)
-      (0 until 2).foreach(_ ⇒ s ! Vector.fill(2)(testRequest.copy(id = Some(rdm.nextInt().toString))))
-
-      val results = Await.result(Future.sequence(s.underlyingActor.supervisee.map(_.ask("gimme")(6.seconds).mapTo[(Int, Int)])), 6.seconds)
-      results.reduce { (c, v) ⇒
-        (c._1 + v._1, c._2 + v._2)
-      } shouldBe(4, 0)
-    }
-
-    "report with pending requests" in {
-      //this is going to reply with receipt false so we should have time to chech on pending emails
-      val s = newSupervisor(superviseeProps = Props(classOf[TestActor[Int]], implicitly[ClassTag[Int]]), retries = 50)
-      val pre = Await.result(s.ask(PendingEmailsCheck)(5.second), 5.seconds)
-      pre.isInstanceOf[Map[_, _]] should be(true)
-      pre.asInstanceOf[Map[String, Int]].isEmpty should be(true)
-
-      s ! testRequest
-      s ! testRequest3
-
-      s.underlyingActor.pending.isEmpty should be(false)
-      s.underlyingActor.pending.exists(_._1.request.id == testRequest3.id) should be(true)
-      s.underlyingActor.pending.exists(_._1.request.id == testRequest.id) should be(true)
-
-      val after = Await.result(s.ask(PendingEmailsCheck)(5.second).mapTo[Map[String, Int]], 5.seconds)
-      after.isEmpty should be(false)
-      after.exists(_._1 == testRequest.id.get) should be(true)
-      after.exists(_._1 == testRequest3.id.get) should be(true)
-    }
-
 
     "try every failed request exactly the maximum number of allowed retries and no more" in {
       val dao = new MockEmailRequestDao(testRequest = Some(testRequest3.copy(status = Some(EmailRequest.Pending))))

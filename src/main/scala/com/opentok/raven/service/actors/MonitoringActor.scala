@@ -5,17 +5,20 @@ import akka.event.LoggingAdapter
 import akka.pattern.{ask, pipe}
 import akka.util.Timeout
 import com.opentok.raven.model.Receipt
-import com.opentok.raven.service.actors.MonitoringActor.{ComponentHealthCheck, PendingEmailsCheck}
+import com.opentok.raven.service.actors.MonitoringActor.{ComponentHealthCheck, FailedEmailsCheck}
 import com.typesafe.config.ConfigFactory
 import slick.driver.JdbcProfile
 import slick.jdbc.JdbcBackend
 
+import scala.collection.mutable
+import scala.collection.mutable.ListBuffer
 import scala.util.Try
 
 object MonitoringActor {
 
   case class ComponentHealthCheck(component: String)
-  case object PendingEmailsCheck
+
+  case object FailedEmailsCheck
 
 }
 
@@ -39,19 +42,26 @@ class MonitoringActor(certifiedService: ActorRef, priorityService: ActorRef,
   implicit val logger: LoggingAdapter = log
   implicit val timeout: Timeout = t
   val config = ConfigFactory.load()
-  val dbHost= config.getString("raven.database.properties.serverName")
-  val dbPort= config.getInt("raven.database.properties.portNumber")
+  val dbHost = config.getString("raven.database.properties.serverName")
+  val dbPort = config.getInt("raven.database.properties.portNumber")
+
+  //subscribe to receipt to monitor failed requests
+  context.system.eventStream.subscribe(self, classOf[Receipt])
+
+  val failed = mutable.Queue.empty[Receipt]
 
   override def receive: Receive = {
 
-    case check @ PendingEmailsCheck ⇒
-      val cf = certifiedService.ask(PendingEmailsCheck).mapTo[Map[String, Int]]
-      val pf = priorityService.ask(PendingEmailsCheck).mapTo[Map[String, Int]]
+    //from eventBus
+    case r: Receipt ⇒ failed.enqueue(r)
+      //prevent memory leak
+      if (failed.length > 2000) {
+        val dequeued = failed.dequeue()
+        log.error(s"number of failed emails is over 2000! dropping $dequeued")
+      }
 
-      (for {
-        certifiedEmails ← cf
-        priorityEmails ← pf
-      } yield certifiedEmails ++ priorityEmails) pipeTo sender()
+    //clone to immutable and send
+    case check@FailedEmailsCheck ⇒ sender() ! failed.toVector
 
     case ComponentHealthCheck("service") ⇒
       (for {
@@ -76,7 +86,6 @@ class MonitoringActor(certifiedService: ActorRef, priorityService: ActorRef,
     case ComponentHealthCheck(_) ⇒ sender() ! Receipt.error(
       new Exception("Not a valid component. Try 'dal' or 'service')"), "Error when processing request")
 
-    case msg ⇒ sender() ! Receipt.error(
-      new Exception(s"Unable to understand message $msg"), "Not a valid monitoring request")
+    case msg ⇒ log.warning(s"unable to process message: $msg")
   }
 }

@@ -1,0 +1,187 @@
+package com.opentok.raven
+
+import java.util.UUID
+
+import com.opentok.raven.Implicits._
+import com.opentok.raven.http.JsonProtocol
+import com.opentok.raven.model.Email._
+import com.opentok.raven.model.EmailRequest.{InvalidTemplate, MissingInjections}
+import spray.json.{JsValue, _}
+
+import scala.util.Try
+
+
+package object model {
+
+  sealed trait Requestable {
+    val id: Option[String]
+  }
+
+  /**
+   * Service email task request
+   * @param to Email address of the recipient
+   * @param template_id template name in resources/templates without extension
+   * @param status status of the request. Check sealed trait [[com.opentok.raven.model.EmailRequest.Status]]
+   * @param inject map of key value pairs to inject to the template
+   */
+  case class EmailRequest(to: String,
+                          template_id: String,
+                          inject: Option[JsObject],
+                          status: Option[EmailRequest.Status],
+                          id: Option[String]) extends Requestable {
+
+    @transient
+    lazy val $inject = inject.map(_.fields).getOrElse(Map.empty)
+
+    @transient
+    lazy val json: JsObject = {
+      JsonProtocol.requestJsonFormat.write(this).asJsObject
+    }
+
+    def validate[T](block: () ⇒ T) =
+      try {
+        block()
+      } catch {
+        //missing injection parameter
+        case e: NoSuchElementException ⇒ throw new MissingInjections($inject, e)
+        //invalid template id
+        case e: MatchError ⇒ throw new InvalidTemplate(template_id, e)
+        case e: Exception ⇒ throw e
+      }
+
+    def validated: EmailRequest = {
+      val email = Email.buildPF(None, "trash@tokbox.com", $inject)
+      validate(() ⇒ email.isDefinedAt(template_id))
+      validate(() ⇒ email.apply(template_id))
+      this
+    }
+
+  }
+
+  object EmailRequest {
+
+    class InvalidTemplate(template_id: String, cause: Throwable)
+      extends Exception(s"invalid template id '$template_id'", cause)
+
+    class MissingInjections(injects: Map[String, JsValue], cause: Throwable)
+      extends Exception(s"missing inject in $injects", cause)
+
+    //transforms an incoming request without id and status
+    val fillInRequest = { req: EmailRequest ⇒
+      req.copy(
+        id = Some(UUID.randomUUID.toString),
+        status = Some(EmailRequest.Pending)
+      )
+    }
+
+    sealed trait Status
+
+    case object Pending extends Status
+
+    case object Succeeded extends Status
+
+    case object Failed extends Status
+
+
+    implicit object EmailRequestStatusFormat extends RootJsonFormat[EmailRequest.Status] {
+      def write(obj: EmailRequest.Status) = JsString(obj.toString)
+
+      def read(json: JsValue): EmailRequest.Status = json match {
+        case JsString("Pending") ⇒ Pending
+        case JsString("Succeeded") ⇒ Succeeded
+        case JsString("Failed") ⇒ Failed
+        case s ⇒ throw new SerializationException(s"Unrecognized EmailReceipt.Status '$s'")
+      }
+    }
+
+  }
+
+  case class Email(
+                    id: Option[String],
+                    subject: String,
+                    recipients: List[EmailAddress],
+                    from: EmailAddress,
+                    html: HTML,
+                    fromTemplateId: Option[String] = None,
+                    toName: Option[EmailAddress] = None,
+                    fromName: Option[String] = None,
+                    categories: Option[List[String]] = None,
+                    setReply: Option[EmailAddress] = None,
+                    cc: Option[List[EmailAddress]] = None,
+                    bcc: Option[List[EmailAddress]] = None,
+                    attachments: Option[List[(String, String)]] = None,
+                    headers: Option[Map[String, String]] = None
+                    ) extends Requestable
+
+  object Email {
+
+    type HTML = String
+    type EmailAddress = String
+    type Injections = Map[String, JsValue]
+
+    import com.opentok.raven.http.JsonProtocol._
+
+    //convenience template constructor that uses html.wrap_email_v1
+    def wrapTemplate(requestId: Option[String], subject: String, recipient: String,
+                     from: String, template: play.twirl.api.Html, fromTemplateId: String,
+                     toName: Option[EmailAddress] = None,
+                     fromName: Option[String] = None,
+                     categories: Option[List[String]] = None,
+                     setReply: Option[EmailAddress] = None,
+                     cc: Option[List[EmailAddress]] = None,
+                     bcc: Option[List[EmailAddress]] = None,
+                     attachments: Option[List[(String, String)]] = None,
+                     headers: Option[Map[String, String]] = None): Email =
+      Email(requestId, subject, recipient :: Nil, from, html.wrap_email_v1(recipient, template).body,
+        Some(fromTemplateId), toName, fromName, categories, setReply, cc, bcc, attachments, headers)
+
+    //decoupled from build to check at runtime what templates are available
+    def buildPF(requestId: Option[String], recipient: String,
+                fields: Map[String, JsValue]): PartialFunction[String, Email] = {
+
+      case templateId@"confirmation_instructions" ⇒
+        wrapTemplate(requestId, "Confirmation Instructions", recipient, "messages@tokbox.com",
+          html.confirmation_instructions(fields %> "confirmation_url"),
+          templateId, fromName = Some("TokBox"))
+
+      case templateId@"repeated_email_attempt" ⇒
+        wrapTemplate(requestId, "Repeated Email Attempt", recipient, "messages@tokbox.com",
+          html.repeated_email_attempt(fields %> "reset_password_link"),
+          templateId, fromName = Some("TokBox"))
+
+      case templateId@"reset_password_instructions" ⇒
+        wrapTemplate(requestId, "Reset Password Instructions", recipient, "messages@tokbox.com",
+          html.reset_password_instructions(fields %> "reset_password_link"),
+          templateId, fromName = Some("TokBox"))
+
+      case templateId@"developer_invitation" ⇒
+        wrapTemplate(requestId, "Developer Invitation", recipient, "messages@tokbox.com",
+          html.developer_invitation(fields %> "account_name", fields %> "invitation_link"),
+          templateId, fromName = Some("TokBox"))
+
+      case templateId@"usage_etl_report" ⇒
+        val subject = "[Hubble] - Usage ETL Report"
+        Email(requestId, subject, recipient :: Nil, "analytics@tokbox.com",
+          html.wrap_internal_v1(subject, html.usage_etl_report(
+            Try(fields("streamError").convertTo[String]).toOption,
+            Try(fields("streamStackTrace").convertTo[String]).toOption,
+            fields("hadrosaurErrors").convertTo[List[String]],
+            fields("processingErrors").convertTo[List[String]],
+            fields("hadrosaurSuccesses").convertTo[Int],
+            fields("processingSuccesses").convertTo[Int]
+          )).body, Some(templateId), fromName = Some("Hubble"))
+
+      case templateId@"test" ⇒
+        wrapTemplate(requestId, "Raven Test", recipient, "analytics@tokbox.com",
+          html.test(fields %> "a", fields.extract[Int]("b")),
+          templateId, fromName = Some("TokBox"))
+
+    }
+
+    def build(requestId: Option[String], templateId: String, injections: Injections, recipient: String): Try[Email] = Try {
+      buildPF(requestId, recipient, injections)(templateId)
+    }
+
+  }
+
+}

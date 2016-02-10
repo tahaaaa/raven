@@ -1,6 +1,6 @@
 package com.opentok.raven.service.actors
 
-import akka.actor.{Props, Actor, ActorLogging, ActorRef}
+import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.pattern._
 import akka.util.Timeout
 import com.opentok.raven.dal.components.EmailRequestDao
@@ -26,7 +26,6 @@ class PriorityCourier(val emailsDao: EmailRequestDao, val emailProvider: ActorRe
   extends Actor with ActorLogging with Courier {
 
   import context.dispatcher
-  import com.opentok.raven.Implicits._
 
   implicit val timeout: Timeout = t
   val daoService = context.actorOf(Props(classOf[RequestPersister], emailsDao))

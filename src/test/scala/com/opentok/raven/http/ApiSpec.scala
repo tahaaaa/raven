@@ -2,6 +2,7 @@ package com.opentok.raven.http
 
 import akka.actor.{Actor, Props}
 import akka.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
+import akka.testkit.TestKit
 import com.opentok.raven.fixture.{H2Dal, MockSystem, TestConfig, WorkingMockSystem, _}
 import com.opentok.raven.model.{Requestable, Email, EmailRequest, Receipt}
 import org.joda.time.DateTime
@@ -19,7 +20,8 @@ class ApiSpec extends WordSpec with Matchers with ScalatestRouteTest {
 
 
   override protected def afterAll(): Unit = {
-    raven.system.terminate()
+    TestKit.shutdownActorSystem(raven.system)
+    raven.db.close()
   }
 
   val treeWithIrresponsiveService = (new MockSystem(Props(new Actor {
@@ -66,22 +68,8 @@ class ApiSpec extends WordSpec with Matchers with ScalatestRouteTest {
     }
   }
 
-  "Unmarshall js array of email request successfully and pass it to priority service" in {
-    Post("/v1/certified", marshalledBatch) ~> workingTree ~> check {
-      status.intValue() shouldBe 200
-      responseAs[Receipt].success shouldBe true
-    }
-  }
-
   "Unmarshall premade Email successfully and pass it to certified service" in {
     Post("/v1/certified", marshalledEmail) ~> workingTree ~> check {
-      status.intValue() shouldBe 200
-      responseAs[Receipt].success shouldBe true
-    }
-  }
-
-  "Unmarshall js array of premade Emails successfully and pass it to priority service" in {
-    Post("/v1/certified", marshalledBatchEmail) ~> workingTree ~> check {
       status.intValue() shouldBe 200
       responseAs[Receipt].success shouldBe true
     }
@@ -165,18 +153,6 @@ class ApiSpec extends WordSpec with Matchers with ScalatestRouteTest {
       val rec = responseAs[Receipt]
       rec.success shouldBe false
     }
-
-    Post("/v1/certified", marshalledBatch) ~> treeWithIrresponsiveEmailProvider ~> check {
-      response.status.intValue() shouldBe 502
-      val rec = responseAs[Receipt]
-      rec.success shouldBe false
-    }
-
-    Post("/v1/certified", marshalledBatchEmail) ~> treeWithIrresponsiveEmailProvider ~> check {
-      response.status.intValue() shouldBe 502
-      val rec = responseAs[Receipt]
-      rec.success shouldBe false
-    }
   }
 
   "should return bad request when trying to pass an email, email batch, or request batch through priority endpoint" in {
@@ -186,18 +162,5 @@ class ApiSpec extends WordSpec with Matchers with ScalatestRouteTest {
       val rec = responseAs[Receipt]
       rec.success shouldBe false
     }
-
-    Post("/v1/priority", marshalledBatch) ~> workingTree ~> check {
-      response.status.intValue() shouldBe 400
-      val rec = responseAs[Receipt]
-      rec.success shouldBe false
-    }
-
-    Post("/v1/priority", marshalledBatchEmail) ~> workingTree ~> check {
-      response.status.intValue() shouldBe 400
-      val rec = responseAs[Receipt]
-      rec.success shouldBe false
-    }
   }
-
 }

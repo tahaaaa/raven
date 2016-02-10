@@ -24,7 +24,8 @@ import scala.util.{Failure, Success}
  * @param emailsDao email requests data access object
  * @param emailProvider SendGrid actor instance
  */
-class CertifiedCourier(val emailsDao: EmailRequestDao, val emailProvider: ActorRef, t: Timeout) extends Actor with ActorLogging with Courier {
+class CertifiedCourier(val emailsDao: EmailRequestDao, val emailProvider: ActorRef, t: Timeout)
+  extends Actor with ActorLogging with Courier {
 
   import context.dispatcher
 

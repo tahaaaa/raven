@@ -14,7 +14,7 @@ trait Service {
 
   implicit val materializer: ActorMaterializer
 
-  val smtpService: ActorRef
+  val mockEmailProvider: ActorRef
 
   val certifiedService: ActorRef
   val priorityService: ActorRef
@@ -31,19 +31,19 @@ trait AkkaService extends Service {
 
   implicit val materializer: ActorMaterializer = ActorMaterializer()
 
-  lazy val smtpService: ActorRef = system.actorOf(Props(classOf[SendgridActor],
+  lazy val mockEmailProvider: ActorRef = system.actorOf(Props(classOf[SendgridActor],
     SENDGRID_API_KEY).withRouter(FromConfig), "SMTPService")
 
   lazy val certifiedService = system.actorOf(
     Props(classOf[EmailSupervisor],
-      Props(classOf[CertifiedCourier], emailRequestDao, smtpService, ACTOR_INNER_TIMEOUT),
+      Props(classOf[CertifiedCourier], emailRequestDao, mockEmailProvider, ACTOR_TIMEOUT),
       CERTIFIED_POOL, emailRequestDao, MAX_RETRIES, DEFERRER),
     "certified-service"
   )
 
   lazy val priorityService = system.actorOf(
     Props(classOf[EmailSupervisor],
-      Props(classOf[PriorityCourier], emailRequestDao, smtpService, ACTOR_INNER_TIMEOUT),
+      Props(classOf[PriorityCourier], emailRequestDao, mockEmailProvider, ACTOR_TIMEOUT),
       PRIORITY_POOL, emailRequestDao, MAX_RETRIES, DEFERRER).withDispatcher("akka.actor.priority-dispatcher"),
     "priority-service")
 

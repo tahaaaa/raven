@@ -15,7 +15,7 @@ POST /v1/priority
 
 POST /v1/certified
 
-→ <EmailRequest> || [ <EmailRequest> .. N ] || <Email> || [ <Email> .. N ]
+→ <EmailRequest> || <Email>
 ← <Receipt>
 
 

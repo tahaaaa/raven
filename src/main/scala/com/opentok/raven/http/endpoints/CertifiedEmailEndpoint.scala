@@ -15,10 +15,10 @@ import com.opentok.raven.model.{Email, EmailRequest, Receipt, Requestable}
 
 class CertifiedEmailEndpoint(handler: ActorRef, t: Timeout)(implicit val mat: Materializer, system: ActorSystem) extends EndpointUtils {
 
-  import com.opentok.raven.http.JsonProtocol._
-
   implicit val logger: LoggingAdapter = system.log
   implicit val timeout: Timeout = t
+
+  import com.opentok.raven.http.JsonProtocol._
 
   def fillInEmail(e: Email): Email = e.copy(id = Some(UUID.randomUUID.toString))
 
@@ -26,14 +26,9 @@ class CertifiedEmailEndpoint(handler: ActorRef, t: Timeout)(implicit val mat: Ma
     post {
       path("certified") {
         pathEndOrSingleSlash {
-          entity(as[Either[List[Requestable], Requestable]]) {
-            case Right(req: EmailRequest) ⇒ handler.ask(EmailRequest.fillInRequest(req).validated).mapTo[Receipt]
-            case Right(em: Email) ⇒ handler.ask(fillInEmail(em)).mapTo[Receipt]
-            case Right(req) ⇒ handler.ask(req).mapTo[Receipt]
-            case Left(lReq) ⇒ handler.ask(lReq.map {
-              case req: EmailRequest ⇒ EmailRequest.fillInRequest(req).validated
-              case em: Email ⇒ fillInEmail(em)
-            }).mapTo[Receipt]
+          entity(as[Requestable]) {
+            case req: EmailRequest ⇒ handler.ask(EmailRequest.fillInRequest(req).validated).mapTo[Receipt]
+            case em: Email ⇒ handler.ask(fillInEmail(em)).mapTo[Receipt]
           }
         }
       }

@@ -11,7 +11,7 @@ abstract class MockSystem(handler: Props) extends Service with AkkaSystem {
 
   override implicit val system: ActorSystem = ActorSystem("raven-test")
   override implicit val materializer: ActorMaterializer = ActorMaterializer()
-  override val monitoringService, certifiedService, priorityService, smtpService: ActorRef = TestActorRef(handler)
+  override val monitoringService, certifiedService, priorityService, mockEmailProvider: ActorRef = TestActorRef(handler)
 }
 
 abstract class WorkingMockSystem extends MockSystem(Props(new Actor {

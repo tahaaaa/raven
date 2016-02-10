@@ -18,5 +18,4 @@ trait H2Dal extends Dal {
   db withSession { implicit session: driver.Backend#Session =>
     StaticQuery.updateNA(schema).execute
   }
-
 }
