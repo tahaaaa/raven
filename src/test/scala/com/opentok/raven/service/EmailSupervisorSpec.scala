@@ -5,7 +5,7 @@ import akka.pattern.ask
 import akka.testkit.{ImplicitSender, TestActorRef, TestKit}
 import akka.util.Timeout
 import com.opentok.raven.fixture._
-import com.opentok.raven.model.{EmailRequest, Receipt}
+import com.opentok.raven.model.{Requestable, EmailRequest, Receipt}
 import com.opentok.raven.service.actors.MonitoringActor.FailedEmailsCheck
 import com.opentok.raven.service.actors.{CertifiedCourier, EmailSupervisor}
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
@@ -47,6 +47,25 @@ with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
       } shouldBe(10, 0)
     }
 
+    "retry until it works or max-retries reached" in {
+      val dao = new MockEmailRequestDao(testRequest = Some(testRequest3.copy(status = Some(EmailRequest.Pending))))
+      val s = newSupervisor(superviseeProps = Props(new Actor with ActorLogging {
+        var fail = true
+
+        def receive: Receive = {
+          case req: EmailRequest if fail ⇒
+            sender() ! Receipt(false, requestId = req.id)
+            fail = false //first one fails second one succeeds
+          case req: EmailRequest ⇒ sender() ! Receipt(true, requestId = req.id)
+        }
+      }), deferrer = 1, retries = 3, pool = 1, mockRequestDao = dao)
+
+      val r = Await.result(s.ask(testRequest3)(10.seconds).mapTo[Receipt], 10.seconds)
+
+      r.success should be(true)
+    }
+
+
     "try every failed request exactly the maximum number of allowed retries and no more" in {
       val dao = new MockEmailRequestDao(testRequest = Some(testRequest3.copy(status = Some(EmailRequest.Pending))))
       val s = newSupervisor(superviseeProps = Props(new Actor with ActorLogging {
@@ -56,7 +75,7 @@ with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
           case req: EmailRequest ⇒ received += 1; log.info("{}", req); sender() ! Receipt(false, requestId = req.id)
           case anyElse ⇒ sender() ! received
         }
-      }), retries = 3, pool = 10, mockRequestDao = dao)
+      }), retries = 3, pool = 1, mockRequestDao = dao)
 
       val r = Await.result(s.ask(testRequest3)(10.seconds).mapTo[Receipt], 10.seconds) //1 * 1 + 2 * 1 + 3 * 1 = 6
 
@@ -66,6 +85,30 @@ with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
 
       called.sum should be(3)
 
+    }
+
+    "retry when supervisee crashes" in {
+      val dao = new MockEmailRequestDao(testRequest = Some(testRequest3.copy(status = Some(EmailRequest.Pending))))
+      val s = newSupervisor(superviseeProps = Props(new Actor with ActorLogging {
+
+        @throws[Exception](classOf[Exception])
+        override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
+          message match {
+            //send receipt to supervisor so that it can retry
+            case Some(req: Requestable) ⇒ context.parent ! Receipt.error(reason, "courier crashed", req.id)
+            case _ ⇒ log.error(s"${self.path} could not recover $reason: message was not a requestable")
+          }
+          super.preRestart(reason, message)
+        }
+
+        def receive: Receive = {
+          case anyElse ⇒ throw new Exception("BOOM")
+        }
+      }), retries = 5, pool = 3, mockRequestDao = dao)
+
+      val r = Await.result(s.ask(testRequest3)(10.seconds).mapTo[Receipt], 10.seconds)
+
+      r.success should be(false)
     }
 
     "don't retry if request wasnt previously saved with status pending or failed" in {

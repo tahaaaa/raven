@@ -69,7 +69,7 @@ package object fixture {
 
   lazy val testRequest2 = EmailRequest("ernest+ravenbatchEmail@tokbox.com", "test",
     Some(JsObject(Map("a" → JsString(s"INTEGRATION TEST RUN AT ${new DateTime().toString}"),
-      "b" → JsNumber(1)))), None, None)
+      "b" → JsNumber(1)))), None, Some("22222222"))
 
   lazy val testRequest3 = EmailRequest("ernest+raven@tokbox.com", "test",
     Some(JsObject(Map("a" → JsString(s"UNIT TEST RUN AT ${new DateTime().toString}"),
