@@ -37,8 +37,10 @@ trait Courier {
     }
   }
 
-  def persistRequests(reqs: List[EmailRequest]): Future[Any] =
+  def persistRequests(reqs: List[EmailRequest]): Future[Any] = {
+    if (reqs.isEmpty) Future.failed(new Exception("trying to persist request but list is empty"))
     Future.sequence[Any, List](reqs.map(persistRequest))
+  }
 
 
   /**
