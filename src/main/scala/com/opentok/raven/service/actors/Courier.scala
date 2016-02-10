@@ -42,10 +42,10 @@ trait Courier {
    * Persists request to database and logs op results
    */
   def persistRequest(req: EmailRequest): Future[Any] = {
-    log.info(s"sending request for dao service to persist $req")
+    log.debug(s"sending request for dao service to persist $req")
     daoService.ask(req).andThen {
       case Success(i) ⇒
-        log.info(s"Successfully persisted request with id ${req.id} to database")
+        log.debug(s"Successfully persisted request with id ${req.id} to database")
       case Failure(e) ⇒
         log.error(e, s"There was an error when persisting request with id ${req.id} to database")
     }
@@ -62,7 +62,7 @@ trait Courier {
    * exception into a receipt if there was one
    */
   def send(id: Option[String], email: Email): Future[Receipt] = {
-    log.info(s"sending email via email provider in path ${emailProvider.path} with timeout $timeout")
+    log.debug(s"sending email via email provider in path ${emailProvider.path} with timeout $timeout")
     emailProvider.ask(email).mapTo[Receipt]
       .map(_.copy(requestId = id))
       .recover {
@@ -140,7 +140,7 @@ class RequestPersister(emailsDao: EmailRequestDao) extends Actor with ActorLoggi
 
   val singleMessageRecv: PartialFunction[Any, Future[Int]] = {
     case req: EmailRequest ⇒
-      log.info(s"Upserting request with id ${req.id} to database")
+      log.debug(s"Upserting request with id ${req.id} to database")
       emailsDao.persistRequest(req)
     case req ⇒ log.error(errMsg); Future.failed(new Exception(errMsg))
   }

@@ -23,7 +23,7 @@ class SendgridActor(apiKey: String) extends Actor with ActorLogging {
 
   override def receive: Receive = {
     case tmp: Email ⇒
-      log.info(s"Received Email with id ${tmp.id}")
+      log.debug(s"Received Email with id ${tmp.id}")
       val receipt: Receipt = Try(client.send(tmp)).map {
         case rsp if rsp.getStatus ⇒ Receipt(rsp.getStatus, requestId = tmp.id)
         case rsp ⇒
