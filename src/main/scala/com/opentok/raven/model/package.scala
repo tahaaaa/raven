@@ -179,6 +179,12 @@ package object model {
           html.payment_details_added(),
           templateId, fromName = Some("TokBox"))
 
+      case templateId@"email_change_confirmation" ⇒
+        wrapTemplate(requestId, "Email Change Confirmation", recipient, "messages@tokbox.com",
+          html.email_change_confirmation(fields %> "unconfirmed_email",
+            fields %> "confirmed_email", fields %> "confirmation_url"),
+          templateId, fromName = Some("TokBox"))
+
       case templateId@"test" ⇒
         wrapTemplate(requestId, "Raven Test", recipient, "analytics@tokbox.com",
           html.test(fields %> "a", fields.extract[Int]("b")),
