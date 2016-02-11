@@ -169,6 +169,11 @@ package object model {
           html.account_expiration_confirmation(),
           templateId, fromName = Some("TokBox"))
 
+      case templateId@"account_suspended" ⇒
+        wrapTemplate(requestId, "Account Suspended", recipient, "messages@tokbox.com",
+          html.account_suspended(fields %> "login_url"),
+          templateId, fromName = Some("TokBox"))
+
       case templateId@"test" ⇒
         wrapTemplate(requestId, "Raven Test", recipient, "analytics@tokbox.com",
           html.test(fields %> "a", fields.extract[Int]("b")),
