@@ -174,6 +174,11 @@ package object model {
           html.account_suspended(fields %> "login_url"),
           templateId, fromName = Some("TokBox"))
 
+      case templateId@"payment_details_added" ⇒
+        wrapTemplate(requestId, "Payment Details Added", recipient, "messages@tokbox.com",
+          html.payment_details_added(),
+          templateId, fromName = Some("TokBox"))
+
       case templateId@"test" ⇒
         wrapTemplate(requestId, "Raven Test", recipient, "analytics@tokbox.com",
           html.test(fields %> "a", fields.extract[Int]("b")),
