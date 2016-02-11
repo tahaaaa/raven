@@ -2,7 +2,7 @@
 ![](http://orig01.deviantart.net/11fe/f/2010/217/7/8/giant_raven_flying_by_furansu.gif)
 
 To see the list of available templates go to [https://raven-tbdev.tokbox.com/v1/debug/template](https://raven-tbdev.tokbox.com/v1/debug/template) or
-jump to [Run](## Run) section and boot up a local instance. Check [## Templates](## Templates) section to find out how to use them.
+jump to [Run](#run) section and boot up a local instance. Check [Templates](#templates) section to find out how to use them.
 
 ## Service
 

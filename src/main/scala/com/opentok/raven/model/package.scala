@@ -159,6 +159,11 @@ package object model {
           html.developer_invitation(fields %> "account_name", fields %> "invitation_link"),
           templateId, fromName = Some("TokBox"))
 
+      case templateId@"account_expiration_warning" ⇒
+        wrapTemplate(requestId, "Account Expiration Warning", recipient, "messages@tokbox.com",
+          html.account_expiration_warning(fields %> "login_url"),
+          templateId, fromName = Some("TokBox"))
+
       case templateId@"test" ⇒
         wrapTemplate(requestId, "Raven Test", recipient, "analytics@tokbox.com",
           html.test(fields %> "a", fields.extract[Int]("b")),
