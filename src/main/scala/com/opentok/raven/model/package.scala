@@ -132,7 +132,7 @@ package object model {
                      bcc: Option[List[EmailAddress]] = None,
                      attachments: Option[List[(String, String)]] = None,
                      headers: Option[Map[String, String]] = None): Email =
-      Email(requestId, subject, recipient :: Nil, from, html.wrap_email_v1(recipient, template).body,
+      Email(requestId, subject, recipient :: Nil, from, html.wrap_email_v2(recipient, template).body,
         Some(fromTemplateId), toName, fromName, categories, setReply, cc, bcc, attachments, headers)
 
     //decoupled from build to check at runtime what templates are available
@@ -155,21 +155,9 @@ package object model {
           templateId, fromName = Some("TokBox"))
 
       case templateId@"developer_invitation" ⇒
-        wrapTemplate(requestId, "Developer Invitation", recipient, "messages@tokbox.com",
+        wrapTemplate(requestId, "TokBox Account Invitation", recipient, "messages@tokbox.com",
           html.developer_invitation(fields %> "account_name", fields %> "invitation_link"),
           templateId, fromName = Some("TokBox"))
-
-      case templateId@"usage_etl_report" ⇒
-        val subject = "[Hubble] - Usage ETL Report"
-        Email(requestId, subject, recipient :: Nil, "analytics@tokbox.com",
-          html.wrap_internal_v1(subject, html.usage_etl_report(
-            Try(fields("streamError").convertTo[String]).toOption,
-            Try(fields("streamStackTrace").convertTo[String]).toOption,
-            fields("hadrosaurErrors").convertTo[List[String]],
-            fields("processingErrors").convertTo[List[String]],
-            fields("hadrosaurSuccesses").convertTo[Int],
-            fields("processingSuccesses").convertTo[Int]
-          )).body, Some(templateId), fromName = Some("Hubble"))
 
       case templateId@"test" ⇒
         wrapTemplate(requestId, "Raven Test", recipient, "analytics@tokbox.com",

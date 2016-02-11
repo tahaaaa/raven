@@ -8,3 +8,4 @@ target/
 .settings
 .idea_modules
 application.conf
+src/main/resources/templates/examples.html

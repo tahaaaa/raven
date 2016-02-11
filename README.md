@@ -2,7 +2,7 @@
 ![](http://orig01.deviantart.net/11fe/f/2010/217/7/8/giant_raven_flying_by_furansu.gif)
 
 To see the list of available templates go to [https://raven-tbdev.tokbox.com/v1/debug/template](https://raven-tbdev.tokbox.com/v1/debug/template) or
-jump to [Run](## Run) section and boot up a local instance. Check [Exploring templates](## Exploring templates) section to find out how to use them.
+jump to [Run](## Run) section and boot up a local instance. Check [## Templates](## Templates) section to find out how to use them.
 
 ## Service
 
@@ -26,11 +26,7 @@ GET /v1/monitoring/health?component=<component>
 
 GET /v1/monitoring/pending
 
-  {
-    <request_id> : <tries>,
-←   <request_id> : <tries>,
-    ...
-  }
+← [ <receipt>, ... ]
 
 
 GET /v1/debug/template
@@ -81,7 +77,7 @@ Email
 }
 ```
 
-## Exploring templates
+## Templates
 After booting up go to [http://localhost:9911/v1/debug/template](http://localhost:9911/v1/debug/template) to see a list of available templates. Complete path with a `template_id` to find out how to use template i.e. [http://localhost:9911/v1/debug/template/test](http://localhost:9911/v1/debug/template/test). At the top of the html document, there will be a list of parameters and their types; if there are none, it means that the template doesn't require any parameters. Pass them in query string to see compiled template i.e. [http://localhost:9911/v1/debug/template/test?a=hello&b=1](http://localhost:9911/v1/debug/template/test?a=hello&b=1).
 
 ## Run

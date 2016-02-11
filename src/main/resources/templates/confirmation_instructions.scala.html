@@ -1,38 +1,23 @@
 @(confirmation_url: String)
-<tr style="background:white;">
-    <td width="60px"></td>
-    <td width=640px style="text-align:center; padding: 30px 0;">
-        <h1>Welcome to TokBox</h1>
-        <p class="light">
-    To start your free OpenTok trial, you'll need to obtain your API secret by verifying your account
-        </p>
-    </td>
-    <td width="60px" ></td>
-</tr>
-<tr>
-    <td width="60px"></td>
-    <td width=640px style="text-align:center; padding: 30px 0; font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;">
-        <center>
-            <a href="@confirmation_url"><span class="btn btn-blue">Verify and get your secret</span></a>
-        </center>
-        <p>
-    Or, visit this url:
-        </p>
+<!-- H1 -->
+<div align="center" style="font-family: 'ITC Avant Garde Gothic W04 Md', 'Muli', helvetica, arial; font-size: 20px; color: #5f5f61; padding-bottom: 35px;">Welcome to TokBox</div>
 
-        <center>
-            <a href="@confirmation_url">@confirmation_url</a>
-        </center>
+<!-- Body Copy -->
+<div style="line-height: 24px; padding-bottom: 35px; font-family: 'Muli', helvetica, arial;">
+    To start your free OpenTok trial, you'll need to obtain your API secret by verifying your account:
+</div>
 
-        <br>
-        <br>
-        <p>
-    Thanks for choosing OpenTok,
-        </p>
-        <strong style="color:#5F6062;font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:18px;line-height:28px;">
-    The TokBox Team
-        </strong>
+<!-- CTA Button with subtitle -->
+<div align="center" style="padding-bottom: 35px;"><a href="@confirmation_url">
+    <button style="height:40px; background-color:  #0099cc; border: none; font-family: 'Muli' helvetica, arial; font-size: 16px; color: #ffffff; padding: 0px 25px; margin-bottom:12px; border-radius: 3px;">
+        <span class="blank" style="text-decoration:none !important;">
+            Verify your account
+        </span>
+        <img style="position: relative; top: 2px; padding-left: 20px" src="http://i224.photobucket.com/albums/dd37/AgathaTinuviel/arrow_white.png" alt="&rarr;" border="0">
+    </button></a>
 
+</div>
 
-    </td>
-    <td width="60px"></td>
-</tr>
+<!-- Thank You -->
+<div style="line-height: 24px; font-family: 'Muli', helvetica, arial;">Thanks for choosing OpenTok,<br><br>The TokBox Team</div>
+
