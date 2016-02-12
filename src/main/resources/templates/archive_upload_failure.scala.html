@@ -1,0 +1,34 @@
+@(session_id: String, archive_id: String, archive_name: Option[String], time_started: String)
+<!-- H2 -->
+<div style="font-family:'ITC Avant Garde Gothic W04 Md', 'Muli', helvetica, arial; font-size:16px; line-height:24px; color:"#38393b;">Archive Upload Failure</div>
+<!-- Body Copy -->
+<div style="line-height: 24px; padding-bottom: 35px; font-family: 'Muli', helvetica, arial;">
+    <p>
+        We're emailing to let you know that your Amazon S3 or Windows Azure integration has failed so your session has been archived but not uploaded.
+        But don't worry your file has not been lost! It has been temporarily uploaded to the OpenTok cloud.
+    </p>
+        Your file will be automatically deleted in 72 hours so we encourage you to log in to your dashboard to review the integration as soon as possible. In the meantime, please download the archive for safe keeping.
+    <ul>
+        <li>
+            <b>Session ID: </b>@session_id
+        </li>
+        <li>
+            <b>Archive ID: </b>@archive_id
+        </li>
+        @archive_name.map{n => 
+          <li><b>Archive Name: </b>@n</li>
+        }
+        <li>
+            <b>Time started: </b>@time_started
+        </li>
+    </ul>
+</div>
+<!-- Body Copy with a link -->
+<div style=" font-family: 'Muli', helvetica, arial; line-height: 24px; padding-bottom: 35px;">
+    If you have further questions please post
+    <!-- CTA link -->
+  <a href="http://tokbox.com/forums/archiving" style=" font-family: 'Muli', helvetica, arial; color: #0099cc; line-height: 24px; text-decoration: none"><font color="#0099cc">Support Forum</font><img style="position: relative; top: 2px; padding-left: 10px" src="http://i224.photobucket.com/albums/dd37/AgathaTinuviel/arrow_blue.png" alt="&rarr;" border="0">
+  </a>
+</div>
+<!-- Thank You -->
+<div style="line-height: 24px; font-family: 'Muli', helvetica, arial;">Thanks for choosing OpenTok,<br>The TokBox Team</div>

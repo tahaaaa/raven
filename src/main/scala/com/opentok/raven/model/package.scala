@@ -190,6 +190,14 @@ package object model {
           html.payment_successful(fields %> "amount", fields %> "currency"),
           templateId, fromName = Some("TokBox"))
 
+      case templateId@"archive_upload_failure" ⇒
+        wrapTemplate(requestId, "Archive Upload Failure", recipient, "messages@tokbox.com",
+          html.archive_upload_failure(
+            fields %> "session_id", fields %> "archive_id",
+            fields ?> "archive_name", fields %> "time_started"
+          ),
+          templateId, fromName = Some("TokBox"))
+
       case templateId@"test" ⇒
         wrapTemplate(requestId, "Raven Test", recipient, "analytics@tokbox.com",
           html.test(fields %> "a", fields.extract[Int]("b")),
@@ -197,7 +205,7 @@ package object model {
 
       case templateId@"harvester" ⇒
         wrapTemplate(requestId, "Harvester Email", recipient, "analytics@tokbox.com",
-          html.harvester(fields %> "datafield",fields %> "harvester_message"),
+          html.harvester(fields %> "datafield", fields %> "harvester_message"),
           templateId, fromName = Some("Business Analytics"))
 
     }
