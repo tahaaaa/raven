@@ -185,6 +185,11 @@ package object model {
             fields %> "confirmed_email", fields %> "confirmation_url"),
           templateId, fromName = Some("TokBox"))
 
+      case templateId@"payment_successful" ⇒
+        wrapTemplate(requestId, "Payment Successful", recipient, "messages@tokbox.com",
+          html.payment_successful(fields %> "amount", fields %> "currency"),
+          templateId, fromName = Some("TokBox"))
+
       case templateId@"test" ⇒
         wrapTemplate(requestId, "Raven Test", recipient, "analytics@tokbox.com",
           html.test(fields %> "a", fields.extract[Int]("b")),
