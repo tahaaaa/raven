@@ -1,12 +1,14 @@
-@(last_invoice_amount: Option[String])
+@(last_invoice_amount: Option[Float], last_invoice_currency: Option[String])
 <!-- H1 -->
 <div align="center" style="font-family: 'ITC Avant Garde Gothic W04 Md', 'Muli', helvetica, arial; font-size: 20px; color: #5f5f61; padding-bottom: 35px;">We're sorry to see you go!</div>
 
 <!-- Body Copy -->
 <div style="line-height: 24px; padding-bottom: 35px; font-family: 'Muli', helvetica, arial;">
   We have cancelled your account. @last_invoice_amount.map{ in =>
-  You will see one final charge of <b>@in</b> billed to your credit card that is based on the minutes you used this month.
-  } 
+    @last_invoice_currency.map { currency =>
+  You will see one final charge of <b>@currency@in</b> billed to your credit card that is based on the minutes you used this month.
+  }
+  }
 </div>
 <!-- Body Copy with a link -->
 <div style=" font-family: 'Muli', helvetica, arial; line-height: 24px; padding-bottom: 35px;">
