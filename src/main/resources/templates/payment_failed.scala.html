@@ -1,4 +1,4 @@
-@(try_num: Int, next_unix_ms: Long, account_portal_url: String)
+@(try_num: Int, next_unix_ms: Long, account_portal_url: com.opentok.raven.model.Email.Url)
 <!-- prettify retry num -->
 @defining(if(try_num==1) "first" else if (try_num==2) "second" else if (try_num==3) "third" else try_num.toString) { try_num_pretty =>
 <!-- prettify next attempt dt -->

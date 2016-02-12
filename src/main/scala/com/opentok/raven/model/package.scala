@@ -5,13 +5,24 @@ import java.util.UUID
 import com.opentok.raven.Implicits._
 import com.opentok.raven.http.JsonProtocol
 import com.opentok.raven.model.Email._
-import com.opentok.raven.model.EmailRequest.{InvalidTemplate, MissingInjections}
 import spray.json.{JsValue, _}
 
 import scala.util.Try
 
 
 package object model {
+
+  //marker trait for validation rejections
+  sealed trait RavenRejection
+
+  class InvalidTemplate(template_id: String, cause: Throwable)
+    extends Exception(s"invalid template id '$template_id'", cause) with RavenRejection
+
+  class MissingInjections(injects: Map[String, JsValue], cause: Throwable)
+    extends Exception(s"missing inject in $injects", cause) with RavenRejection
+
+  class InvalidInjection(value: String, msg: String)
+    extends Exception(s"invalid value '$value': $msg") with RavenRejection
 
   sealed trait Requestable {
     val id: Option[String]
@@ -59,12 +70,6 @@ package object model {
   }
 
   object EmailRequest {
-
-    class InvalidTemplate(template_id: String, cause: Throwable)
-      extends Exception(s"invalid template id '$template_id'", cause)
-
-    class MissingInjections(injects: Map[String, JsValue], cause: Throwable)
-      extends Exception(s"missing inject in $injects", cause)
 
     //transforms an incoming request without id and status
     val fillInRequest = { req: EmailRequest ⇒
@@ -114,6 +119,17 @@ package object model {
                     ) extends Requestable
 
   object Email {
+
+    //type to enforce url to start with scheme
+    case class Url(_url: String) {
+      if (!_url.startsWith("http://"))
+        throw new InvalidInjection(_url, "url must start with 'http://' to be parseable by all email clients")
+
+      override def toString: String = _url
+    }
+
+    //coerce string to url when required
+    implicit def urlToString(url: String): Url = Url(url)
 
     type HTML = String
     type EmailAddress = String
@@ -187,12 +203,13 @@ package object model {
 
       case templateId@"payment_successful" ⇒
         wrapTemplate(requestId, "Payment Successful", recipient, "messages@tokbox.com",
-          html.payment_successful(fields %> "amount", fields %> "currency"),
+          html.payment_successful(fields.extract[Float]("amount"), fields %> "currency"),
           templateId, fromName = Some("TokBox"))
 
       case templateId@"payment_failed" ⇒
-        wrapTemplate(requestId, "Payment Successful", recipient, "messages@tokbox.com",
-          html.payment_failed(fields.extract[Int]("try_num"), fields.extract[Long]("next_unix_ms"), fields %> "account_portal_url"),
+        wrapTemplate(requestId, "Payment Failed", recipient, "messages@tokbox.com",
+          html.payment_failed(fields.extract[Int]("try_num"),
+            fields.extract[Long]("next_unix_ms"), fields %> "account_portal_url"),
           templateId, fromName = Some("TokBox"))
 
       case templateId@"account_deleted" ⇒
@@ -208,7 +225,7 @@ package object model {
         wrapTemplate(requestId, "Archive Upload Failure", recipient, "messages@tokbox.com",
           html.archive_upload_failure(
             fields %> "session_id", fields %> "archive_id",
-            fields ?> "archive_name", fields %> "time_started"
+            fields ?> "archive_name", fields.extract[Long]("started_unix_ms")
           ),
           templateId, fromName = Some("TokBox"))
 
