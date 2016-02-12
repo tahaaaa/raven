@@ -215,7 +215,7 @@ package object model {
       case templateId@"account_deleted" ⇒
         wrapTemplate(requestId, "Account Deleted", recipient, "messages@tokbox.com",
           html.account_deleted(
-            fields.get("last_invoice_amount").map(_.convertTo[Long]),
+            fields.get("last_invoice_amount").map(_.convertTo[Float]),
             fields ?> "last_invoice_currency"
           ),
           templateId, fromName = Some("TokBox"))
