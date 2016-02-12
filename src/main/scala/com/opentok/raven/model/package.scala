@@ -190,6 +190,11 @@ package object model {
           html.payment_successful(fields %> "amount", fields %> "currency"),
           templateId, fromName = Some("TokBox"))
 
+      case templateId@"payment_failed" ⇒
+        wrapTemplate(requestId, "Payment Successful", recipient, "messages@tokbox.com",
+          html.payment_failed(fields.extract[Int]("try_num"), fields.extract[Long]("next_unix_ms"), fields %> "account_portal_url"),
+          templateId, fromName = Some("TokBox"))
+
       case templateId@"account_deleted" ⇒
         wrapTemplate(requestId, "Account Deleted", recipient, "messages@tokbox.com",
           html.account_deleted(fields ?> "last_invoice_amount"),
