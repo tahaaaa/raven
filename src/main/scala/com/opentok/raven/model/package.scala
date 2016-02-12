@@ -195,6 +195,11 @@ package object model {
           html.test(fields %> "a", fields.extract[Int]("b")),
           templateId, fromName = Some("TokBox"))
 
+      case templateId@"harvester" ⇒
+        wrapTemplate(requestId, "Harvester Email", recipient, "analytics@tokbox.com",
+          html.harvester(fields %> "datafield",fields %> "harvester_message"),
+          templateId, fromName = Some("Business Analytics"))
+
     }
 
     def build(requestId: Option[String], templateId: String, injections: Injections, recipient: String): Try[Email] = Try {
