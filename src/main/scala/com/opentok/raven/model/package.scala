@@ -122,8 +122,8 @@ package object model {
 
     //type to enforce url to start with scheme
     case class Url(_url: String) {
-      if (!_url.startsWith("http://"))
-        throw new InvalidInjection(_url, "url must start with 'http://' to be parseable by all email clients")
+      if (!_url.startsWith("http://") && (!_url.startsWith("https://")))
+        throw new InvalidInjection(_url, "url must start with scheme (http/https) to be parseable by all email clients")
 
       override def toString: String = _url
     }
