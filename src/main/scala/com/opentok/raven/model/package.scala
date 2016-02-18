@@ -142,14 +142,14 @@ package object model {
                      from: String, template: play.twirl.api.Html, fromTemplateId: String,
                      toName: Option[EmailAddress] = None,
                      fromName: Option[String] = None,
-                     categories: Option[List[String]] = None,
+                     categories: List[String] = Nil,
                      setReply: Option[EmailAddress] = None,
                      cc: Option[List[EmailAddress]] = None,
                      bcc: Option[List[EmailAddress]] = None,
                      attachments: Option[List[(String, String)]] = None,
                      headers: Option[Map[String, String]] = None): Email =
       Email(requestId, subject, recipient :: Nil, from, html.wrap_email_v2(recipient, template).body,
-        Some(fromTemplateId), toName, fromName, categories, setReply, cc, bcc, attachments, headers)
+        Some(fromTemplateId), toName, fromName, Some("raven" :: fromTemplateId :: categories), setReply, cc, bcc, attachments, headers)
 
     //decoupled from build to check at runtime what templates are available
     def buildPF(requestId: Option[String], recipient: String,
@@ -239,7 +239,7 @@ package object model {
 
       case templateId@"harvester" ⇒
         wrapTemplate(requestId, "Harvester Email", recipient, "analytics@tokbox.com",
-          html.harvester(fields %> "datafield",fields %> "harvester_message",fields %> "harvester_image_link"),
+          html.harvester(fields %> "datafield", fields %> "harvester_message", fields %> "harvester_image_link"),
           templateId, fromName = Some("Business Analytics"))
 
     }
