@@ -1,4 +1,4 @@
-@(datafield: String, harvester_message: String, harvester_image_link: String)
+@(datafield: String, harvester_message: String, harvester_image_link: String, harvester_analysis_image_link: String)
 <!-- H1 -->
 <div align="center" style="font-family: 'ITC Avant Garde Gothic W04 Md', 'Muli', helvetica, arial; font-size: 20px; color: #5f5f61; padding-bottom: 35px;">Welcome to the New Harvester Emails</div>
 
@@ -8,6 +8,16 @@
      <br><br>
 </div>
 <div align="center" style="line-height: 24px; padding-bottom: 35px; font-family: 'Muli', helvetica, arial;">
+<a href="@datafield"><img src="@harvester_analysis_image_link"></a>
+     <br><br>
+</div>
+<div align="center" style="line-height: 24px; padding-bottom: 35px; font-family: 'Muli', helvetica, arial;">
+The chart above shows a number of our customers that were Harvested.  The size of the bubble is proportional to their lifetime streamed subscribed minutes.  The height of the bubble is the tenure in weeks when they were Harvested.  The x-axis is the week in which they were Harvested.  The color is associated with the vertical of the customer (as determined by Harvester).
+<br><br>
+While there isn't really a solid business decision that can be made from the visualization, I use this as an example of visualizations that I hope to include in my requests to have you Harvest accounts so you can see the value to TokBox of Harvesting.  Ideally, we will focus on new accounts and interesting verticals and in six months, we will be able to show how Harvesting is moving TokBox rapidly toward profitability.  More accounts, Harvested younger, that can be the benefactors of our Product, BD, SSE, and Analytics efforts will go a long way to making us all more successful.
+<br><br>
+Also, keep an eye on that butterfly.  As it transmogrifies (all butterflies have already metamorphed), it indicates the level of your contribution to the Harvest.
+<br><br>
 Today we would like you to take a look at<br><a href="@datafield">@harvester_message</a>
      <br><br>
 </div>
