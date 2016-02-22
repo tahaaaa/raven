@@ -192,7 +192,7 @@ package object model {
 
       case templateId@"payment_details_added" ⇒
         wrapTemplate(requestId, "Payment Details Added", recipient, "messages@tokbox.com",
-          html.payment_details_added(),
+          html.payment_details_added(fields %> "account_portal_url"),
           templateId, fromName = Some("TokBox"))
 
       case templateId@"email_change_confirmation" ⇒
