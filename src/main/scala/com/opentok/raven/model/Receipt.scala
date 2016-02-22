@@ -42,19 +42,13 @@ object Receipt {
   }
 
   def error(e: Throwable, message: String, requestId: Option[String] = None): Receipt = {
-    val cause = Try(e.getCause.toString).toOption
-    val stackTrace = {
-      val sw = new StringWriter()
-      val pw = new PrintWriter(sw)
-      e.printStackTrace(pw)
-      sw.toString
-    }
-    val errors = stackTrace :: Nil
+    val cause = Try(e.getCause.getMessage).toOption
+    val msg = e.getMessage
     Receipt(
       success = false,
       requestId = requestId,
       message = Some(message),
-      errors = cause.map(_ :: errors).getOrElse(errors)
+      errors = cause.map(_ :: msg :: Nil).getOrElse(msg :: Nil)
     )
   }
 

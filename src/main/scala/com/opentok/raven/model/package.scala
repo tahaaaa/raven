@@ -5,13 +5,24 @@ import java.util.UUID
 import com.opentok.raven.Implicits._
 import com.opentok.raven.http.JsonProtocol
 import com.opentok.raven.model.Email._
-import com.opentok.raven.model.EmailRequest.{InvalidTemplate, MissingInjections}
 import spray.json.{JsValue, _}
 
 import scala.util.Try
 
 
 package object model {
+
+  //marker trait for validation rejections
+  sealed trait RavenRejection
+
+  class InvalidTemplate(template_id: String, cause: Throwable)
+    extends Exception(s"invalid template id '$template_id'", cause) with RavenRejection
+
+  class MissingInjections(injects: Map[String, JsValue], cause: Throwable)
+    extends Exception(s"missing inject in $injects", cause) with RavenRejection
+
+  class InvalidInjection(value: String, msg: String)
+    extends Exception(s"invalid value '$value': $msg") with RavenRejection
 
   sealed trait Requestable {
     val id: Option[String]
@@ -59,12 +70,6 @@ package object model {
   }
 
   object EmailRequest {
-
-    class InvalidTemplate(template_id: String, cause: Throwable)
-      extends Exception(s"invalid template id '$template_id'", cause)
-
-    class MissingInjections(injects: Map[String, JsValue], cause: Throwable)
-      extends Exception(s"missing inject in $injects", cause)
 
     //transforms an incoming request without id and status
     val fillInRequest = { req: EmailRequest ⇒
@@ -115,6 +120,17 @@ package object model {
 
   object Email {
 
+    //type to enforce url to start with scheme
+    case class Url(_url: String) {
+      if (!_url.startsWith("http://") && (!_url.startsWith("https://")))
+        throw new InvalidInjection(_url, "url must start with scheme (http/https) to be parseable by all email clients")
+
+      override def toString: String = _url
+    }
+
+    //coerce string to url when required
+    implicit def urlToString(url: String): Url = Url(url)
+
     type HTML = String
     type EmailAddress = String
     type Injections = Map[String, JsValue]
@@ -126,14 +142,14 @@ package object model {
                      from: String, template: play.twirl.api.Html, fromTemplateId: String,
                      toName: Option[EmailAddress] = None,
                      fromName: Option[String] = None,
-                     categories: Option[List[String]] = None,
+                     categories: List[String] = Nil,
                      setReply: Option[EmailAddress] = None,
                      cc: Option[List[EmailAddress]] = None,
                      bcc: Option[List[EmailAddress]] = None,
                      attachments: Option[List[(String, String)]] = None,
                      headers: Option[Map[String, String]] = None): Email =
       Email(requestId, subject, recipient :: Nil, from, html.wrap_email_v2(recipient, template).body,
-        Some(fromTemplateId), toName, fromName, categories, setReply, cc, bcc, attachments, headers)
+        Some(fromTemplateId), toName, fromName, Some("raven" :: fromTemplateId :: categories), setReply, cc, bcc, attachments, headers)
 
     //decoupled from build to check at runtime what templates are available
     def buildPF(requestId: Option[String], recipient: String,
@@ -176,13 +192,44 @@ package object model {
 
       case templateId@"payment_details_added" ⇒
         wrapTemplate(requestId, "Payment Details Added", recipient, "messages@tokbox.com",
-          html.payment_details_added(),
+          html.payment_details_added(fields %> "account_portal_url"),
           templateId, fromName = Some("TokBox"))
 
       case templateId@"email_change_confirmation" ⇒
         wrapTemplate(requestId, "Email Change Confirmation", recipient, "messages@tokbox.com",
           html.email_change_confirmation(fields %> "unconfirmed_email",
             fields %> "confirmed_email", fields %> "confirmation_url"),
+          templateId, fromName = Some("TokBox"))
+
+      case templateId@"payment_successful" ⇒
+        wrapTemplate(requestId, "Payment Successful", recipient, "messages@tokbox.com",
+          html.payment_successful(fields.extract[Float]("amount"), fields %> "currency"),
+          templateId, fromName = Some("TokBox"))
+
+      case templateId@"payment_failed" ⇒
+        wrapTemplate(requestId, "Payment Failed", recipient, "messages@tokbox.com",
+          html.payment_failed(fields.extract[Int]("try_num"),
+            fields.extract[Long]("next_unix_ms"), fields %> "account_portal_url"),
+          templateId, fromName = Some("TokBox"))
+
+      case templateId@"account_deleted" ⇒
+        wrapTemplate(requestId, "Account Deleted", recipient, "messages@tokbox.com",
+          html.account_deleted(
+            fields.get("last_invoice_amount").map(_.convertTo[Float]),
+            fields ?> "last_invoice_currency"
+          ),
+          templateId, fromName = Some("TokBox"))
+
+      case templateId@"support_plan_upgrade" ⇒
+        wrapTemplate(requestId, "Support Plan Upgrade", recipient, "messages@tokbox.com",
+          html.support_plan_upgrade(), templateId, fromName = Some("TokBox"))
+
+      case templateId@"archive_upload_failure" ⇒
+        wrapTemplate(requestId, "Archive Upload Failure", recipient, "messages@tokbox.com",
+          html.archive_upload_failure(
+            fields %> "session_id", fields %> "archive_id",
+            fields ?> "archive_name", fields.extract[Long]("started_unix_ms")
+          ),
           templateId, fromName = Some("TokBox"))
 
       case templateId@"test" ⇒
