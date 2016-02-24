@@ -239,7 +239,20 @@ package object model {
 
       case templateId@"harvester" ⇒
         wrapTemplate(requestId, "Harvester Email", recipient, "analytics@tokbox.com",
-          html.harvester(fields %> "datafield", fields %> "harvester_message", fields %> "harvester_image_link"),
+          html.harvester(
+	fields %> "datafield",
+	fields ?> "datafield_1",
+	fields ?> "datafield_2",
+	fields ?> "datafield_3",
+	fields %> "harvester_image_link",
+	fields ?> "harvester_analysis_image_link",
+	fields %> "harvester_email",
+	fields ?> "harvester_email_1",
+	fields ?> "harvester_email_2",
+	fields ?> "harvester_email_3",
+	fields %> "harvester_message",
+	fields ?> "harvester_message_1",
+	fields ?> "harvester_message_2"),
           templateId, fromName = Some("Business Analytics"))
 
     }

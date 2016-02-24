@@ -1,4 +1,4 @@
-@(datafield: String, harvester_message: String, harvester_image_link: String)
+@(datafield: String, datafield_1: Option[String], datafield_2: Option[String], datafield_3: Option[String], harvester_image_link: String, harvester_analysis_image_link: Option[String], harvester_email: String , harvester_email_1: Option[String], harvester_email_2: Option[String], harvester_email_3: Option[String], harvester_message: String, harvester_message_1: Option[String], harvester_message_2: Option[String] );
 <!-- H1 -->
 <div align="center" style="font-family: 'ITC Avant Garde Gothic W04 Md', 'Muli', helvetica, arial; font-size: 20px; color: #5f5f61; padding-bottom: 35px;">Welcome to the New Harvester Emails</div>
 
@@ -7,9 +7,42 @@
 <a href="@datafield"><img src="@harvester_image_link"></a>
      <br><br>
 </div>
+@harvester_analysis_image_link.map{hail =>
 <div align="center" style="line-height: 24px; padding-bottom: 35px; font-family: 'Muli', helvetica, arial;">
-Today we would like you to take a look at<br><a href="@datafield">@harvester_message</a>
+<a href="@datafield"><img src="@hail"></a>
      <br><br>
+	}
+</div>
+<div align="center" style="line-height: 24px; padding-bottom: 35px; font-family: 'Muli', helvetica, arial;">
+<p>
+@harvester_message
+</p>
+@harvester_message_1.map{hm1 => 
+     <p>
+	@hm1
+	</p>
+	}
+@harvester_message_2.map{hm2 => 
+     <p>
+	@hm2
+	</p>
+	}
+<a href="@datafield">@harvester_email</a>
+@datafield_1.map{df1 => 
+     <p>
+	<a href="@df1">@harvester_email_1</a>
+	</p>
+	}
+@datafield_1.map{df2 => 
+     <p>
+	<a href="@df2">@harvester_email_2</a>
+	</p>
+	}
+@datafield_1.map{df3 => 
+     <p>
+	<a href="@df3">@harvester_email_3</a>
+	</p>
+	}
 </div>
 
 <!-- CTA Button with subtitle -->
