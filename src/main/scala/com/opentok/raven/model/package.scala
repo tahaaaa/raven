@@ -256,6 +256,11 @@ package object model {
 	fields ?> "harvester_message_2"),
           templateId, fromName = Some("Business Analytics"))
 
+      case templateId@"tos_production" ⇒
+        wrapTemplate(requestId, " TokBox account suspension warning. Your account will be suspended in 24 hours unless we hear from you", recipient, "billing@tokbox.com",
+          html.tos_production(fields %> "login_url"),
+          templateId, fromName = Some("TokBox"))
+
     }
 
     def build(requestId: Option[String], templateId: String, injections: Injections, recipient: String): Try[Email] = Try {
