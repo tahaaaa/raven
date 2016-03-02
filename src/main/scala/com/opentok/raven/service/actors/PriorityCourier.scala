@@ -4,7 +4,7 @@ import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.pattern._
 import akka.util.Timeout
 import com.opentok.raven.dal.components.EmailRequestDao
-import com.opentok.raven.model.{Email, EmailRequest, Receipt}
+import com.opentok.raven.model.{Provider, Email, EmailRequest, Receipt}
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
@@ -12,22 +12,21 @@ import scala.util.{Failure, Success}
 /**
  * Upon receiving a [[com.opentok.raven.model.Requestable]],
  * this actor will attempt to first construct an email, if it's not
- * constructed yet, then it will try to forward it to
- * [[com.opentok.raven.service.actors.SendgridActor]], then it will
+ * constructed yet, then it will pass email to
+ * [[com.opentok.raven.model.SendgridProvider]], then it will
  * deliver a [[com.opentok.raven.model.Receipt]] with the results
  * back to the requester and finally, as a non-blocking side effect,
  * persist it to the DB.
  *
  * @param emailsDao email requests data access object
- * @param emailProvider sendgrid actor instance
+ * @param provider SMTP provider
  */
 
-class PriorityCourier(val emailsDao: EmailRequestDao, val emailProvider: ActorRef, t: Timeout)
+class PriorityCourier(val emailsDao: EmailRequestDao, val provider: Provider, val timeout: Timeout)
   extends Actor with ActorLogging with Courier {
 
   import context.dispatcher
 
-  implicit val timeout: Timeout = t
   val daoService = context.actorOf(Props(classOf[RequestPersister], emailsDao))
 
   override def receive: Receive = {

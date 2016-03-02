@@ -4,14 +4,15 @@ import akka.actor.{Actor, ActorRef, ActorSystem, Props}
 import akka.event.LoggingAdapter
 import akka.stream.ActorMaterializer
 import akka.testkit.TestActorRef
-import com.opentok.raven.model.{Email, EmailRequest, Receipt}
+import com.opentok.raven.model.{Provider, Email, EmailRequest, Receipt}
 import com.opentok.raven.service.{AkkaSystem, Service}
 
 abstract class MockSystem(handler: Props) extends Service with AkkaSystem {
 
   override implicit val system: ActorSystem = ActorSystem("raven-test")
   override implicit val materializer: ActorMaterializer = ActorMaterializer()
-  override val monitoringService, certifiedService, priorityService, mockEmailProvider: ActorRef = TestActorRef(handler)
+  override val smtpProvider: Provider = new MockProvider(Receipt.success)
+  override val monitoringService, certifiedService, priorityService: ActorRef = TestActorRef(handler)
 }
 
 abstract class WorkingMockSystem extends MockSystem(Props(new Actor {

@@ -4,7 +4,7 @@ import akka.actor.{Actor, ActorLogging, ActorRef}
 import akka.pattern._
 import akka.util.Timeout
 import com.opentok.raven.dal.components.EmailRequestDao
-import com.opentok.raven.model.{Requestable, Email, EmailRequest, Receipt}
+import com.opentok.raven.model._
 
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.{Failure, Success, Try}
@@ -22,7 +22,7 @@ trait Courier {
   implicit val timeout: Timeout
 
   val daoService: ActorRef
-  val emailProvider: ActorRef
+  val provider: Provider
 
   @throws[Exception](classOf[Exception])
   override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
@@ -62,12 +62,11 @@ trait Courier {
    * exception into a receipt if there was one
    */
   def send(id: Option[String], email: Email): Future[Receipt] = {
-    log.debug(s"sending email via email provider in path ${emailProvider.path} with timeout $timeout")
-    emailProvider.ask(email).mapTo[Receipt]
+    provider.send(email).mapTo[Receipt]
       .map(_.copy(requestId = id))
       .recover {
         case e: Exception ⇒
-          val msg = s"There was a problem when processing email request with id $id"
+          val msg = s"there was a problem when processing email request with id $id"
           log.error(e, msg)
           Receipt.error(e, message = msg, requestId = id)
       }
