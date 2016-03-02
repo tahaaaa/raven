@@ -239,8 +239,27 @@ package object model {
 
       case templateId@"harvester" ⇒
         wrapTemplate(requestId, "Harvester Email", recipient, "analytics@tokbox.com",
-          html.harvester(fields %> "datafield", fields %> "harvester_message", fields %> "harvester_image_link"),
+          html.harvester(
+	fields %> "title",
+	fields %> "datafield",
+	fields ?> "datafield_1",
+	fields ?> "datafield_2",
+	fields ?> "datafield_3",
+	fields %> "harvester_image_link",
+	fields ?> "harvester_analysis_image_link",
+	fields %> "harvester_email",
+	fields ?> "harvester_email_1",
+	fields ?> "harvester_email_2",
+	fields ?> "harvester_email_3",
+	fields %> "harvester_message",
+	fields ?> "harvester_message_1",
+	fields ?> "harvester_message_2"),
           templateId, fromName = Some("Business Analytics"))
+
+      case templateId@"tos_production" ⇒
+        wrapTemplate(requestId, " TokBox account suspension warning. Your account will be suspended in 24 hours unless we hear from you", recipient, "billing@tokbox.com",
+          html.tos_production(fields %> "login_url"),
+          templateId, fromName = Some("TokBox"))
 
     }
 
