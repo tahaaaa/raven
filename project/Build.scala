@@ -39,7 +39,6 @@ object RavenBuild extends Build {
     .settings(Revolver.settings: _*)
     .settings(
       coverageExcludedPackages := "html",
-      coverageEnabled := true,
       assemblyMergeStrategy in assembly := {
         case PathList("application.conf") => MergeStrategy.discard
         case x =>

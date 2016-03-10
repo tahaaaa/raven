@@ -12,13 +12,16 @@ import akka.util.Timeout
 import com.opentok.raven.http.EndpointUtils
 import com.opentok.raven.model.{Email, EmailRequest, Receipt, Requestable}
 
+import scala.util.{Success, Failure}
+
 
 class CertifiedEmailEndpoint(handler: ActorRef, t: Timeout)(implicit val mat: Materializer, system: ActorSystem) extends EndpointUtils {
 
-  implicit val logger: LoggingAdapter = system.log
+  implicit val log: LoggingAdapter = system.log
   implicit val timeout: Timeout = t
 
   import com.opentok.raven.http.JsonProtocol._
+  import system.dispatcher
 
   def fillInEmail(e: Email): Email = e.copy(id = Some(UUID.randomUUID.toString))
 
@@ -27,8 +30,22 @@ class CertifiedEmailEndpoint(handler: ActorRef, t: Timeout)(implicit val mat: Ma
       path("certified") {
         pathEndOrSingleSlash {
           entity(as[Requestable]) {
-            case req: EmailRequest ⇒ handler.ask(EmailRequest.fillInRequest(req).validated).mapTo[Receipt]
-            case em: Email ⇒ handler.ask(fillInEmail(em)).mapTo[Receipt]
+            case req: EmailRequest ⇒
+              val validated = EmailRequest.fillInRequest(req).validated
+              handler.ask(validated).mapTo[Receipt].andThen {
+                case Success(r) if r.success ⇒
+                  log.info(s"email request with id '${validated.id.get}' template '${validated.template_id}' was sent successfully to '${validated.to}'")
+                case _ ⇒
+                  log.warning(s"email request with id '${validated.id.get}' template '${validated.template_id}' failed to send to '${validated.to}'")
+              }
+            case em: Email ⇒
+              val email = fillInEmail(em)
+              handler.ask(email).mapTo[Receipt].andThen {
+                case Success(r) if r.success ⇒
+                  log.info(s"email with id '${em.id.get}' was sent successfully to '${em.recipients}'")
+                case _ ⇒
+                  log.warning(s"email with id '${em.id.get}' failed to send to '${em.recipients}'")
+              }
           }
         }
       }

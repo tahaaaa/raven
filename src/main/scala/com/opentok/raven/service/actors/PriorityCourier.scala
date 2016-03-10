@@ -32,7 +32,7 @@ class PriorityCourier(val emailsDao: EmailRequestDao, val provider: Provider, va
   override def receive: Receive = {
 
     case r: EmailRequest ⇒
-      log.info(s"Received request with id ${r.id}")
+      log.debug("received request with id '{}'", r.id)
 
       val req = //at this point, no request should have empty status
         if (r.status.isEmpty) r.copy(status = Some(EmailRequest.Pending))

@@ -63,12 +63,12 @@ class CertifiedCourier(val emailsDao: EmailRequestDao,
 
   override def receive: Receive = {
     case em: Email ⇒
-      log.info(s"Received email with id ${em.id}")
+      log.debug("received email with id {}", em.id)
       //direct email, so we generate a pending email request for every recipient
       sendEmail(emailToPendingEmailRequests(em), em) pipeTo sender()
 
     case r: EmailRequest ⇒
-      log.info(s"Received request with id ${r.id}")
+      log.debug("received request with id {}", r.id)
 
       val req = //at this point, no request should have empty status
         if (r.status.isEmpty) r.copy(status = Some(EmailRequest.Pending))
@@ -95,7 +95,7 @@ class CertifiedCourier(val emailsDao: EmailRequestDao,
 
       receipt pipeTo sender()
 
-    case anyElse ⇒ log.warning(s"Not an acceptable request $anyElse")
+    case anyElse ⇒ log.warning(s"Not an acceptable request: $anyElse")
   }
 
 }

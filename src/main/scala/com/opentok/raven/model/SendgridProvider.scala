@@ -37,14 +37,16 @@ class SendgridProvider(apiKey: String) extends Provider {
 
   val errorMsg = "error when connecting with SendGrid client"
 
-  override def send(tmp: Email)(implicit ctx: ExecutionContext): Future[Receipt] = Future {
-    log.debug(s"Received Email with id ${tmp.id}")
-    Try(client.send(tmp)).map {
-      case rsp if rsp.getStatus ⇒ Receipt(rsp.getStatus, requestId = tmp.id)
+  override def send(em: Email)(implicit ctx: ExecutionContext): Future[Receipt] = Future {
+    log.debug(s"received email with id '{}' addressed to '{}' with subject '{}'", em.id, em.recipients, em.subject)
+    Try(client.send(em)).map {
+      case rsp if rsp.getStatus ⇒
+        log.debug(s"successfully sent email with id '{}", em.id)
+        Receipt(rsp.getStatus, requestId = em.id)
       case rsp ⇒
         val combined = errorMsg + " " + rsp.getMessage
         log.error(combined)
-        Receipt.error(new Exception(combined), errorMsg, tmp.id)
+        Receipt.error(new Exception(combined), errorMsg, em.id)
     }.recover {
       case e: Exception ⇒
         log.error(errorMsg, e)
