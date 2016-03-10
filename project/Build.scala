@@ -51,6 +51,7 @@ object RavenBuild extends Build {
         "sonar.host.url" → "http://fistbump.tokbox.com:9000/",
         "sonar.jdbc.url" → "jdbc:mysql://fistbump.tokbox.com/sonar",
         "sonar.jdbc.driverClassName" → "com.mysql.jdbc.Driver",
+        "sonar.scoverage.reportPath" → "target/scala-2.11/scoverage-report/scoverage.xml",
         "sonar.jdbc.username" → "sonar",
         "sonar.jdbc.password" → "sonar"
       ),
