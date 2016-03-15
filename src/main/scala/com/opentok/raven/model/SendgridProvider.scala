@@ -5,12 +5,17 @@ import org.slf4j.LoggerFactory
 
 import scala.concurrent.{Future, ExecutionContext}
 import scala.util.Try
+import scala.util.matching.Regex
 
 /**
  * Processes [[com.opentok.raven.model.Email]] and sends it via SendGrid SMTPAPI
- * @param apiKey to authenticate client
+ * @param client [[com.sendgrid.SendGrid]] client
+ * @param prd if set to false, only emails with recipients matching `restrictTo` will be processed
+ * @param restrictTo regex to match recipients against
  */
-class SendgridProvider(apiKey: String) extends Provider {
+class SendgridProvider(client: SendGrid,
+                       prd: Boolean,
+                       restrictTo: Option[String]) extends Provider {
   /**
    * transforms [[com.opentok.raven.model.Email]] to [[com.sendgrid.SendGrid.Email]]
    */
@@ -33,11 +38,11 @@ class SendgridProvider(apiKey: String) extends Provider {
 
   val log = LoggerFactory.getLogger(this.getClass)
 
-  val client = new SendGrid(apiKey)
-
   val errorMsg = "error when connecting with SendGrid client"
 
-  override def send(em: Email)(implicit ctx: ExecutionContext): Future[Receipt] = Future {
+  val restrictRgxMaybe: Option[Regex] = restrictTo.map(new Regex(_))
+
+  def doSend(em: Email)(implicit ctx: ExecutionContext): Future[Receipt] = Future {
     log.debug(s"received email with id '{}' addressed to '{}' with subject '{}'", em.id, em.recipients, em.subject)
     Try(client.send(em)).map {
       case rsp if rsp.getStatus ⇒
@@ -52,5 +57,22 @@ class SendgridProvider(apiKey: String) extends Provider {
         log.error(errorMsg, e)
         Receipt.error(e, errorMsg)
     }.get
+  }
+
+  override def send(em: Email)(implicit ctx: ExecutionContext): Future[Receipt] = {
+    //if not prd filter out recipients that don't match regex restrictTo
+    if (!prd) {
+      val restrictRgx = restrictRgxMaybe.get //guaranteed by RavenConfig when booting up
+      log.warn(s"flag 'prd' set to false: filtering recipients that don't match regex '$restrictTo'")
+      val finalRecipients = em.recipients.filter(restrictRgx.pattern.matcher(_).matches)
+
+      if (finalRecipients.isEmpty) {
+        val msg = s"email '${em.id.get}' not sent: flag prd set to false and no recipients matched regex: '${restrictRgx.regex}'"
+        log.warn(msg)
+        Future.successful(Receipt.success(
+          message = Some(msg),
+          requestId = em.id))
+      } else doSend(em.copy(recipients = finalRecipients))
+    } else doSend(em)
   }
 }

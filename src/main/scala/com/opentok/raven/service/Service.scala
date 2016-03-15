@@ -7,6 +7,7 @@ import com.opentok.raven.RavenConfig
 import com.opentok.raven.dal.Dal
 import com.opentok.raven.model.{Provider, SendgridProvider}
 import com.opentok.raven.service.actors._
+import com.sendgrid.SendGrid
 
 /**
  * Trait that declares the actors that make up our service
@@ -32,7 +33,7 @@ trait AkkaService extends Service {
 
   implicit val materializer: ActorMaterializer = ActorMaterializer()
 
-  lazy val smtpProvider: Provider = new SendgridProvider(SENDGRID_API_KEY)
+  lazy val smtpProvider: Provider = new SendgridProvider(new SendGrid(SENDGRID_API_KEY), PRD, RESTRICT_TO)
 
   lazy val certifiedService = system.actorOf(
     Props(classOf[EmailSupervisor],

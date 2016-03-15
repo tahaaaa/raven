@@ -6,7 +6,11 @@ import akka.util.Timeout
 import com.typesafe.config.{Config, ConfigFactory}
 import slick.jdbc.JdbcBackend.Database
 
+import scala.util.Try
+
 trait RavenConfig {
+  val PRD: Boolean
+  val RESTRICT_TO: Option[String]
   val HOST: String
   val PORT: Int
   val SENDGRID_API_KEY: String
@@ -20,6 +24,14 @@ trait RavenConfig {
 }
 
 abstract class FromResourcesConfig(config: Config) extends RavenConfig {
+
+  val PRD: Boolean = config.getBoolean("raven.prd")
+
+  val RESTRICT_TO = Try(config.getString("raven.restrict-to")).toOption
+
+  if (!PRD) {
+    assert(RESTRICT_TO.isDefined, "'restrict-to' must be set in config if 'prd' flag is set to false!")
+  }
 
   val HOST = config.getString("raven.host")
 
