@@ -42,9 +42,9 @@ class CertifiedEmailEndpoint(handler: ActorRef, t: Timeout)(implicit val mat: Ma
               val email = fillInEmail(em)
               handler.ask(email).mapTo[Receipt].andThen {
                 case Success(r) if r.success ⇒
-                  log.info(s"email with id '${em.id.get}' was sent successfully to '${em.recipients}'")
+                  log.info(s"email with id '${email.id.get}' was sent successfully to '${email.recipients}'")
                 case _ ⇒
-                  log.warning(s"email with id '${em.id.get}' failed to send to '${em.recipients}'")
+                  log.warning(s"email with id '${email.id.get}' failed to send to '${email.recipients}'")
               }
           }
         }
