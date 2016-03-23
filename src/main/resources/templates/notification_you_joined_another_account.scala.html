@@ -1,4 +1,4 @@
-@(account_name: String, invitation_link: com.opentok.raven.model.Email.Url)
+@(account_name: String, account_portal_url: com.opentok.raven.model.Email.Url)
 
 <!-- H1 -->
 <div align="center" style="font-family: 'ITC Avant Garde Gothic W04 Md', 'Muli', helvetica, arial; font-size: 20px; color: #5f5f61; padding-bottom: 35px;">
@@ -7,15 +7,15 @@
 
 <!-- Body Copy -->
 <div style="line-height: 24px; padding-bottom: 35px; font-family: 'Muli', helvetica, arial;">
-    You have been invited to join OpenTok. To get started, please click on the link below:
+    You have joined another OpenTok account. To use this account, please click on the link below:
 </div>
 
 <!-- CTA Button with subtitle -->
 <div align="center" style="padding-bottom: 35px;">
-  <a href="@invitation_link">
+  <a href="@account_portal_url">
     <button style="height:40px; background-color:  #0099cc; border: none; font-family: 'Muli' helvetica, arial; font-size: 16px; color: #ffffff; padding: 0px 25px; margin-bottom:12px; border-radius: 3px;">
       <span class="blank" style="text-decoration:none !important;">
-          Join account <b>@account_name</b>
+          Use account <b>@account_name</b>
       </span>
       <img style="position: relative; top: 2px; padding-left: 20px" src="https://assets.tokbox.com/email/arrow_white.png" alt="&rarr;" border="0">
     </button>
