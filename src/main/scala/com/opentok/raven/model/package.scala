@@ -87,6 +87,10 @@ package object model {
 
     case object Failed extends Status
 
+    case object Filtered extends Status
+
+    case object PartiallyFiltered extends Status
+
 
     implicit object EmailRequestStatusFormat extends RootJsonFormat[EmailRequest.Status] {
       def write(obj: EmailRequest.Status) = JsString(obj.toString)

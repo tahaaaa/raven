@@ -69,8 +69,9 @@ class SendgridProvider(client: SendGrid,
       if (finalRecipients.isEmpty) {
         val msg = s"email '${em.id.get}' not sent: flag prd set to false and no recipients matched regex: '${restrictRgx.regex}'"
         log.warn(msg)
-        Future.successful(Receipt.success(
-          message = Some(msg),
+        Future.successful(Receipt(
+          success = true,
+          errors = List(msg),
           requestId = em.id))
       } else doSend(em.copy(recipients = finalRecipients))
     } else doSend(em)
