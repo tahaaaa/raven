@@ -225,6 +225,11 @@ package object model {
           ),
           templateId, fromName = Some("TokBox"))
 
+      case templateId@"user_deleted_from_account" ⇒
+        wrapTemplate(requestId, "Account Deleted", recipient, "messages@tokbox.com",
+          html.user_deleted_from_account(fields %> "account_name"),
+          templateId, fromName = Some("TokBox"))
+
       case templateId@"support_plan_upgrade" ⇒
         wrapTemplate(requestId, "Support Plan Upgrade", recipient, "messages@tokbox.com",
           html.support_plan_upgrade(), templateId, fromName = Some("TokBox"))

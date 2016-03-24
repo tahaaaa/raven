@@ -24,7 +24,7 @@ with App with MysqlDal with AkkaSystem with AkkaService with AkkaApi {
     case Failure(e) ⇒
       system.log.error(e, s"data access layer verification failed")
       //terminate service
-      system.terminate()
+      // system.terminate()
   }
 
 }
