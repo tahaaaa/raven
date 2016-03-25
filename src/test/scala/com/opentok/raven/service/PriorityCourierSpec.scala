@@ -92,5 +92,23 @@ with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
 
       serv.received shouldBe 1
     }
+
+    "If receipt is success but contains errors, request should be stored with status filtered" in {
+      val dao = new MockEmailRequestDao(Some(testRequest))
+      val rec = Receipt(success = true, requestId = testRequest.id, errors = List("oopsies"))
+      val serv = new MockProvider(rec)
+      val courier = priorityCourier(dao, serv)
+
+      within(3.seconds) {
+        courier ! testRequest
+
+        expectMsg[Receipt](rec)
+      }
+
+      serv.right shouldBe 1
+
+      dao.received.head.status shouldBe Some(EmailRequest.Filtered)
+
+    }
   }
 }

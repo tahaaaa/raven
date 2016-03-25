@@ -103,8 +103,11 @@ trait Courier {
     def andThenPersistResult(req: EmailRequest): Future[Receipt] =
       f.flatAndThen {
         //email was processed successfully by provider
-        case Success(rec) if rec.success ⇒
+        case Success(rec) if rec.success && rec.errors.isEmpty ⇒
           persistRequest(req.copy(status = Some(EmailRequest.Succeeded)))
+        //email was filtered out: prd flag is off and didn't match regex
+        case Success(rec) if rec.success ⇒
+          persistRequest(req.copy(status = Some(EmailRequest.Filtered)))
         //email was NOT processed successfully by provider
         case Success(rec) ⇒
           persistRequest(req.copy(status = Some(EmailRequest.Failed)))
@@ -114,9 +117,15 @@ trait Courier {
 
     def andThenPersistResult(reqs: List[EmailRequest]): Future[Receipt] =
       f.flatAndThen {
-        case Success(rec) if rec.success ⇒
+        case Success(rec) if rec.success && rec.errors.isEmpty ⇒
           Future.sequence[Any, List](reqs.map(req ⇒
             persistRequest(req.copy(status = Some(EmailRequest.Succeeded)))))
+        case Success(rec) if rec.success && reqs.length == 1 ⇒
+          Future.sequence[Any, List](reqs.map(req ⇒
+          persistRequest(req.copy(status = Some(EmailRequest.Filtered)))))
+        case Success(rec) if rec.success ⇒
+          Future.sequence[Any, List](reqs.map(req ⇒
+          persistRequest(req.copy(status = Some(EmailRequest.PartiallyFiltered)))))
         case Success(rec) ⇒
           Future.sequence[Any, List](reqs.map(req ⇒
             persistRequest(req.copy(status = Some(EmailRequest.Failed)))))
