@@ -223,10 +223,12 @@ package object model {
 
       case templateId@"account_deleted" ⇒
         wrapTemplate(requestId, "Account Deleted", recipient, "messages@tokbox.com",
-          html.account_deleted(
-            fields.get("last_invoice_amount").map(_.convertTo[Float]),
-            fields ?> "last_invoice_currency"
-          ),
+          html.account_deleted(fields %> "account_name"),
+          templateId, fromName = Some("TokBox"))
+
+      case templateId@"user_deleted_from_account" ⇒
+        wrapTemplate(requestId, "Account Deleted", recipient, "messages@tokbox.com",
+          html.user_deleted_from_account(fields %> "account_name"),
           templateId, fromName = Some("TokBox"))
 
       case templateId@"support_plan_upgrade" ⇒
