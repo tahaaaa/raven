@@ -272,6 +272,15 @@ package object model {
           html.tos_production(fields %> "login_url"),
           templateId, fromName = Some("TokBox"))
 
+      case templateId@"tools_feedback" ⇒
+        wrapTemplate(requestId, " New Tools Feedback Received", recipient, "tools-feedback@tokbox.com",
+          html.tools_feedback(
+  fields ?> "tool_name",
+  fields ?> "component",
+  fields ?> "rating",
+  fields ?> "feedback_body"),
+          templateId, fromName = Some("Tokbox Tools Feedback"))
+
     }
 
     def build(requestId: Option[String], templateId: String, injections: Injections, recipient: String): Try[Email] = Try {
