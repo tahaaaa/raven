@@ -141,7 +141,7 @@ package object model {
 
     import com.opentok.raven.http.JsonProtocol._
 
-    //convenience template constructor that uses html.wrap_email_v1
+    //convenience template constructor that uses html.wrap_email_v2
     def wrapTemplate(requestId: Option[String], subject: String, recipient: String,
                      from: String, template: play.twirl.api.Html, fromTemplateId: String,
                      toName: Option[EmailAddress] = None,
@@ -251,20 +251,20 @@ package object model {
       case templateId@"harvester" ⇒
         wrapTemplate(requestId, "Harvester Email", recipient, "analytics@tokbox.com",
           html.harvester(
-	fields %> "title",
-	fields %> "datafield",
-	fields ?> "datafield_1",
-	fields ?> "datafield_2",
-	fields ?> "datafield_3",
-	fields %> "harvester_image_link",
-	fields ?> "harvester_analysis_image_link",
-	fields %> "harvester_email",
-	fields ?> "harvester_email_1",
-	fields ?> "harvester_email_2",
-	fields ?> "harvester_email_3",
-	fields %> "harvester_message",
-	fields ?> "harvester_message_1",
-	fields ?> "harvester_message_2"),
+            fields %> "title",
+            fields %> "datafield",
+            fields ?> "datafield_1",
+            fields ?> "datafield_2",
+            fields ?> "datafield_3",
+            fields %> "harvester_image_link",
+            fields ?> "harvester_analysis_image_link",
+            fields %> "harvester_email",
+            fields ?> "harvester_email_1",
+            fields ?> "harvester_email_2",
+            fields ?> "harvester_email_3",
+            fields %> "harvester_message",
+            fields ?> "harvester_message_1",
+            fields ?> "harvester_message_2"),
           templateId, fromName = Some("Business Analytics"))
 
       case templateId@"tos_production" ⇒
@@ -275,10 +275,10 @@ package object model {
       case templateId@"tools_feedback" ⇒
         wrapTemplate(requestId, " New Tools Feedback Received", recipient, "tools-feedback@tokbox.com",
           html.tools_feedback(
-  fields ?> "tool_name",
-  fields ?> "component",
-  fields ?> "rating",
-  fields ?> "feedback_body"),
+            fields ?> "tool_name",
+            fields ?> "component",
+            fields ?> "rating",
+            fields ?> "feedback_body"),
           templateId, fromName = Some("Tokbox Tools Feedback"))
 
     }
