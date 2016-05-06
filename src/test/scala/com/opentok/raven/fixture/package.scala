@@ -25,13 +25,14 @@ package object fixture {
 
   class MockEmailRequestDao(testRequest: Option[EmailRequest],
                             persistanceFails: Boolean = false,
-                            persistanceTimesOut: Boolean = false) extends EmailRequestDao {
+                            persistanceTimesOut: Boolean = false)
+                            (implicit system: ActorSystem) extends EmailRequestDao {
 
     val log = LoggerFactory.getLogger("MockEmailRequestDao")
 
-    import scala.concurrent.ExecutionContext.Implicits.global
+    import system.dispatcher
 
-    lazy val timeout = 20000
+    lazy val timeout = 5000
 
     lazy val received = scala.collection.mutable.ListBuffer.empty[EmailRequest]
 
@@ -68,7 +69,7 @@ package object fixture {
 
   lazy val testRequest2 = EmailRequest("ernest+ravenbatchEmail@tokbox.com", "test",
     Some(JsObject(Map("a" → JsString(s"INTEGRATION TEST RUN AT ${new DateTime().toString}"),
-      "b" → JsNumber(1)))), None, None)
+      "b" → JsNumber(1)))), None, Some("22222222"))
 
   lazy val testRequest3 = EmailRequest("ernest+raven@tokbox.com", "test",
     Some(JsObject(Map("a" → JsString(s"UNIT TEST RUN AT ${new DateTime().toString}"),
@@ -77,17 +78,7 @@ package object fixture {
   lazy val testEmail =
     Email.build(testRequest2.id, testRequest2.template_id, testRequest2.$inject, testRequest2.to)
 
-  lazy val nBatch = 3
-
-  lazy val marshalledBatchEmail: JsValue = JsArray(Vector.fill(nBatch)(
-    emailJsonFormat.write(testEmail.get.copy(recipients = "BATCH@tokbox.com" :: Nil))).toSeq: _*)
-
   lazy val marshalledEmail = emailJsonFormat.write(testEmail.get)
-
-  lazy val marshalledBatch: JsValue = JsArray(Vector.fill(nBatch)(requestJsonFormat.write(
-    EmailRequest("ernest+ravenbatch@tokbox.com", "test",
-      Some(JsObject(Map("a" → JsString(s"INTEGRATION TEST RUN AT ${new DateTime().toString}"),
-        "b" → JsNumber(1)))), None, None))).toSeq: _*)
 
   class TestActor[T](t: ClassTag[T]) extends Actor with ActorLogging {
     var right = 0

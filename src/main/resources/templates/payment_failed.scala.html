@@ -1,0 +1,23 @@
+@(try_num: Int, next_unix_ms: Long, account_portal_url: com.opentok.raven.model.Email.Url)
+<!-- prettify retry num -->
+@defining(if(try_num==1) "first" else if (try_num==2) "second" else if (try_num==3) "third" else try_num.toString) { try_num_pretty =>
+<!-- prettify next attempt dt -->
+@defining((new org.joda.time.DateTime(next_unix_ms, org.joda.time.DateTimeZone.UTC)).toString("YYYY-MM-dd HH:mm:ss Z")){ next_attempt_on =>
+  <!-- H1 -->
+  <div align="center" style="font-family: 'ITC Avant Garde Gothic W04 Md', 'Muli', helvetica, arial; font-size: 20px; color: #5f5f61; padding-bottom: 35px;">Payment Failed</div>
+  <!-- Body Copy -->
+  <div style="line-height: 24px; padding-bottom: 35px; font-family: 'Muli', helvetica, arial;">
+    Our <b>@try_num_pretty</b> attempt to charge you was unsuccessful. We'll attempt to charge the credit card you have on file again on <b>@next_attempt_on</b>.
+  </div>
+  <div align="center" style="padding-bottom: 35px;"><a href="@account_portal_url">
+      <button style="height:40px; background-color:  #0099cc; border: none; font-family: 'Muli' helvetica, arial; font-size: 16px; color: #ffffff; padding: 0px 25px; margin-bottom:12px; border-radius: 3px;">
+          <span class="blank" style="text-decoration:none !important;">
+            Verify your credit card
+          </span>
+          <img style="position: relative; top: 2px; padding-left: 20px" src="https://assets.tokbox.com/email/arrow_white.png" alt="&rarr;" border="0">
+      </button></a>
+  </div>
+  <!-- Thank You -->
+  <div style="line-height: 24px; font-family: 'Muli', helvetica, arial;">Thanks for choosing OpenTok,<br><br>The TokBox Team</div>
+}
+}

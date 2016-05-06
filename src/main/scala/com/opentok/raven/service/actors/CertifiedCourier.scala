@@ -24,7 +24,8 @@ import scala.util.{Failure, Success}
  * @param emailsDao email requests data access object
  * @param emailProvider SendGrid actor instance
  */
-class CertifiedCourier(val emailsDao: EmailRequestDao, val emailProvider: ActorRef, t: Timeout) extends Actor with ActorLogging with Courier {
+class CertifiedCourier(val emailsDao: EmailRequestDao, val emailProvider: ActorRef, t: Timeout)
+  extends Actor with ActorLogging with Courier {
 
   import context.dispatcher
 
@@ -42,7 +43,7 @@ class CertifiedCourier(val emailsDao: EmailRequestDao, val emailProvider: ActorR
     //persist request attempt
     persistRequests(reqs).flatMap { _ ⇒
       //then send email to email provider
-      send(None, email)
+      send(reqs.head.id, email)
     }.recoverWith {
       //we only enter this block if emailsDao fails to persist request
       //because send recovers itself with an error receipt
@@ -50,7 +51,7 @@ class CertifiedCourier(val emailsDao: EmailRequestDao, val emailProvider: ActorR
       case e: Exception ⇒
         log.warning("There was a problem when trying to save request BEFORE forwarding it to provider. Skipping persist..")
         //add error in errors but leave receipt success as it is
-        send(None, email).map(_.copy(
+        send(reqs.head.id, email).map(_.copy(
           message = Some("email delivered but there was a problem when persisting request to db"),
           errors = e.getMessage :: Nil)
         )

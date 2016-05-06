@@ -16,5 +16,4 @@ trait TestConfig extends RavenConfig {
   override val DEFERRER: Int = 1
   override val DB_CHECK: String = "select 1;"
   override val PRIORITY_POOL: Int = 1
-  override val ACTOR_INNER_TIMEOUT: Timeout = 4.seconds
 }

@@ -16,25 +16,18 @@ trait JsonProtocol extends SprayJsonSupport with DefaultJsonProtocol {
   implicit val receiptJsonFormat: RootJsonFormat[Receipt] = jsonFormat4(Receipt.apply)
 
   implicit object RequestableJsonFormat
-    extends RootJsonFormat[Either[List[Requestable], Requestable]] {
-    override def write(obj: Either[List[Requestable], Requestable]): JsValue =
+    extends RootJsonFormat[Requestable] {
+
+    override def write(obj: Requestable): JsValue =
       obj match {
-        case Right(e: EmailRequest) ⇒ requestJsonFormat.write(e)
-        case Right(e: Email) ⇒ emailJsonFormat.write(e)
-        case Left(lReq) if lReq.isEmpty ⇒ JsArray(Vector.empty)
-        case Left(lReq) ⇒ JsArray(lReq.map {
-          case e: EmailRequest ⇒ requestJsonFormat.write(e)
-          case e: Email ⇒ emailJsonFormat.write(e)
-        }.toSeq: _*)
+        case e: EmailRequest ⇒ requestJsonFormat.write(e)
+        case e: Email ⇒ emailJsonFormat.write(e)
       }
 
-    override def read(json: JsValue): Either[List[Requestable], Requestable] =
+    override def read(json: JsValue): Requestable =
       json match {
-        case JsArray(lReq) if lReq.isEmpty ⇒ Left(List.empty[Requestable])
-        case JsArray(lReq) if lReq.head.asJsObject.fields.exists(_._1.toLowerCase == "template_id") ⇒ Left(lReq.map(requestJsonFormat.read).toList)
-        case JsArray(lReq) ⇒ Left(lReq.map(emailJsonFormat.read).toList)
-        case obj: JsValue if obj.asJsObject.fields.exists(_._1.toLowerCase == "template_id") ⇒ Right(requestJsonFormat.read(obj))
-        case obj: JsValue ⇒ Right(emailJsonFormat.read(obj))
+        case obj: JsValue if obj.asJsObject.fields.exists(_._1.toLowerCase == "template_id") ⇒ requestJsonFormat.read(obj)
+        case obj: JsValue ⇒ emailJsonFormat.read(obj)
       }
   }
 

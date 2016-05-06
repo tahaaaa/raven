@@ -15,7 +15,6 @@ trait RavenConfig {
   val CERTIFIED_POOL: Int
   val PRIORITY_POOL: Int
   val ACTOR_TIMEOUT: Timeout
-  val ACTOR_INNER_TIMEOUT: Timeout
   val ENDPOINT_TIMEOUT: Timeout
   val DB_CHECK: String
 }
@@ -32,6 +31,8 @@ abstract class FromResourcesConfig(config: Config) extends RavenConfig {
 
   val DEFERRER = config.getInt("raven.deferrer")
 
+  assert(DEFERRER != 0, "deferrer cannot be 0!")
+
   val CERTIFIED_POOL = config.getInt("raven.certified-pool")
 
   val PRIORITY_POOL = config.getInt("raven.priority-pool")
@@ -41,12 +42,14 @@ abstract class FromResourcesConfig(config: Config) extends RavenConfig {
     Timeout(dur.toMillis, TimeUnit.MILLISECONDS)
   }
 
-  implicit val ACTOR_INNER_TIMEOUT: Timeout = ACTOR_TIMEOUT.duration * 2
-
   implicit val ENDPOINT_TIMEOUT: Timeout = {
     val dur = config.getDuration("raven.endpoint-timeout")
     Timeout(dur.toMillis, TimeUnit.MILLISECONDS)
   }
+
+  assert(ACTOR_TIMEOUT.duration * DEFERRER * MAX_RETRIES < ENDPOINT_TIMEOUT.duration,
+    s"max-retries($MAX_RETRIES) * deferrer($DEFERRER) * actor-timeout($ACTOR_TIMEOUT) " +
+      s"should be smaller than endpoint timeout($ENDPOINT_TIMEOUT)")
 
   implicit val DB_CHECK: String = config.getString("raven.database.connectionTestQuery")
 

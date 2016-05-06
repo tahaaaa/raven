@@ -14,8 +14,8 @@ import scala.reflect.ClassTag
 class CertifiedCourierSpec() extends TestKit(ActorSystem("CertifiedCourierSpec"))
 with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
 
-  override def afterAll() {
-    system.terminate()
+  override def afterAll(): Unit = {
+    TestKit.shutdownActorSystem(system)
   }
 
   implicit val ctx = system.dispatcher

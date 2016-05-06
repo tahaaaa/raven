@@ -10,7 +10,7 @@ import scala.reflect.ClassTag
 trait TestAkkaSystem extends AkkaService {
   this: H2Dal with TestConfig with com.opentok.raven.service.System ⇒
 
-  override lazy val smtpService: TestActorRef[TestActor[Email]] =
+  override lazy val mockEmailProvider: TestActorRef[TestActor[Email]] =
     TestActorRef(Props(classOf[TestActor[Email]], implicitly[ClassTag[Email]]))
 
 }

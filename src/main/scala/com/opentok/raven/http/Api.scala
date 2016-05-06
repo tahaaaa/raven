@@ -8,9 +8,10 @@ import akka.http.scaladsl.server._
 import akka.util.CompactByteString
 import com.opentok.raven.RavenConfig
 import com.opentok.raven.http.endpoints.{CertifiedEmailEndpoint, DebugEndpoint, MonitoringEndpoint, PriorityEmailEndpoint}
-import com.opentok.raven.model.EmailRequest.{InvalidTemplate, MissingInjections}
-import com.opentok.raven.model.Receipt
+import com.opentok.raven.model.{RavenRejection, Receipt}
 import com.opentok.raven.service.Service
+
+import scala.util.Try
 
 trait Api {
   val routeTree: Route
@@ -34,21 +35,28 @@ trait AkkaApi extends Api {
   }
 
   val rejectionHandler = RejectionHandler.newBuilder().handle {
-    case rej@MalformedRequestContentRejection(msg, _) ⇒
-      system.log.warning(s"malformed request content rejection: $rej")
-      completeWithMessage("There was a problem when unmarshalling body: " + msg, rej)
+    case rej@ValidationRejection(msg, Some(cause)) ⇒
+      complete {
+        HttpResponse(
+          status = BadRequest,
+          entity = HttpEntity.Strict(ContentType(`application/json`),
+            CompactByteString(JsonProtocol.receiptJsonFormat.write(
+              Receipt(
+                success = false,
+                message = Some("rejected"),
+                errors = Try(cause.getMessage :: cause.getCause.getMessage :: Nil)
+                  .getOrElse(cause.getMessage :: Nil)
+              )
+            ).toString)))
+      }
     case rej: Rejection ⇒
       system.log.warning(s"$rej")
-      completeWithMessage("rejection", rej)
+      completeWithMessage("rejected", rej)
   }
 
   val receiptExceptionHandler = ExceptionHandler {
-    case e: InvalidTemplate ⇒
-      val msg = s"invalid template: ${e.getCause.getMessage}"
-      reject(new ValidationRejection(msg, Some(e)))
-    case e: MissingInjections ⇒
-      val msg = s"missing injections: ${e.getCause.getMessage}"
-      reject(new ValidationRejection(msg, Some(e)))
+    case e: RavenRejection ⇒
+      reject(new ValidationRejection(e.getMessage, Some(e)))
     //rest of exceptions
     case e: Exception ⇒
       system.log.error(e, "unexpected error")

@@ -1,39 +1,26 @@
-@(account_name: String, invitation_link: String)
-<tr style="background:white;">
-    <td width="60px"></td>
-    <td width=640px style="text-align:center; padding: 30px 0;">
-        <h1>Congratulations! You have been invited @account_name. </h1>
-        <p class="light">
-To get started, please click on the link below:
-        </p>
-    </td>
-    <td width="60px" ></td>
-</tr>
-<tr>
-    <td width="60px"></td>
-    <td width=640px style="text-align:center; padding: 30px 0; font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;">
+@(account_name: String, invitation_link: com.opentok.raven.model.Email.Url)
 
-        <center>
-            <a href="@invitation_link" class="btn btn-blue">Join @account_name</a>
-        </center>
+<!-- H1 -->
+<div align="center" style="font-family: 'ITC Avant Garde Gothic W04 Md', 'Muli', helvetica, arial; font-size: 20px; color: #5f5f61; padding-bottom: 35px;">
+    Congratulations!
+</div>
 
-        <p>
-Or, visit this url:
-        </p>
+<!-- Body Copy -->
+<div style="line-height: 24px; padding-bottom: 35px; font-family: 'Muli', helvetica, arial;">
+    You have been invited to join OpenTok. To get started, please click on the link below:
+</div>
 
-        <center>
-            <a href="@invitation_link"> @invitation_link </a>
-        </center>
+<!-- CTA Button with subtitle -->
+<div align="center" style="padding-bottom: 35px;"><a href="@invitation_link">
+    <button style="height:40px; background-color:  #0099cc; border: none; font-family: 'Muli' helvetica, arial; font-size: 16px; color: #ffffff; padding: 0px 25px; margin-bottom:12px; border-radius: 3px;">
+        <span class="blank" style="text-decoration:none !important;">
+            Join account <b>@account_name</b>
+        </span>
+        <img style="position: relative; top: 2px; padding-left: 20px" src="https://assets.tokbox.com/email/arrow_white.png" alt="&rarr;" border="0">
+    </button></a>
 
-        <br>
-        <br>
-        <p>
-Thanks for choosing OpenTok,
-        </p>
-        <strong style="color:#5F6062;font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:18px;line-height:28px;">
-The TokBox Team
-        </strong>
+</div>
 
-    </td>
-    <td width="60px"></td>
-</tr>
+<!-- Thank You -->
+<div style="line-height: 24px; font-family: 'Muli', helvetica, arial;">Thanks for choosing OpenTok,<br><br>The TokBox Team</div>
+

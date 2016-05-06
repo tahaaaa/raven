@@ -16,8 +16,10 @@ import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-//uses all components but DAL uses an in-memory DB
-//and fake sendgrid actor
+/**
+ * uses all components but DAL uses an in-memory DB
+ * and couriers have a mocked email provider that doesn't send emails
+ */
 class IntegrationSpec extends TestKit(ActorSystem("IntegrationSpec"))
 with com.opentok.raven.service.System with TestConfig
 with WordSpecLike with Matchers
@@ -30,8 +32,9 @@ with BeforeAndAfterAll with H2Dal with TestAkkaSystem with AkkaApi {
     interface = HOST, port = PORT), 3.seconds)
 
   override def afterAll() {
-    TestKit.shutdownActorSystem(system)
     binding.unbind()
+    TestKit.shutdownActorSystem(system)
+    db.close()
   }
 
   import system.dispatcher
@@ -57,20 +60,12 @@ with BeforeAndAfterAll with H2Dal with TestAkkaSystem with AkkaApi {
     receipt.success should be(true)
   }
 
-  "Expose in-flight emails information" in {
-    val resp = Await.result(Source.single(RequestBuilding.Get("/v1/monitoring/pending"))
-      .via(selfConnectionFlow).runWith(Sink.head), 3.seconds)
-    resp.status.isSuccess() should be(true)
-  }
-
   "Send an email via priority service, persist results to DB and reply back to requester with success" in {
     val receipt = Await.result(Source.single(RequestBuilding.Post("/v1/priority", marshalledRequest))
       .via(selfConnectionFlow).runWith(Sink.head).map(_.entity).flatMap(receiptUnmarshaller.apply), 3.seconds)
 
-    smtpService.underlyingActor.wrong should be(0)
-    smtpService.underlyingActor.right should be(1)
-
-    Thread.sleep(2000) //wait for persist
+    mockEmailProvider.underlyingActor.wrong should be(0)
+    mockEmailProvider.underlyingActor.right should be(1)
 
     val dbRecord = Await.result(emailRequestDao.retrieveRequest(receipt.requestId.get), 5.seconds).get
     dbRecord.id shouldBe receipt.requestId
@@ -85,10 +80,8 @@ with BeforeAndAfterAll with H2Dal with TestAkkaSystem with AkkaApi {
     val receipt = Await.result(Source.single(RequestBuilding.Post("/v1/certified", marshalledRequest))
       .via(selfConnectionFlow).runWith(Sink.head).map(_.entity).flatMap(receiptUnmarshaller.apply), 3.seconds)
 
-    smtpService.underlyingActor.wrong should be(0)
-    smtpService.underlyingActor.right should be(2)
-
-    Thread.sleep(2000) //wait for persist
+    mockEmailProvider.underlyingActor.wrong should be(0)
+    mockEmailProvider.underlyingActor.right should be(2) //prev 1 + 1
 
     val dbRecord = Await.result(emailRequestDao.retrieveRequest(receipt.requestId.get), 5.seconds).get
     dbRecord.id shouldBe receipt.requestId
@@ -99,33 +92,12 @@ with BeforeAndAfterAll with H2Dal with TestAkkaSystem with AkkaApi {
     receipt.success shouldBe (true)
   }
 
-  "Send a batch of emails via certified service, persist results to DB and reply back to requester with success" in {
-    val receipt = Await.result(Source.single(RequestBuilding.Post("/v1/certified", marshalledBatch))
-      .via(selfConnectionFlow).runWith(Sink.head).map(_.entity).flatMap(receiptUnmarshaller.apply), 3.seconds)
-
-    Thread.sleep(2000)
-
-    smtpService.underlyingActor.wrong should be(0)
-    smtpService.underlyingActor.right should be(5)
-
-    import driver.api._
-    val count = Await.result(db.run(
-      sql"SELECT status FROM email_requests WHERE recipient = 'ernest+ravenbatch@tokbox.com'".as[String]
-    ), 5.seconds)
-    count.length shouldBe nBatch
-    receipt.success shouldBe (true)
-    count.filter(_ == EmailRequest.Succeeded.toString.toLowerCase).length shouldBe nBatch
-
-  }
-
-  "Send an prebuilt email via certified service, persist results to DB and reply back to requester with success" in {
+  "Send a prebuilt email via certified service, persist results to DB and reply back to requester with success" in {
     val receipt = Await.result(Source.single(RequestBuilding.Post("/v1/certified", marshalledEmail))
       .via(selfConnectionFlow).runWith(Sink.head).map(_.entity).flatMap(receiptUnmarshaller.apply), 3.seconds)
 
-    Thread.sleep(2000)
-
-    smtpService.underlyingActor.wrong should be(0)
-    smtpService.underlyingActor.right should be(6)
+    mockEmailProvider.underlyingActor.wrong should be(0)
+    mockEmailProvider.underlyingActor.right should be(3) //prev 2 + 1
 
     val dbRecord = Await.result(emailRequestDao.retrieveRequest(receipt.requestId.get), 5.seconds).get
     dbRecord.id shouldBe receipt.requestId
@@ -136,24 +108,9 @@ with BeforeAndAfterAll with H2Dal with TestAkkaSystem with AkkaApi {
     receipt.success shouldBe (true)
   }
 
-  "Send a batch of prebuilt emails via certified service, persist results to DB and reply back to requester with success" in {
-    val receipt = Await.result(Source.single(RequestBuilding.Post("/v1/certified", marshalledBatchEmail))
-      .via(selfConnectionFlow).runWith(Sink.head).map(_.entity).flatMap(receiptUnmarshaller.apply), 3.seconds)
-
-    Thread.sleep(2000)
-
-    smtpService.underlyingActor.wrong should be(0)
-    smtpService.underlyingActor.right should be(9)
-
-    import driver.api._
-    val count = Await.result(db.run(
-      sql"SELECT status FROM email_requests WHERE recipient = 'BATCH@tokbox.com'".as[String]
-    ), 5.seconds)
-    count.length shouldBe nBatch
-    count.filter(_ == EmailRequest.Succeeded.toString.toLowerCase).length shouldBe nBatch
-
-    receipt.success shouldBe (true)
+  "Expose in-flight emails information" in {
+    val resp = Await.result(Source.single(RequestBuilding.Get("/v1/monitoring/pending"))
+      .via(selfConnectionFlow).runWith(Sink.head), 3.seconds)
+    resp.status.isSuccess() should be(true)
   }
-
-
 }

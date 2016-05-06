@@ -1,0 +1,139 @@
+@(recipient: String, content: play.twirl.api.Html)
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html style="font-family: 'Muli', arial; margin: 0; padding: 0">
+<head>
+ <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+  <title>TokBox Email Template</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+</head>
+
+<body style="font-family: 'Muli', arial; margin: 0; padding: 0; font-size: 14px; color:#5f6062;" bgcolor="#f9f9f9">
+    <link type="text/css" rel="stylesheet" href="http://fast.fonts.net/cssapi/d2adacd8-a7c8-4ed5-b3ad-1814b107599b.css"/>
+    <style type="text/css">
+        @@font-face {
+            font-family: 'Muli'; font-style: normal; font-weight: 300; src: local('Muli Light'), local('Muli-Light'), url(http://themes.googleusercontent.com/static/fonts/muli/v5/TgrecWq39GVsTOFonFwGXQLUuEpTyoUstqEm5AMlJo4.woff) format('woff');
+        }
+        body {
+            margin: 0; padding: 0; font-family: 'Muli', helvetica, arial;
+        }
+    </style>
+
+    <table border="0" cellpadding="0" cellspacing="0" width="100%">
+        <tr>
+            <td>
+                <table align="center" border="0" cellpadding="0" cellspacing="0" width="600" style="border-collapse: collapse;">
+                    <tr>
+                        <td>
+
+
+
+                            <table align="center" border="0" cellpadding="0" cellspacing="0" width="600">
+                                <tr>
+                                    <!-- Logo -->
+                                    <td align="center" style="padding: 35px 0 25px 0; color: #153643;">
+                                        <a href="http://www.tokbox.com" style="color: #0098ca; text-decoration: none">
+                                            <img src="https://assets.tokbox.com/email/logo.png" alt="TokBox" width="135" height="35" style="display: block;" border="0" >
+                                        </a>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+
+                                        <!-- Gray Line -->
+                                        <div style="border-top-color: #f1eeeb; border-top-style: solid; border-top-width: 1px"></div>
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td style="padding: 35px 0 35px 0;">@content </td>
+                                </tr>
+                            </table>
+
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+
+
+
+    <table border="0" cellpadding="0" cellspacing="0" width="100%" bgcolor="#f0edeb">
+        <tr>
+            <td>
+                <table align="center" border="0" cellpadding="0" cellspacing="0" width="600" style="border-collapse: collapse;">
+                    <tr>
+                        <td>
+
+                            <!-- TokBox & Telefonica -->
+                            <div style="padding-top: 25px"><table border="0" cellpadding="0" cellspacing="0" width="100%">
+                                <tr>
+                                    <td width="275" valign="top" align="right">
+                                        <a href="http://www.tokbox.com" style="color: #0098ca; text-decoration: none">
+                                            <img src="https://assets.tokbox.com/email/tokboxgray.png" alt="TokBox" width="95" height="25" style="display: block;" border="0">
+                                        </a>
+                                    </td>
+
+                                    <td style="font-size: 0; line-height: 0;" width="50">
+                                        &nbsp;
+                                    </td>
+
+                                    <td width="275" valign="top" align="left">
+                                        <a href="http://www.telefonica.com/" style="color: #0098ca; text-decoration: none">
+                                            <img src="https://assets.tokbox.com/email/telefonicagray.png" alt="Telefonica" width="70" height="18" style="display: block;" border="0">
+                                        </a>
+                                    </td>
+
+                                </tr>
+                            </table></div>
+
+                            <!-- Adress -->
+                            <div align="center" style=" font-family: 'Muli', helvetica, arial; font-size:11px; line-height:14px; padding-top:12px;">501 2nd Street, Suite 310, San Francisco, CA 94107</div>
+                            <!-- Social Media -->
+                            <div align="center" style="padding:20px 0 20px 0" width="300" >
+
+                                <a href="http://www.tokbox.com/blog/" style="text-decoration:none;">
+                                    <img src="https://assets.tokbox.com/email/social_icon-blog.png" alt="Blog" style="padding-right: 17px"border="0">
+                                </a>
+                                <a href="https://twitter.com/tokbox" style="text-decoration:none;">
+                                    <img src="https://assets.tokbox.com/email/social_icon-twitter.png" alt="Twitter" style="padding-right: 17px"border="0">
+                                </a>
+                                <a href="https://www.linkedin.com/company/tokbox" style="text-decoration:none;">
+                                    <img src="https://assets.tokbox.com/email/social_icon-linkedin.png" alt="LinkedIn" style="padding-right: 17px"border="0">
+                                </a>
+                                <a href="https://www.facebook.com/tokbox" style="text-decoration:none;">
+                                    <img src="https://assets.tokbox.com/email/social_icon-facebook.png" alt="Facebook" style="padding-right: 17px"border="0">
+                                </a>
+                                <a href="https://plus.google.com/+tokbox/posts" style="text-decoration:none;">
+                                    <img src="https://assets.tokbox.com/email/social_icon-googleplus.png" alt="Google Plus" style="padding-right: 17px"border="0">
+                                </a>
+                                <a href="https://assets.tokbox.com/email/social_icon-youtube.png" style="text-decoration:none;">
+                                    <img src="https://assets.tokbox.com/email/social_icon-youtube.png" alt="Youtube" style="padding-right: 0px"border="0">
+                                </a>
+                            </div>
+
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+
+    <table border="0" cellpadding="0" cellspacing="0" width="100%" bgcolor="#f9f9f9">
+        <tr>
+            <td>
+                <table align="center" border="0" cellpadding="0" cellspacing="0" width="600" style="border-collapse: collapse;">
+                    <tr>
+                        <td>
+
+                            <div align="center" style="font-family: 'Muli', helvetica, arial; font-size:11px; padding:20px 0 20px 0" >
+
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
