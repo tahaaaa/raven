@@ -87,6 +87,10 @@ package object model {
 
     case object Failed extends Status
 
+    case object Filtered extends Status
+
+    case object PartiallyFiltered extends Status
+
 
     implicit object EmailRequestStatusFormat extends RootJsonFormat[EmailRequest.Status] {
       def write(obj: EmailRequest.Status) = JsString(obj.toString)
@@ -137,7 +141,7 @@ package object model {
 
     import com.opentok.raven.http.JsonProtocol._
 
-    //convenience template constructor that uses html.wrap_email_v1
+    //convenience template constructor that uses html.wrap_email_v2
     def wrapTemplate(requestId: Option[String], subject: String, recipient: String,
                      from: String, template: play.twirl.api.Html, fromTemplateId: String,
                      toName: Option[EmailAddress] = None,
@@ -173,6 +177,11 @@ package object model {
       case templateId@"developer_invitation" ⇒
         wrapTemplate(requestId, "TokBox Account Invitation", recipient, "messages@tokbox.com",
           html.developer_invitation(fields %> "account_name", fields %> "invitation_link"),
+          templateId, fromName = Some("TokBox"))
+
+      case templateId@"notification_you_joined_another_account" ⇒
+        wrapTemplate(requestId, "TokBox Account Notification", recipient, "messages@tokbox.com",
+          html.notification_you_joined_another_account(fields %> "account_name", fields %> "account_portal_url"),
           templateId, fromName = Some("TokBox"))
 
       case templateId@"account_expiration_warning" ⇒
@@ -214,10 +223,12 @@ package object model {
 
       case templateId@"account_deleted" ⇒
         wrapTemplate(requestId, "Account Deleted", recipient, "messages@tokbox.com",
-          html.account_deleted(
-            fields.get("last_invoice_amount").map(_.convertTo[Float]),
-            fields ?> "last_invoice_currency"
-          ),
+          html.account_deleted(fields %> "account_name"),
+          templateId, fromName = Some("TokBox"))
+
+      case templateId@"user_deleted_from_account" ⇒
+        wrapTemplate(requestId, "Account Deleted", recipient, "messages@tokbox.com",
+          html.user_deleted_from_account(fields %> "account_name"),
           templateId, fromName = Some("TokBox"))
 
       case templateId@"support_plan_upgrade" ⇒
@@ -240,26 +251,35 @@ package object model {
       case templateId@"harvester" ⇒
         wrapTemplate(requestId, "Harvester Email", recipient, "analytics@tokbox.com",
           html.harvester(
-	fields %> "title",
-	fields %> "datafield",
-	fields ?> "datafield_1",
-	fields ?> "datafield_2",
-	fields ?> "datafield_3",
-	fields %> "harvester_image_link",
-	fields ?> "harvester_analysis_image_link",
-	fields %> "harvester_email",
-	fields ?> "harvester_email_1",
-	fields ?> "harvester_email_2",
-	fields ?> "harvester_email_3",
-	fields %> "harvester_message",
-	fields ?> "harvester_message_1",
-	fields ?> "harvester_message_2"),
+            fields %> "title",
+            fields %> "datafield",
+            fields ?> "datafield_1",
+            fields ?> "datafield_2",
+            fields ?> "datafield_3",
+            fields %> "harvester_image_link",
+            fields ?> "harvester_analysis_image_link",
+            fields %> "harvester_email",
+            fields ?> "harvester_email_1",
+            fields ?> "harvester_email_2",
+            fields ?> "harvester_email_3",
+            fields %> "harvester_message",
+            fields ?> "harvester_message_1",
+            fields ?> "harvester_message_2"),
           templateId, fromName = Some("Business Analytics"))
 
       case templateId@"tos_production" ⇒
         wrapTemplate(requestId, " TokBox account suspension warning. Your account will be suspended in 24 hours unless we hear from you", recipient, "billing@tokbox.com",
           html.tos_production(fields %> "login_url"),
           templateId, fromName = Some("TokBox"))
+
+      case templateId@"tools_feedback" ⇒
+        wrapTemplate(requestId, " New Tools Feedback Received", recipient, "tools-feedback@tokbox.com",
+          html.tools_feedback(
+            fields ?> "tool_name",
+            fields ?> "component",
+            fields ?> "rating",
+            fields ?> "feedback_body"),
+          templateId, fromName = Some("Tokbox Tools Feedback"))
 
     }
 

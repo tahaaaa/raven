@@ -80,8 +80,11 @@ Email
 ## Templates
 After booting up go to [http://localhost:9911/v1/debug/template](http://localhost:9911/v1/debug/template) to see a list of available templates. Complete path with a `template_id` to find out how to use template i.e. [http://localhost:9911/v1/debug/template/test](http://localhost:9911/v1/debug/template/test). At the top of the html document, there will be a list of parameters and their types; if there are none, it means that the template doesn't require any parameters. Pass them in query string to see compiled template i.e. [http://localhost:9911/v1/debug/template/test?a=hello&b=1](http://localhost:9911/v1/debug/template/test?a=hello&b=1).
 
+## Configure
+Do `cp src/main/resources/reference.conf src/main/resources/application.conf` and override db values in application.conf. Note that by default only emails that match `.*@tokbox.com` will be sent. This can be turned off by setting `prd` to `true` in your `application.conf`.
+
 ## Run
-Create the db in your preferred mysql instance with [src/test/resources/schema.sql](schema.sql). Do `cp src/main/resources/reference.conf src/main/resources/application.conf` and override db values in application.conf. Install sbt if you don't have it already and do `sbt run` or `sbt reStart`.
+[Configure](#configure) first and then create the db and build the schema in your preferred mysql instance with [src/test/resources/schema.sql](schema.sql). Install sbt if you don't have it already and do `sbt run` or `sbt reStart`.
 
 ## Deploy
 Do ` sbt clean assembly && docker build -t opentok/raven:latest . `, then `docker run -d -p 8000:9911 --restart=always --name raven -v path/to/host/resources/folder:/etc/opentok/ -v path/to/host/logs:/var/log/opentok opentok/raven:latest`

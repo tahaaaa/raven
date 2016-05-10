@@ -4,7 +4,7 @@ import akka.actor.{ActorSystem, Props}
 import akka.testkit.{ImplicitSender, TestActorRef, TestKit}
 import akka.util.Timeout
 import com.opentok.raven.fixture._
-import com.opentok.raven.model.{EmailRequest, Receipt}
+import com.opentok.raven.model.{EmailRequest, Provider, Receipt}
 import com.opentok.raven.service.actors.CertifiedCourier
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 
@@ -22,15 +22,15 @@ with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
   implicit val log = system.log
 
   def certifiedCourier(mockRequestDao: MockEmailRequestDao,
-                       serv: TestActorRef[_]) =
+                       provider: Provider) =
     TestActorRef(Props(classOf[CertifiedCourier],
-      mockRequestDao, serv, 500.millis: Timeout))
+      mockRequestDao, provider, 500.millis: Timeout))
 
   "A Certified Courier" must {
 
     "First attempt to persist request to db and then pass it to sendgridService" in {
       val dao = new MockEmailRequestDao(Some(testRequest))
-      val serv = sendgridService
+      val serv = new MockProvider(Receipt.success)
       val courier = certifiedCourier(dao, serv)
 
       within(3.seconds) {
@@ -39,8 +39,7 @@ with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
         expectMsg[Receipt](Receipt.success(None, testRequest.id))
       }
 
-      serv.underlyingActor.right shouldBe 1
-      serv.underlyingActor.wrong shouldBe 0
+      serv.right shouldBe 1
 
       dao.received.head.status shouldBe Some(EmailRequest.Pending) //first save with status pending
       dao.received.tail.head.status shouldBe Some(EmailRequest.Succeeded) //then save success
@@ -49,7 +48,7 @@ with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
 
     "If first attempt to persist fails, try to send anyway but change success receipt message with warning" in {
       val dao = new MockEmailRequestDao(Some(testRequest), persistanceFails = true)
-      val serv = sendgridService
+      val serv = new MockProvider(Receipt.success)
       val courier = certifiedCourier(dao, serv)
 
       val r = within(3.seconds) {
@@ -60,13 +59,12 @@ with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
       r.success should be(true)
       r.message.get.contains("problem") should be(true)
 
-      serv.underlyingActor.right shouldBe 1
-      serv.underlyingActor.wrong shouldBe 0
+      serv.right shouldBe 1
     }
 
     "If attempt to persist timeouts, try to send anyway but change success receipt message with warning" in {
       val dao = new MockEmailRequestDao(Some(testRequest), persistanceTimesOut = true)
-      val serv = sendgridService
+      val serv = new MockProvider(Receipt.success)
       val courier = certifiedCourier(dao, serv)
 
       val r = within(3.seconds) {
@@ -78,13 +76,12 @@ with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
       r.success should be(true)
       r.message.get.contains("problem") should be(true)
 
-      serv.underlyingActor.right shouldBe 1
-      serv.underlyingActor.wrong shouldBe 0
+      serv.right shouldBe 1
     }
 
     "If sendgridService request timeouts, should persist failure to db and return an unsuccessful receipt" in {
       val dao = new MockEmailRequestDao(Some(testRequest))
-      val serv = unresponsiveSendgridService
+      val serv = new UnresponsiveProvider
       val courier = certifiedCourier(dao, serv)
 
       val r = within(3.seconds) {
@@ -100,12 +97,12 @@ with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
       dao.received.head.status should be(Some(EmailRequest.Pending)) //first save with pending
       dao.received.tail.head.status should be(Some(EmailRequest.Failed)) //then save failed
 
-      serv.underlyingActor.received shouldBe 1
+      serv.received shouldBe 1
     }
 
     "If both sendgridService and db timeouts, should return an unsuccessful receipt with both errors" in {
       val dao = new MockEmailRequestDao(Some(testRequest), persistanceTimesOut = true)
-      val serv = unresponsiveSendgridService
+      val serv = new UnresponsiveProvider
       val courier = certifiedCourier(dao, serv)
 
       val r = within(3.seconds) {
@@ -122,7 +119,26 @@ with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
       dao.received.head.status should be(Some(EmailRequest.Pending)) //first save with pending
       dao.received.tail.head.status should be(Some(EmailRequest.Failed)) //then save failed
 
-      serv.underlyingActor.received shouldBe 1
+      serv.received shouldBe 1
+    }
+
+    "If receipt is success but contains errors, request should be stored with status filtered" in {
+      val dao = new MockEmailRequestDao(Some(testRequest))
+      val rec = Receipt(success = true, requestId = testRequest.id, errors = List("oopsies"))
+      val serv = new MockProvider(rec)
+      val courier = certifiedCourier(dao, serv)
+
+      within(3.seconds) {
+        courier ! testRequest
+
+        expectMsg[Receipt](rec)
+      }
+
+      serv.right shouldBe 1
+
+      dao.received.head.status shouldBe Some(EmailRequest.Pending) //first save with status pending
+      dao.received.tail.head.status shouldBe Some(EmailRequest.Filtered) //then save success
+
     }
   }
 

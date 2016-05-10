@@ -4,7 +4,7 @@ import akka.actor.{Actor, ActorLogging, ActorRef}
 import akka.pattern._
 import akka.util.Timeout
 import com.opentok.raven.dal.components.EmailRequestDao
-import com.opentok.raven.model.{Requestable, Email, EmailRequest, Receipt}
+import com.opentok.raven.model._
 
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.{Failure, Success, Try}
@@ -22,7 +22,7 @@ trait Courier {
   implicit val timeout: Timeout
 
   val daoService: ActorRef
-  val emailProvider: ActorRef
+  val provider: Provider
 
   @throws[Exception](classOf[Exception])
   override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
@@ -42,12 +42,12 @@ trait Courier {
    * Persists request to database and logs op results
    */
   def persistRequest(req: EmailRequest): Future[Any] = {
-    log.debug(s"sending request for dao service to persist $req")
+    log.debug("sending request for dao service to persist '{}' with status '{}'", req.id, req.status)
     daoService.ask(req).andThen {
       case Success(i) ⇒
-        log.debug(s"Successfully persisted request with id ${req.id} to database")
+        log.debug("successfully persisted request with id '{}' with status '{}'", req.id, req.status)
       case Failure(e) ⇒
-        log.error(e, s"There was an error when persisting request with id ${req.id} to database")
+        log.error(e, s"there was an error when persisting request with id ${req.id} to database")
     }
   }
 
@@ -62,12 +62,11 @@ trait Courier {
    * exception into a receipt if there was one
    */
   def send(id: Option[String], email: Email): Future[Receipt] = {
-    log.debug(s"sending email via email provider in path ${emailProvider.path} with timeout $timeout")
-    emailProvider.ask(email).mapTo[Receipt]
+    provider.send(email).mapTo[Receipt]
       .map(_.copy(requestId = id))
       .recover {
         case e: Exception ⇒
-          val msg = s"There was a problem when processing email request with id $id"
+          val msg = s"there was a problem when processing email request with id $id"
           log.error(e, msg)
           Receipt.error(e, message = msg, requestId = id)
       }
@@ -104,8 +103,11 @@ trait Courier {
     def andThenPersistResult(req: EmailRequest): Future[Receipt] =
       f.flatAndThen {
         //email was processed successfully by provider
-        case Success(rec) if rec.success ⇒
+        case Success(rec) if rec.success && rec.errors.isEmpty ⇒
           persistRequest(req.copy(status = Some(EmailRequest.Succeeded)))
+        //email was filtered out: prd flag is off and didn't match regex
+        case Success(rec) if rec.success ⇒
+          persistRequest(req.copy(status = Some(EmailRequest.Filtered)))
         //email was NOT processed successfully by provider
         case Success(rec) ⇒
           persistRequest(req.copy(status = Some(EmailRequest.Failed)))
@@ -115,9 +117,15 @@ trait Courier {
 
     def andThenPersistResult(reqs: List[EmailRequest]): Future[Receipt] =
       f.flatAndThen {
-        case Success(rec) if rec.success ⇒
+        case Success(rec) if rec.success && rec.errors.isEmpty ⇒
           Future.sequence[Any, List](reqs.map(req ⇒
             persistRequest(req.copy(status = Some(EmailRequest.Succeeded)))))
+        case Success(rec) if rec.success && reqs.length == 1 ⇒
+          Future.sequence[Any, List](reqs.map(req ⇒
+          persistRequest(req.copy(status = Some(EmailRequest.Filtered)))))
+        case Success(rec) if rec.success ⇒
+          Future.sequence[Any, List](reqs.map(req ⇒
+          persistRequest(req.copy(status = Some(EmailRequest.PartiallyFiltered)))))
         case Success(rec) ⇒
           Future.sequence[Any, List](reqs.map(req ⇒
             persistRequest(req.copy(status = Some(EmailRequest.Failed)))))
@@ -136,12 +144,10 @@ class RequestPersister(emailsDao: EmailRequestDao) extends Actor with ActorLoggi
 
   import context.dispatcher
 
-  val errMsg = " received unacceptable request"
+  val errMsg = "received unacceptable request"
 
   val singleMessageRecv: PartialFunction[Any, Future[Int]] = {
-    case req: EmailRequest ⇒
-      log.debug(s"Upserting request with id ${req.id} to database")
-      emailsDao.persistRequest(req)
+    case req: EmailRequest ⇒ emailsDao.persistRequest(req)
     case req ⇒ log.error(errMsg); Future.failed(new Exception(errMsg))
   }
 

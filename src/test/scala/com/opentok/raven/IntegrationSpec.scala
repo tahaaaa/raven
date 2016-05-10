@@ -64,8 +64,7 @@ with BeforeAndAfterAll with H2Dal with TestAkkaSystem with AkkaApi {
     val receipt = Await.result(Source.single(RequestBuilding.Post("/v1/priority", marshalledRequest))
       .via(selfConnectionFlow).runWith(Sink.head).map(_.entity).flatMap(receiptUnmarshaller.apply), 3.seconds)
 
-    mockEmailProvider.underlyingActor.wrong should be(0)
-    mockEmailProvider.underlyingActor.right should be(1)
+    smtpProvider.right should be(1)
 
     val dbRecord = Await.result(emailRequestDao.retrieveRequest(receipt.requestId.get), 5.seconds).get
     dbRecord.id shouldBe receipt.requestId
@@ -80,8 +79,7 @@ with BeforeAndAfterAll with H2Dal with TestAkkaSystem with AkkaApi {
     val receipt = Await.result(Source.single(RequestBuilding.Post("/v1/certified", marshalledRequest))
       .via(selfConnectionFlow).runWith(Sink.head).map(_.entity).flatMap(receiptUnmarshaller.apply), 3.seconds)
 
-    mockEmailProvider.underlyingActor.wrong should be(0)
-    mockEmailProvider.underlyingActor.right should be(2) //prev 1 + 1
+    smtpProvider.right should be(2) //prev 1 + 1
 
     val dbRecord = Await.result(emailRequestDao.retrieveRequest(receipt.requestId.get), 5.seconds).get
     dbRecord.id shouldBe receipt.requestId
@@ -96,8 +94,7 @@ with BeforeAndAfterAll with H2Dal with TestAkkaSystem with AkkaApi {
     val receipt = Await.result(Source.single(RequestBuilding.Post("/v1/certified", marshalledEmail))
       .via(selfConnectionFlow).runWith(Sink.head).map(_.entity).flatMap(receiptUnmarshaller.apply), 3.seconds)
 
-    mockEmailProvider.underlyingActor.wrong should be(0)
-    mockEmailProvider.underlyingActor.right should be(3) //prev 2 + 1
+    smtpProvider.right should be(3) //prev 2 + 1
 
     val dbRecord = Await.result(emailRequestDao.retrieveRequest(receipt.requestId.get), 5.seconds).get
     dbRecord.id shouldBe receipt.requestId

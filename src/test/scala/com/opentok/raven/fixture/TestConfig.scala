@@ -6,6 +6,8 @@ import com.opentok.raven.RavenConfig
 import scala.concurrent.duration._
 
 trait TestConfig extends RavenConfig {
+  override val PRD: Boolean = false
+  override val RESTRICT_TO: Option[String] = Some("(.*)@tokbox.com")
   override val HOST: String = "localhost"
   override val PORT: Int = 9911
   override val ENDPOINT_TIMEOUT: Timeout = 6.seconds

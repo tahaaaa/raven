@@ -18,7 +18,8 @@ with App with MysqlDal with AkkaSystem with AkkaService with AkkaApi {
 
   testDalConnectivity().andThen {
     case s: Success[_] ⇒
-      system.log.info(s"raven service started and listening on $HOST:$PORT; max-retries=$MAX_RETRIES; deferrer=$DEFERRER; " +
+      system.log.info(s"raven service started and listening on $HOST:$PORT; PRD:$PRD; " +
+        s"restrictTo: $RESTRICT_TO; max-retries=$MAX_RETRIES; deferrer=$DEFERRER; " +
         s"actor-timeout:$ACTOR_TIMEOUT; endpoint-timeout:$ENDPOINT_TIMEOUT")
     case Failure(e) ⇒
       system.log.error(e, s"data access layer verification failed")

@@ -91,7 +91,7 @@ class EmailSupervisor(superviseeProps: Props, nSupervisees: Int,
 
     //forward receipt back to requester
     case rec: Receipt if rec.success ⇒
-      log.info(s"completed request with id ${rec.requestId} successfully")
+      log.debug("completed request with id '{}' successfully", rec.requestId)
       rec.requestId.map { id ⇒
         pending.find(_._1.request.id.get == id).map { request ⇒
           //reply to requester
@@ -103,7 +103,7 @@ class EmailSupervisor(superviseeProps: Props, nSupervisees: Int,
 
     //try to retry
     case receipt: Receipt if !receipt.success ⇒
-      log.warning(s"there was an error when processing request with id ${receipt.requestId}")
+      log.warning(s"there was an error when processing request '${receipt.requestId}'")
       receipt.requestId.map { id ⇒
         pending.find(_._1.request.id.get == id).map {
           case (supervisedRequest, ret) if ret < retries ⇒
@@ -114,6 +114,8 @@ class EmailSupervisor(superviseeProps: Props, nSupervisees: Int,
                   //legitimate retry
                   case Some(status) if status == EmailRequest.Failed || status == EmailRequest.Pending ⇒
                     //schedule send message to self with request in n seconds
+                    val in = deferrer.seconds
+                    log.info(s"retrying request '$id' in '$in' status is not success: '$status'; retries: $ret")
                     context.system.scheduler.scheduleOnce(deferrer.seconds, self, supervisedRequest.request)
                   //already succeeded
                   case Some(status) if status == EmailRequest.Succeeded ⇒

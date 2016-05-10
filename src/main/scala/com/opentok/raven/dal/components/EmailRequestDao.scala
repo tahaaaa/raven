@@ -45,7 +45,7 @@ class EmailRequestSlickDao()(implicit driver: JdbcProfile, db: JdbcBackend#Datab
 
 
   def persistRequest(req: EmailRequest): Future[Int] = {
-    log.info(s"persisting request with id ${req.id}, status ${req.status}")
+    log.debug(s"persisting request with id ${req.id}, status ${req.status}")
 
     val inject: Option[String] = req.inject.flatMap(injectToString)
     val status: Option[String] = req.status.map(statusToString)

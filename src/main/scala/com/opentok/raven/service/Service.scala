@@ -5,7 +5,9 @@ import akka.routing.FromConfig
 import akka.stream.ActorMaterializer
 import com.opentok.raven.RavenConfig
 import com.opentok.raven.dal.Dal
+import com.opentok.raven.model.{Provider, SendgridProvider}
 import com.opentok.raven.service.actors._
+import com.sendgrid.SendGrid
 
 /**
  * Trait that declares the actors that make up our service
@@ -14,7 +16,7 @@ trait Service {
 
   implicit val materializer: ActorMaterializer
 
-  val mockEmailProvider: ActorRef
+  val smtpProvider: Provider
 
   val certifiedService: ActorRef
   val priorityService: ActorRef
@@ -31,19 +33,18 @@ trait AkkaService extends Service {
 
   implicit val materializer: ActorMaterializer = ActorMaterializer()
 
-  lazy val mockEmailProvider: ActorRef = system.actorOf(Props(classOf[SendgridActor],
-    SENDGRID_API_KEY).withRouter(FromConfig), "SMTPService")
+  lazy val smtpProvider: Provider = new SendgridProvider(new SendGrid(SENDGRID_API_KEY), PRD, RESTRICT_TO)
 
   lazy val certifiedService = system.actorOf(
     Props(classOf[EmailSupervisor],
-      Props(classOf[CertifiedCourier], emailRequestDao, mockEmailProvider, ACTOR_TIMEOUT),
+      Props(classOf[CertifiedCourier], emailRequestDao, smtpProvider, ACTOR_TIMEOUT),
       CERTIFIED_POOL, emailRequestDao, MAX_RETRIES, DEFERRER),
     "certified-service"
   )
 
   lazy val priorityService = system.actorOf(
     Props(classOf[EmailSupervisor],
-      Props(classOf[PriorityCourier], emailRequestDao, mockEmailProvider, ACTOR_TIMEOUT),
+      Props(classOf[PriorityCourier], emailRequestDao, smtpProvider, ACTOR_TIMEOUT),
       PRIORITY_POOL, emailRequestDao, MAX_RETRIES, DEFERRER).withDispatcher("akka.actor.priority-dispatcher"),
     "priority-service")
 

@@ -123,7 +123,7 @@ with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
 
     "bubble up exceptions from supervisees correctly" in {
       val s = newSupervisor(superviseeProps = Props(classOf[CertifiedCourier],
-        new MockEmailRequestDao(Some(testRequest3)), system.deadLetters, 1.seconds: Timeout), retries = 1)
+        new MockEmailRequestDao(Some(testRequest3)), new UnresponsiveProvider, 1.seconds: Timeout), retries = 1)
       val r = Await.result(s.ask(testRequest3)(4.second).mapTo[Receipt], 2.seconds)
       r.errors.length > 1 should be(true) //retry error + ask Timeout error
       r.errors.exists(_.toLowerCase.contains("timeout"))

@@ -1,35 +1,35 @@
 package com.opentok.raven.service.actors
 
-import akka.actor.{Actor, ActorLogging, ActorRef, Props}
+import akka.actor.{Actor, ActorLogging, Props}
 import akka.pattern._
 import akka.util.Timeout
 import com.opentok.raven.dal.components.EmailRequestDao
-import com.opentok.raven.model.{Email, EmailRequest, Receipt}
+import com.opentok.raven.model._
 
 import scala.concurrent.{Future, Promise}
 import scala.util.{Failure, Success}
 
 /**
- * * Upon receiving a [[com.opentok.raven.model.Requestable]],
+ * Upon receiving a [[com.opentok.raven.model.Requestable]],
  * this actor will attempt to first construct an email, if it's not
  * constructed yet, then it will try to persist an attempt in the db.
  *
  * Regardless of the results of the previous operation but after
- * completed (or timeout), this actor will forward the email to
- * [[com.opentok.raven.service.actors.SendgridActor]], then
+ * completed (or timeout), this actor will pass email to
+ * [[com.opentok.raven.model.SendgridProvider]], then
  * as a non-blocking side effect, persist it to the DB and finally,
  * it willdeliver a [[com.opentok.raven.model.Receipt]] with the results
  * back to the requester.
  *
  * @param emailsDao email requests data access object
- * @param emailProvider SendGrid actor instance
+ * @param provider SMTP provider
  */
-class CertifiedCourier(val emailsDao: EmailRequestDao, val emailProvider: ActorRef, t: Timeout)
+class CertifiedCourier(val emailsDao: EmailRequestDao,
+                       val provider: Provider, val timeout: Timeout)
   extends Actor with ActorLogging with Courier {
 
   import context.dispatcher
 
-  implicit val timeout: Timeout = t
   val daoService = context.actorOf(Props(classOf[RequestPersister], emailsDao))
 
   /**
@@ -63,12 +63,12 @@ class CertifiedCourier(val emailsDao: EmailRequestDao, val emailProvider: ActorR
 
   override def receive: Receive = {
     case em: Email ⇒
-      log.info(s"Received email with id ${em.id}")
+      log.debug("received email with id {}", em.id)
       //direct email, so we generate a pending email request for every recipient
       sendEmail(emailToPendingEmailRequests(em), em) pipeTo sender()
 
     case r: EmailRequest ⇒
-      log.info(s"Received request with id ${r.id}")
+      log.debug("received request with id {}", r.id)
 
       val req = //at this point, no request should have empty status
         if (r.status.isEmpty) r.copy(status = Some(EmailRequest.Pending))
@@ -95,7 +95,7 @@ class CertifiedCourier(val emailsDao: EmailRequestDao, val emailProvider: ActorR
 
       receipt pipeTo sender()
 
-    case anyElse ⇒ log.warning(s"Not an acceptable request $anyElse")
+    case anyElse ⇒ log.warning(s"Not an acceptable request: $anyElse")
   }
 
 }
