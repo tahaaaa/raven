@@ -169,6 +169,11 @@ package object model {
           html.repeated_email_attempt(fields %> "reset_password_link"),
           templateId, fromName = Some("TokBox"))
 
+      case templateId@"password_changed" ⇒
+        wrapTemplate(requestId, "Password Changed", recipient, "messages@tokbox.com",
+          html.password_changed(),
+          templateId, fromName = Some("TokBox"))
+
       case templateId@"reset_password_instructions" ⇒
         wrapTemplate(requestId, "Reset Password Instructions", recipient, "messages@tokbox.com",
           html.reset_password_instructions(fields %> "reset_password_link"),
