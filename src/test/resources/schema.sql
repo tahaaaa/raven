@@ -8,3 +8,7 @@ CREATE TABLE IF NOT EXISTS email_requests (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP(),
   PRIMARY KEY(request_id, recipient)
 );
+
+ALTER TABLE email_requests
+MODIFY COLUMN inject TEXT;
+
