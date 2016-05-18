@@ -286,6 +286,23 @@ package object model {
             fields ?> "feedback_body"),
           templateId, fromName = Some("Tokbox Tools Feedback"))
 
+      case templateId@"error" ⇒
+        val component = fields %> "component"
+        val owner = fields ?> "owner"
+        wrapTemplate(requestId, s"[$component] Error", recipient, owner.getOrElse("messages@tokbox.com"),
+          html.error(fields %> "message", component, fields ?> "stack_trace"), templateId)
+
+      case templateId@"hubble_anomaly" ⇒
+        val topicId = fields %> "topic_id"
+        wrapTemplate(requestId, s"[Hubble] $topicId", recipient, "hubble@tokbox.com",
+          html.hubble_anomaly(
+            fields %> "message",
+            fields %> "results_url", topicId,
+            fields.extract[Int]("size"),
+            fields %> "name", fields.extract[Long]("topic_version"),
+            fields %> "query", fields %> "source",
+            fields %> "analysis", fields.extract[Option[Map[String, String]]]("dimensions"),
+            fields ?> "time_cut", fields %> "created_at"), templateId)
     }
 
     def build(requestId: Option[String], templateId: String, injections: Injections, recipient: String): Try[Email] = Try {
