@@ -10,7 +10,7 @@ import akka.stream.scaladsl.{Flow, Sink, Source}
 import akka.testkit.TestKit
 import com.opentok.raven.fixture.{H2Dal, _}
 import com.opentok.raven.http.AkkaApi
-import com.opentok.raven.model.{EmailRequest, Receipt}
+import com.opentok.raven.model.{RequestContext, EmailRequest, Receipt}
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 
 import scala.concurrent.Await
@@ -23,13 +23,15 @@ import scala.concurrent.duration._
 class IntegrationSpec extends TestKit(ActorSystem("IntegrationSpec"))
 with com.opentok.raven.service.System with TestConfig
 with WordSpecLike with Matchers
-with BeforeAndAfterAll with H2Dal with TestAkkaSystem with AkkaApi with RavenLogging{
+with BeforeAndAfterAll with H2Dal with TestAkkaSystem with AkkaApi with RavenLogging {
 
   import com.opentok.raven.http.JsonProtocol._
 
   //start service
   val binding = Await.result(Http().bindAndHandle(handler = routeTree,
     interface = HOST, port = PORT), 3.seconds)
+
+  implicit val rtctx = RequestContext(testRequest, "1")
 
   override def afterAll() {
     binding.unbind()

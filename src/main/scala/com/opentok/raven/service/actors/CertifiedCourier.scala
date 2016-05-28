@@ -3,6 +3,7 @@ package com.opentok.raven.service.actors
 import akka.actor.{Actor, Props}
 import akka.pattern._
 import akka.util.Timeout
+import build.unstable.tylog.Variation
 import com.opentok.raven.dal.components.EmailRequestDao
 import com.opentok.raven.model._
 
@@ -35,11 +36,11 @@ class CertifiedCourier(val emailsDao: EmailRequestDao,
   /**
    * transforms an email into a list of pending email requests (one per recipient)
    */
-  def emailToPendingEmailRequests(em: Email): List[EmailRequest] = em.recipients.map(
+  def emailToPendingEmailRequests(em: Email)(implicit rctx: RequestContext): List[EmailRequest] = em.recipients.map(
     EmailRequest(_, em.fromTemplateId.getOrElse("no_template"),
       None, Some(EmailRequest.Pending), em.id))
 
-  def sendEmail(reqs: List[EmailRequest], email: Email): Future[Receipt] = {
+  def sendEmail(reqs: List[EmailRequest], email: Email)(implicit rtcx: RequestContext): Future[Receipt] = {
     //persist request attempt
     persistRequests(reqs).flatMap { _ ⇒
       //then send email to email provider
@@ -62,39 +63,52 @@ class CertifiedCourier(val emailsDao: EmailRequestDao,
   }
 
   override def receive: Receive = {
-    case em: Email ⇒
-      //direct email, so we generate a pending email request for every recipient
-      sendEmail(emailToPendingEmailRequests(em), em) pipeTo sender()
+    case ctx@RequestContext(requestable, traceId) ⇒
 
-    case r: EmailRequest ⇒
+      implicit val rctx: RequestContext = ctx
+      val reqId = requestable.id.get
 
-      val req = //at this point, no request should have empty status
-        if (r.status.isEmpty) r.copy(status = Some(EmailRequest.Pending))
-        else r
+      requestable match {
+        case em: Email ⇒
+          //direct email, so we generate a pending email request for every recipient
+          sendEmail(emailToPendingEmailRequests(em), em) pipeTo sender()
 
-      trace(log, req.id.get, BuildEmail, Variation.Attempt)
-      val templateMaybe =
-        Email.build(req.id, req.template_id, req.$inject, req.to)
+        case r: EmailRequest ⇒
 
-      val receipt: Future[Receipt] = templateMaybe match {
-        //successfully built template
-        case Success(email) ⇒
-          trace(log, req.id.get, BuildEmail, Variation.Success)
-          sendEmail(req :: Nil, email)
-        //persist failed attempt to db,
-        case Failure(e) ⇒
-          val msg = s"unexpected error when building template ${req.template_id}"
-          trace(log, req.id.get, BuildEmail, Variation.Failure(e), Some(msg))
-          val p = Promise[Receipt]()
-          persistRequest(req.copy(status = Some(EmailRequest.Failed)))
-            .onComplete { _ ⇒
-              //regardless of persist results, send receipt
-              p complete Success(Receipt.error(e, msg, requestId = req.id))
-            }
-          p.future
+          val req = //at this point, no request should have empty status
+            if (r.status.isEmpty) r.copy(status = Some(EmailRequest.Pending))
+            else r
+
+          trace(log, traceId, BuildEmail, Variation.Attempt, "{}", reqId)
+
+          val templateMaybe =
+            Email.build(req.id, req.template_id, req.$inject, req.to)
+
+          val receipt: Future[Receipt] = templateMaybe match {
+
+            //successfully built template
+            case Success(email) ⇒
+              trace(log, traceId, BuildEmail, Variation.Success, "{}", reqId)
+              sendEmail(req :: Nil, email)
+
+            //persist failed attempt to db,
+            case Failure(e) ⇒
+              val msg = s"unexpected error when building template ${req.template_id}"
+
+              trace(log, traceId, BuildEmail, Variation.Failure(e), msg)
+
+              val p = Promise[Receipt]()
+              persistRequest(req.copy(status = Some(EmailRequest.Failed)))
+                .onComplete { _ ⇒
+                  //regardless of persist results, send receipt
+                  p complete Success(Receipt.error(e, msg, requestId = req.id))
+                }
+              p.future
+          }
+
+          receipt pipeTo sender()
       }
 
-      receipt pipeTo sender()
 
     case anyElse ⇒ warning(log, "Not an acceptable request: {}", anyElse)
   }

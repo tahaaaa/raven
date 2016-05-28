@@ -59,7 +59,7 @@ object Build extends sbt.Build {
       test in assembly := {},
       libraryDependencies ++= {
         Seq(
-          "build.unstable" %% "tylog-core" % "0.1.3",
+          "build.unstable" %% "tylog" % "0.2.4",
           "org.scala-lang" % "scala-compiler" % scalaV,
           "com.typesafe.play" %% "twirl-api" % playTwirlV,
           "com.typesafe.akka" %% "akka-actor" % akkaV,

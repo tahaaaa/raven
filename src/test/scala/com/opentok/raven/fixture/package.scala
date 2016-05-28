@@ -1,14 +1,13 @@
 package com.opentok.raven
 
-import akka.actor.{ActorSystem, Props, ActorLogging, Actor}
+import akka.actor.{Actor, ActorLogging, ActorSystem, Props}
 import akka.testkit.TestActorRef
 import com.opentok.raven.dal.components.EmailRequestDao
 import com.opentok.raven.http.JsonProtocol._
-import com.opentok.raven.model.{Email, Receipt, EmailRequest}
+import com.opentok.raven.model.{Email, EmailRequest, Receipt, RequestContext}
 import org.joda.time.DateTime
 import org.slf4j.LoggerFactory
 import spray.json._
-
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.reflect.ClassTag
@@ -26,17 +25,16 @@ package object fixture {
   class MockEmailRequestDao(testRequest: Option[EmailRequest],
                             persistanceFails: Boolean = false,
                             persistanceTimesOut: Boolean = false)
-                            (implicit system: ActorSystem) extends EmailRequestDao {
+                           (implicit system: ActorSystem) extends EmailRequestDao {
+
 
     val log = LoggerFactory.getLogger("MockEmailRequestDao")
-
-    import system.dispatcher
 
     lazy val timeout = 5000
 
     lazy val received = scala.collection.mutable.ListBuffer.empty[EmailRequest]
 
-    def retrieveRequest(id: String)(implicit ctx: ExecutionContext): Future[Option[EmailRequest]] = {
+    def retrieveRequest(id: String)(implicit ctx: ExecutionContext, rctx: RequestContext): Future[Option[EmailRequest]] = {
       log.debug("{}", id)
       if (persistanceFails) Future.failed(new Exception("Could not fetch request"))
       else if (persistanceTimesOut) Future {
@@ -48,7 +46,7 @@ package object fixture {
       }
     }
 
-    def persistRequest(req: EmailRequest)(implicit ctx: ExecutionContext): Future[Int] = {
+    def persistRequest(req: EmailRequest)(implicit ctx: ExecutionContext, rctx: RequestContext): Future[Int] = {
       if (persistanceFails) Future.failed(new Exception("BOOM"))
       else if (persistanceTimesOut) Future {
         received += req
