@@ -1,10 +1,10 @@
 package com.opentok.raven.service
 
 import akka.actor.{ActorSystem, Props}
-import akka.testkit.{ImplicitSender, TestActorRef, TestKit}
+import akka.testkit.{ImplicitSender, TestKit}
 import akka.util.Timeout
 import com.opentok.raven.fixture._
-import com.opentok.raven.model.{Provider, EmailRequest, Receipt}
+import com.opentok.raven.model.{EmailRequest, Provider, Receipt}
 import com.opentok.raven.service.actors.PriorityCourier
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 
@@ -31,7 +31,7 @@ with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
       val serv = new MockProvider(Receipt.success)
       val courier = priorityCourier(dao, serv)
 
-      courier ! testRequest
+      courier ! testRequest.toCtx
 
       //receipt should contain receipt id
       expectMsg[Receipt](Receipt.success(None, testRequest.id))
@@ -44,7 +44,7 @@ with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
       val serv = new MockProvider(Receipt.success)
       val courier = priorityCourier(dao, serv)
 
-      courier ! testRequest
+      courier ! testRequest.toCtx
       //receipt should contain receipt id
       expectMsg[Receipt](2.seconds, Receipt.success(None, testRequest.id))
 
@@ -53,7 +53,7 @@ with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
       val dao2 = new MockEmailRequestDao(Some(testRequest), persistanceTimesOut = true)
       val courier2 = priorityCourier(dao2, serv)
 
-      courier2 ! testRequest
+      courier2 ! testRequest.toCtx
       //receipt should contain receipt id
       expectMsg[Receipt](2.seconds, Receipt.success(None, testRequest.id))
 
@@ -64,7 +64,7 @@ with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
       val dao = new MockEmailRequestDao(Some(testRequest))
       val serv = new UnresponsiveProvider
       val courier = priorityCourier(dao, serv)
-      courier ! testRequest
+      courier ! testRequest.toCtx
 
       val r = expectMsgType[Receipt](3.seconds)(implicitly[ClassTag[Receipt]])
       r.success should be(false)
@@ -80,7 +80,7 @@ with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
       val dao = new MockEmailRequestDao(Some(testRequest), persistanceTimesOut = true)
       val serv = new UnresponsiveProvider
       val courier = priorityCourier(dao, serv)
-      courier ! testRequest
+      courier ! testRequest.toCtx
 
       val r = expectMsgType[Receipt](3.seconds)(implicitly[ClassTag[Receipt]])
       r.success should be(false)
@@ -100,7 +100,7 @@ with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
       val courier = priorityCourier(dao, serv)
 
       within(3.seconds) {
-        courier ! testRequest
+        courier ! testRequest.toCtx
 
         expectMsg[Receipt](rec)
       }

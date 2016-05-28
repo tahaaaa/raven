@@ -38,7 +38,7 @@ with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
       val rdm = new Random(1000)
       val s = newSupervisor(pool = 2)
       s.underlyingActor.supervisee.length should be(2)
-      (0 until 10).foreach(_ ⇒ s ! testRequest.copy(id = Some(rdm.nextInt().toString)))
+      (0 until 10).foreach(_ ⇒ s ! testRequest.copy(id = Some(rdm.nextInt().toString)).toCtx)
 
       val results = Await.result(Future.sequence(s.underlyingActor.supervisee.map(_.ask("gimme")(6.seconds).mapTo[(Int, Int)])), 6.seconds)
 
@@ -60,7 +60,7 @@ with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
         }
       }), deferrer = 1, retries = 3, pool = 1, mockRequestDao = dao)
 
-      val r = Await.result(s.ask(testRequest3)(10.seconds).mapTo[Receipt], 10.seconds)
+      val r = Await.result(s.ask(testRequest3.toCtx)(10.seconds).mapTo[Receipt], 10.seconds)
 
       r.success should be(true)
     }
@@ -77,7 +77,7 @@ with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
         }
       }), retries = 3, pool = 1, mockRequestDao = dao)
 
-      val r = Await.result(s.ask(testRequest3)(10.seconds).mapTo[Receipt], 10.seconds) //1 * 1 + 2 * 1 + 3 * 1 = 6
+      val r = Await.result(s.ask(testRequest3.toCtx)(10.seconds).mapTo[Receipt], 10.seconds) //1 * 1 + 2 * 1 + 3 * 1 = 6
 
       r.success should be(false)
 
@@ -106,14 +106,14 @@ with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
         }
       }), retries = 5, pool = 3, mockRequestDao = dao)
 
-      val r = Await.result(s.ask(testRequest3)(10.seconds).mapTo[Receipt], 10.seconds)
+      val r = Await.result(s.ask(testRequest3.toCtx)(10.seconds).mapTo[Receipt], 10.seconds)
 
       r.success should be(false)
     }
 
     "don't retry if request wasnt previously saved with status pending or failed" in {
       val s = newSupervisor(pool = 10, retries = 5, superviseeProps = Props(classOf[TestActor[Int]], implicitly[ClassTag[Int]]))
-      s ! testRequest
+      s ! testRequest.toCtx
       val results = Await.result(Future.sequence(s.underlyingActor.supervisee.map(_.ask("gimme")(3.seconds).mapTo[(Int, Int)])), 4.seconds)
       results.reduce { (c, v) ⇒
         (c._1 + v._1, c._2 + v._2)
@@ -124,7 +124,7 @@ with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
     "bubble up exceptions from supervisees correctly" in {
       val s = newSupervisor(superviseeProps = Props(classOf[CertifiedCourier],
         new MockEmailRequestDao(Some(testRequest3)), new UnresponsiveProvider, 1.seconds: Timeout), retries = 1)
-      val r = Await.result(s.ask(testRequest3)(4.second).mapTo[Receipt], 2.seconds)
+      val r = Await.result(s.ask(testRequest3.toCtx)(4.second).mapTo[Receipt], 2.seconds)
       r.errors.length > 1 should be(true) //retry error + ask Timeout error
       r.errors.exists(_.toLowerCase.contains("timeout"))
     }

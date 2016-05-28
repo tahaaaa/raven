@@ -4,7 +4,7 @@ import akka.actor.{ActorSystem, Props}
 import akka.testkit.{ImplicitSender, TestActorRef, TestKit}
 import akka.util.Timeout
 import com.opentok.raven.fixture._
-import com.opentok.raven.model.{EmailRequest, Provider, Receipt}
+import com.opentok.raven.model._
 import com.opentok.raven.service.actors.CertifiedCourier
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 
@@ -34,7 +34,7 @@ with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
       val courier = certifiedCourier(dao, serv)
 
       within(3.seconds) {
-        courier ! testRequest
+        courier ! testRequest.toCtx
 
         expectMsg[Receipt](Receipt.success(None, testRequest.id))
       }
@@ -52,7 +52,7 @@ with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
       val courier = certifiedCourier(dao, serv)
 
       val r = within(3.seconds) {
-        courier ! testRequest
+        courier ! testRequest.toCtx
 
         expectMsgType[Receipt](implicitly[ClassTag[Receipt]])
       }
@@ -68,7 +68,7 @@ with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
       val courier = certifiedCourier(dao, serv)
 
       val r = within(3.seconds) {
-        courier ! testRequest
+        courier ! testRequest.toCtx
 
         expectMsgType[Receipt](implicitly[ClassTag[Receipt]])
       }
@@ -85,7 +85,7 @@ with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
       val courier = certifiedCourier(dao, serv)
 
       val r = within(3.seconds) {
-        courier ! testRequest
+        courier ! testRequest.toCtx
 
         expectMsgType[Receipt](implicitly[ClassTag[Receipt]])
       }
@@ -106,7 +106,7 @@ with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
       val courier = certifiedCourier(dao, serv)
 
       val r = within(3.seconds) {
-        courier ! testRequest
+        courier ! testRequest.toCtx
 
         expectMsgType[Receipt](implicitly[ClassTag[Receipt]])
       }
@@ -129,7 +129,7 @@ with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
       val courier = certifiedCourier(dao, serv)
 
       within(3.seconds) {
-        courier ! testRequest
+        courier ! testRequest.toCtx
 
         expectMsg[Receipt](rec)
       }

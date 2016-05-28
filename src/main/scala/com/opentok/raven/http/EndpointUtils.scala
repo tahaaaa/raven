@@ -39,7 +39,7 @@ trait EndpointUtils {
       //generate request_id if traceId was extracted from header
       //otherwise generate one and use it for both
       val generatedId = UUID.randomUUID().toString
-      val (requestId, traceId) = traceIdMaybe.map(t ⇒ t → generatedId).getOrElse(generatedId → generatedId)
+      val (requestId, traceId) = traceIdMaybe.map(t ⇒ generatedId → t).getOrElse(generatedId → generatedId)
 
       trace(log, traceId, CompleteRequest, Variation.Attempt, "")
 

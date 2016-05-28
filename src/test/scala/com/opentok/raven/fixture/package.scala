@@ -4,7 +4,7 @@ import akka.actor.{Actor, ActorLogging, ActorSystem, Props}
 import akka.testkit.TestActorRef
 import com.opentok.raven.dal.components.EmailRequestDao
 import com.opentok.raven.http.JsonProtocol._
-import com.opentok.raven.model.{Email, EmailRequest, Receipt, RequestContext}
+import com.opentok.raven.model._
 import org.joda.time.DateTime
 import org.slf4j.LoggerFactory
 import spray.json._
@@ -13,6 +13,10 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.reflect.ClassTag
 
 package object fixture {
+
+  implicit class ToCtx(req: Requestable) {
+    def toCtx: RequestContext = RequestContext(req, "trace-1")
+  }
 
   class UnresponsiveActor extends Actor {
     var received = 0
