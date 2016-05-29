@@ -5,8 +5,7 @@ import akka.pattern.ask
 import akka.testkit.{ImplicitSender, TestActorRef, TestKit}
 import akka.util.Timeout
 import com.opentok.raven.fixture._
-import com.opentok.raven.model.{Requestable, EmailRequest, Receipt}
-import com.opentok.raven.service.actors.MonitoringActor.FailedEmailsCheck
+import com.opentok.raven.model.{EmailRequest, Receipt, RequestContext, Requestable}
 import com.opentok.raven.service.actors.{CertifiedCourier, EmailSupervisor}
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 
@@ -25,7 +24,7 @@ with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
   implicit val ctx = system.dispatcher
   implicit val log = system.log
 
-  def newSupervisor(superviseeProps: Props = Props(classOf[TestActor[EmailRequest]], implicitly[ClassTag[EmailRequest]]),
+  def newSupervisor(superviseeProps: Props = Props(classOf[TestActor[RequestContext]], implicitly[ClassTag[RequestContext]]),
                     mockRequestDao: MockEmailRequestDao = new MockEmailRequestDao(Some(testRequest)),
                     pool: Int = 1,
                     retries: Int = 3,
@@ -53,10 +52,10 @@ with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
         var fail = true
 
         def receive: Receive = {
-          case req: EmailRequest if fail ⇒
+          case RequestContext(req: EmailRequest, _) if fail ⇒
             sender() ! Receipt(false, requestId = req.id)
             fail = false //first one fails second one succeeds
-          case req: EmailRequest ⇒ sender() ! Receipt(true, requestId = req.id)
+          case RequestContext(req: EmailRequest, _) ⇒ sender() ! Receipt(true, requestId = req.id)
         }
       }), deferrer = 1, retries = 3, pool = 1, mockRequestDao = dao)
 
@@ -72,7 +71,7 @@ with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
         var received = 0
 
         def receive: Receive = {
-          case req: EmailRequest ⇒ received += 1; log.info("{}", req); sender() ! Receipt(false, requestId = req.id)
+          case RequestContext(req: EmailRequest, _) ⇒ received += 1; log.info("{}", req); sender() ! Receipt(false, requestId = req.id)
           case anyElse ⇒ sender() ! received
         }
       }), retries = 3, pool = 1, mockRequestDao = dao)
@@ -95,7 +94,7 @@ with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
         override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
           message match {
             //send receipt to supervisor so that it can retry
-            case Some(req: Requestable) ⇒ context.parent ! Receipt.error(reason, "courier crashed", req.id)
+            case Some(RequestContext(req: Requestable, _)) ⇒ context.parent ! Receipt.error(reason, "courier crashed", req.id)
             case _ ⇒ log.error(s"${self.path} could not recover $reason: message was not a requestable")
           }
           super.preRestart(reason, message)
