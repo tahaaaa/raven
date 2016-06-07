@@ -49,9 +49,10 @@ package object model {
       JsonProtocol.requestJsonFormat.write(this).asJsObject
     }
 
-    def validate[T](block: () ⇒ T) =
+    def validated: EmailRequest = {
       try {
-        block()
+        val email = Email.buildPF(None, "trash@tokbox.com", $inject)
+        email.apply(template_id)
       } catch {
         //missing injection parameter
         case e: NoSuchElementException ⇒ throw new MissingInjections($inject, e)
@@ -59,24 +60,22 @@ package object model {
         case e: MatchError ⇒ throw new InvalidTemplate(template_id, e)
         case e: Exception ⇒ throw e
       }
-
-    def validated: EmailRequest = {
-      val email = Email.buildPF(None, "trash@tokbox.com", $inject)
-      validate(() ⇒ email.isDefinedAt(template_id))
-      validate(() ⇒ email.apply(template_id))
       this
     }
-
   }
 
   object EmailRequest {
 
     //transforms an incoming request without id and status
     val fillInRequest = { req: EmailRequest ⇒
-      req.copy(
-        id = Some(UUID.randomUUID.toString),
-        status = Some(EmailRequest.Pending)
-      )
+      req.id match {
+        case Some(_) ⇒
+          req.copy(status = Some(EmailRequest.Pending))
+        case None ⇒ req.copy(
+          id = Some(UUID.randomUUID.toString),
+          status = Some(EmailRequest.Pending)
+        )
+      }
     }
 
     sealed trait Status

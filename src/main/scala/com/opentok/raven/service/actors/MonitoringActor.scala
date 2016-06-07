@@ -1,9 +1,9 @@
 package com.opentok.raven.service.actors
 
 import akka.actor._
-import akka.event.LoggingAdapter
 import akka.pattern.{ask, pipe}
 import akka.util.Timeout
+import com.opentok.raven.RavenLogging
 import com.opentok.raven.model.Receipt
 import com.opentok.raven.service.actors.MonitoringActor.{ComponentHealthCheck, FailedEmailsCheck}
 import com.typesafe.config.ConfigFactory
@@ -11,7 +11,6 @@ import slick.driver.JdbcProfile
 import slick.jdbc.JdbcBackend
 
 import scala.collection.mutable
-import scala.collection.mutable.ListBuffer
 import scala.util.Try
 
 object MonitoringActor {
@@ -35,11 +34,10 @@ object MonitoringActor {
  */
 class MonitoringActor(certifiedService: ActorRef, priorityService: ActorRef,
                       db: JdbcBackend#Database, driver: JdbcProfile, dbCheck: String, t: Timeout)
-  extends Actor with ActorLogging {
+  extends Actor with RavenLogging {
 
   import context.dispatcher
 
-  implicit val logger: LoggingAdapter = log
   implicit val timeout: Timeout = t
   val config = ConfigFactory.load()
   val dbHost = config.getString("raven.database.properties.serverName")
@@ -57,7 +55,7 @@ class MonitoringActor(certifiedService: ActorRef, priorityService: ActorRef,
       //prevent memory leak
       if (failed.length > 2000) {
         val dequeued = failed.dequeue()
-        log.error(s"number of failed emails is over 2000! dropping $dequeued")
+        log.warn(s"number of failed emails is over 2000! dropping $dequeued")
       }
 
     //clone to immutable and send
@@ -86,6 +84,6 @@ class MonitoringActor(certifiedService: ActorRef, priorityService: ActorRef,
     case ComponentHealthCheck(_) ⇒ sender() ! Receipt.error(
       new Exception("Not a valid component. Try 'dal' or 'service')"), "Error when processing request")
 
-    case msg ⇒ log.warning(s"unable to process message: $msg")
+    case msg ⇒ log.warn(s"unable to process message: $msg")
   }
 }

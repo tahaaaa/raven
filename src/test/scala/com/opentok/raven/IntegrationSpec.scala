@@ -23,7 +23,7 @@ import scala.concurrent.duration._
 class IntegrationSpec extends TestKit(ActorSystem("IntegrationSpec"))
 with com.opentok.raven.service.System with TestConfig
 with WordSpecLike with Matchers
-with BeforeAndAfterAll with H2Dal with TestAkkaSystem with AkkaApi {
+with BeforeAndAfterAll with H2Dal with TestAkkaSystem with AkkaApi with RavenLogging{
 
   import com.opentok.raven.http.JsonProtocol._
 

@@ -1,28 +1,26 @@
 package com.opentok.raven.dal.components
 
+import com.opentok.raven.RavenLogging
 import com.opentok.raven.model.EmailRequest
-import org.slf4j.LoggerFactory
 import slick.driver.JdbcProfile
 import slick.jdbc.JdbcBackend
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 trait EmailRequestDao {
 
   def retrieveRequest(id: String)(implicit ctx: ExecutionContext): Future[Option[EmailRequest]]
 
-  def persistRequest(req: EmailRequest): Future[Int]
+  def persistRequest(req: EmailRequest)(implicit ctx: ExecutionContext): Future[Int]
 
 }
 
 class EmailRequestSlickDao()(implicit driver: JdbcProfile, db: JdbcBackend#Database)
-  extends EmailRequestDao {
+  extends EmailRequestDao with RavenLogging {
 
   import driver.api._
   import spray.json._
-
-  val log = LoggerFactory.getLogger(this.getClass)
 
   //custom mappers
   private def statusToString(status: EmailRequest.Status): String =
@@ -44,8 +42,9 @@ class EmailRequestSlickDao()(implicit driver: JdbcProfile, db: JdbcBackend#Datab
     Try(str.map(_.parseJson.asJsObject)).toOption.flatten
 
 
-  def persistRequest(req: EmailRequest): Future[Int] = {
-    log.debug(s"persisting request with id ${req.id}, status ${req.status}")
+  def persistRequest(req: EmailRequest)(implicit ctx: ExecutionContext): Future[Int] = {
+    trace(log, req.id.get, PersistRequestState, Variation.Attempt,
+      Some(s"trying to persist request '${req.id}' with status '${req.status}'"))
 
     val inject: Option[String] = req.inject.flatMap(injectToString)
     val status: Option[String] = req.status.map(statusToString)
@@ -60,10 +59,18 @@ class EmailRequestSlickDao()(implicit driver: JdbcProfile, db: JdbcBackend#Datab
   status = $status,
   inject = $inject,
   updated_at = CURRENT_TIMESTAMP()""")
+      .andThen {
+        case Success(i) ⇒
+          trace(log, req.id.get, PersistRequestState, Variation.Success,
+            Some(s"successfully persisted request with id '${req.id}' with status '${req.status}'"))
+        case Failure(e) ⇒
+          trace(log, req.id.get, PersistRequestState, Variation.Failure(e),
+            Some(s"there was an error when persisting request with id ${req.id} with status '${req.status}'"))
+      }
   }
 
   def retrieveRequest(id: String)(implicit ctx: ExecutionContext): Future[Option[EmailRequest]] = {
-    log.debug("attempting to retrieve request with id {}", id)
+    trace(log, id, RetrieveRequestState, Variation.Attempt, Some(s"attempting to retrieve request with id $id"))
     db.run(sql"""
       SELECT recipient, template_id, inject, status, request_id
       FROM email_requests
@@ -73,5 +80,9 @@ class EmailRequestSlickDao()(implicit driver: JdbcProfile, db: JdbcBackend#Datab
           EmailRequest.apply(recipient, template_id, stringToInject(inject),
             Some(stringToStatus(status)), Some(id))
       })
+      .andThen {
+        case s: Success[_] ⇒ trace(log, id, RetrieveRequestState, Variation.Success)
+        case Failure(e) ⇒ trace(log, id, RetrieveRequestState, Variation.Failure(e))
+      }
   }
 }

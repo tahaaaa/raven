@@ -1,10 +1,10 @@
 package com.opentok.raven.service.actors
 
-import akka.actor.{Actor, ActorLogging, ActorRef, Props}
+import akka.actor.{Actor, Props}
 import akka.pattern._
 import akka.util.Timeout
 import com.opentok.raven.dal.components.EmailRequestDao
-import com.opentok.raven.model.{Provider, Email, EmailRequest, Receipt}
+import com.opentok.raven.model.{Email, EmailRequest, Provider, Receipt}
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
@@ -23,7 +23,7 @@ import scala.util.{Failure, Success}
  */
 
 class PriorityCourier(val emailsDao: EmailRequestDao, val provider: Provider, val timeout: Timeout)
-  extends Actor with ActorLogging with Courier {
+  extends Actor with Courier {
 
   import context.dispatcher
 
@@ -32,22 +32,25 @@ class PriorityCourier(val emailsDao: EmailRequestDao, val provider: Provider, va
   override def receive: Receive = {
 
     case r: EmailRequest ⇒
-      log.debug("received request with id '{}'", r.id)
 
       val req = //at this point, no request should have empty status
         if (r.status.isEmpty) r.copy(status = Some(EmailRequest.Pending))
         else r
 
+      trace(log, req.id.get, BuildEmail, Variation.Attempt)
       val templateMaybe = Email.build(req.id, req.template_id, req.$inject, req.to)
 
       val receipt: Future[Receipt] = templateMaybe match {
         //successfully built email
         case Success(email) ⇒
+          trace(log, req.id.get, BuildEmail, Variation.Success)
           //attempt to send email via emailProvider
           send(req.id, email) andThenPersistResult req
         //error when building email, persist attempt
         case Failure(e) ⇒
-          Future.successful(Receipt.error(e, "unexpected error when building template", requestId = req.id))
+          val msg = s"unexpected error when building template ${req.template_id}"
+          trace(log, req.id.get, BuildEmail, Variation.Failure(e), Some(msg))
+          Future.successful(Receipt.error(e, msg, requestId = req.id))
             //install side effect persist to db
             .andThen {
               case _ ⇒ persistRequest(req.copy(status = Some(EmailRequest.Failed)))
@@ -56,6 +59,6 @@ class PriorityCourier(val emailsDao: EmailRequestDao, val provider: Provider, va
       //pipe future receipt to sender
       receipt pipeTo sender()
 
-    case anyElse ⇒ log.warning(s"Not an acceptable request $anyElse")
+    case anyElse ⇒ warning(log, "Not an acceptable request {}", anyElse)
   }
 }

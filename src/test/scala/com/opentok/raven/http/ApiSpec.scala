@@ -3,6 +3,7 @@ package com.opentok.raven.http
 import akka.actor.{Actor, Props}
 import akka.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
 import akka.testkit.TestKit
+import com.opentok.raven.RavenLogging
 import com.opentok.raven.fixture.{H2Dal, MockSystem, TestConfig, WorkingMockSystem, _}
 import com.opentok.raven.model.{Requestable, Email, EmailRequest, Receipt}
 import org.joda.time.DateTime
@@ -15,7 +16,7 @@ import scala.concurrent.duration._
 class ApiSpec extends WordSpec with Matchers with ScalatestRouteTest {
 
   //uses mock system, so db is irrelevant in this test, but still needs to be mixed in
-  val raven = new WorkingMockSystem with TestConfig with H2Dal with AkkaApi
+  val raven = new WorkingMockSystem with TestConfig with H2Dal with AkkaApi with RavenLogging
   val workingTree = raven.routeTree
 
 
@@ -28,14 +29,14 @@ class ApiSpec extends WordSpec with Matchers with ScalatestRouteTest {
     override def receive: Receive = {
       case _ ⇒ //does not reply at all
     }
-  })) with TestConfig with H2Dal with AkkaApi).routeTree
+  })) with TestConfig with H2Dal with AkkaApi with RavenLogging).routeTree
 
   val treeWithIrresponsiveEmailProvider = (new MockSystem(Props(new Actor {
     override def receive: Receive = {
       case req: Requestable ⇒ sender() ! Receipt.error(new Exception("sendgrid irresponsive"), "oops")
       case batch: List[_] ⇒ sender() ! Receipt.error(new Exception("sendgrid irresponsive"), "oops")
     }
-  })) with TestConfig with H2Dal with AkkaApi).routeTree
+  })) with TestConfig with H2Dal with AkkaApi with RavenLogging).routeTree
 
   implicit val routeTestTimeout = RouteTestTimeout(7.seconds)
 

@@ -1,8 +1,10 @@
 package com.opentok.raven.service.actors
 
-import akka.actor.{Actor, ActorLogging, ActorRef}
+import akka.actor.{Actor, ActorRef}
 import akka.pattern._
 import akka.util.Timeout
+import build.unstable.tylog.TypedLogging
+import com.opentok.raven.RavenLogging
 import com.opentok.raven.dal.components.EmailRequestDao
 import com.opentok.raven.model._
 
@@ -13,8 +15,8 @@ import scala.util.{Failure, Success, Try}
  * Common methods used by [[com.opentok.raven.service.actors.PriorityCourier]] and
  * [[com.opentok.raven.service.actors.CertifiedCourier]]
  */
-trait Courier {
-  this: Actor with ActorLogging ⇒
+trait Courier extends RavenLogging {
+  this: Actor ⇒
 
   import context.dispatcher
 
@@ -41,18 +43,10 @@ trait Courier {
   /**
    * Persists request to database and logs op results
    */
-  def persistRequest(req: EmailRequest): Future[Any] = {
-    log.debug("sending request for dao service to persist '{}' with status '{}'", req.id, req.status)
-    daoService.ask(req).andThen {
-      case Success(i) ⇒
-        log.debug("successfully persisted request with id '{}' with status '{}'", req.id, req.status)
-      case Failure(e) ⇒
-        log.error(e, s"there was an error when persisting request with id ${req.id} to database")
-    }
-  }
+  def persistRequest(req: EmailRequest): Future[Any] = daoService.ask(req)
 
   def persistRequests(reqs: List[EmailRequest]): Future[Any] = {
-    if (reqs.isEmpty) Future.failed(new Exception("trying to persist request but list is empty"))
+    if (reqs.isEmpty) Future.failed(new Exception("trying to persist empty list of requests"))
     Future.sequence[Any, List](reqs.map(persistRequest))
   }
 
@@ -62,12 +56,10 @@ trait Courier {
    * exception into a receipt if there was one
    */
   def send(id: Option[String], email: Email): Future[Receipt] = {
-    provider.send(email).mapTo[Receipt]
-      .map(_.copy(requestId = id))
+    provider.send(email).mapTo[Receipt].map(_.copy(requestId = id))
       .recover {
         case e: Exception ⇒
           val msg = s"there was a problem when processing email request with id $id"
-          log.error(e, msg)
           Receipt.error(e, message = msg, requestId = id)
       }
   }
@@ -140,7 +132,7 @@ trait Courier {
 /**
  * Helper actor that wraps emailsDao futures to provide timeout support
  */
-class RequestPersister(emailsDao: EmailRequestDao) extends Actor with ActorLogging {
+class RequestPersister(emailsDao: EmailRequestDao) extends Actor with RavenLogging {
 
   import context.dispatcher
 
@@ -148,11 +140,20 @@ class RequestPersister(emailsDao: EmailRequestDao) extends Actor with ActorLoggi
 
   val singleMessageRecv: PartialFunction[Any, Future[Int]] = {
     case req: EmailRequest ⇒ emailsDao.persistRequest(req)
-    case req ⇒ log.error(errMsg); Future.failed(new Exception(errMsg))
+    case req ⇒ Future.failed(new Exception(errMsg))
   }
 
   def receive: Actor.Receive = {
-    case id: String ⇒ emailsDao.retrieveRequest(id) pipeTo sender()
+    case id: String ⇒
+      trace(log, id, RetrieveRequestState, Variation.Attempt)
+      val f = emailsDao.retrieveRequest(id)
+      f andThen {
+        case s: Success[_] ⇒
+          trace(log, id, RetrieveRequestState, Variation.Success)
+        case Failure(e) ⇒
+          trace(log, id, RetrieveRequestState, Variation.Failure(e))
+      }
+      f pipeTo sender()
     case msg ⇒ singleMessageRecv(msg) pipeTo sender()
   }
 }

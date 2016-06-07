@@ -1,6 +1,6 @@
 package com.opentok.raven.service.actors
 
-import akka.actor.{Actor, ActorLogging, Props}
+import akka.actor.{Actor, Props}
 import akka.pattern._
 import akka.util.Timeout
 import com.opentok.raven.dal.components.EmailRequestDao
@@ -26,7 +26,7 @@ import scala.util.{Failure, Success}
  */
 class CertifiedCourier(val emailsDao: EmailRequestDao,
                        val provider: Provider, val timeout: Timeout)
-  extends Actor with ActorLogging with Courier {
+  extends Actor with Courier {
 
   import context.dispatcher
 
@@ -49,7 +49,7 @@ class CertifiedCourier(val emailsDao: EmailRequestDao,
       //because send recovers itself with an error receipt
       //in which case, we skip persistance step and try to send anyway
       case e: Exception ⇒
-        log.warning("There was a problem when trying to save request BEFORE forwarding it to provider. Skipping persist..")
+        log.warn("There was a problem when trying to save request BEFORE forwarding it to provider. Skipping persist..")
         //add error in errors but leave receipt success as it is
         send(reqs.head.id, email).map(_.copy(
           message = Some("email delivered but there was a problem when persisting request to db"),
@@ -63,27 +63,28 @@ class CertifiedCourier(val emailsDao: EmailRequestDao,
 
   override def receive: Receive = {
     case em: Email ⇒
-      log.debug("received email with id {}", em.id)
       //direct email, so we generate a pending email request for every recipient
       sendEmail(emailToPendingEmailRequests(em), em) pipeTo sender()
 
     case r: EmailRequest ⇒
-      log.debug("received request with id {}", r.id)
 
       val req = //at this point, no request should have empty status
         if (r.status.isEmpty) r.copy(status = Some(EmailRequest.Pending))
         else r
 
+      trace(log, req.id.get, BuildEmail, Variation.Attempt)
       val templateMaybe =
         Email.build(req.id, req.template_id, req.$inject, req.to)
 
       val receipt: Future[Receipt] = templateMaybe match {
         //successfully built template
-        case Success(email) ⇒ sendEmail(req :: Nil, email)
+        case Success(email) ⇒
+          trace(log, req.id.get, BuildEmail, Variation.Success)
+          sendEmail(req :: Nil, email)
         //persist failed attempt to db,
         case Failure(e) ⇒
-          val msg = "unexpected error when building template"
-          log.error(e, msg)
+          val msg = s"unexpected error when building template ${req.template_id}"
+          trace(log, req.id.get, BuildEmail, Variation.Failure(e), Some(msg))
           val p = Promise[Receipt]()
           persistRequest(req.copy(status = Some(EmailRequest.Failed)))
             .onComplete { _ ⇒
@@ -95,7 +96,7 @@ class CertifiedCourier(val emailsDao: EmailRequestDao,
 
       receipt pipeTo sender()
 
-    case anyElse ⇒ log.warning(s"Not an acceptable request: $anyElse")
+    case anyElse ⇒ warning(log, "Not an acceptable request: {}", anyElse)
   }
 
 }

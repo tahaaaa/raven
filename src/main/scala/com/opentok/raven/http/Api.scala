@@ -5,8 +5,9 @@ import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
+import akka.http.scaladsl.settings.RoutingSettings
 import akka.util.CompactByteString
-import com.opentok.raven.RavenConfig
+import com.opentok.raven.{RavenLogging, RavenConfig}
 import com.opentok.raven.http.endpoints.{CertifiedEmailEndpoint, DebugEndpoint, MonitoringEndpoint, PriorityEmailEndpoint}
 import com.opentok.raven.model.{RavenRejection, Receipt}
 import com.opentok.raven.service.Service
@@ -25,7 +26,7 @@ trait Api {
  * to the top-level actors that make up the system.
  */
 trait AkkaApi extends Api {
-  this: com.opentok.raven.service.System with Service with RavenConfig ⇒
+  this: com.opentok.raven.service.System with Service with RavenConfig with RavenLogging ⇒
 
   def completeWithMessage(msg: String, rejection: Rejection) = {
     complete(HttpResponse(BadRequest,
@@ -36,6 +37,7 @@ trait AkkaApi extends Api {
 
   val rejectionHandler = RejectionHandler.newBuilder().handle {
     case rej@ValidationRejection(msg, Some(cause)) ⇒
+      warning(log, "rejected: {}", rej)
       complete {
         HttpResponse(
           status = BadRequest,
@@ -50,7 +52,7 @@ trait AkkaApi extends Api {
             ).toString)))
       }
     case rej: Rejection ⇒
-      system.log.warning(s"$rej")
+      warning(log, "rejected: {}", rej)
       completeWithMessage("rejected", rej)
   }
 
@@ -59,11 +61,12 @@ trait AkkaApi extends Api {
       reject(new ValidationRejection(e.getMessage, Some(e)))
     //rest of exceptions
     case e: Exception ⇒
-      system.log.error(e, "unexpected error")
+      val msg = "unexpected error"
+      log.error(msg, e)
       complete(HttpResponse(InternalServerError,
         entity = HttpEntity.Strict(ContentType(`application/json`),
           CompactByteString(JsonProtocol.receiptJsonFormat.write(
-            Receipt.error(e, "Oops! There was an unexpected Error")).toString()))))
+            Receipt.error(e, msg)).toString()))))
   }
 
   val certified = new CertifiedEmailEndpoint(certifiedService, ENDPOINT_TIMEOUT)
@@ -78,7 +81,8 @@ trait AkkaApi extends Api {
       handleExceptions(receiptExceptionHandler) {
         priority.route ~ certified.route ~ monitoring.route ~ debugging.route
       }
-    })(RoutingSettings.default, rejectionHandler.result(), receiptExceptionHandler)
+    })(RoutingSettings.default, rejectionHandler = rejectionHandler.result(),
+      exceptionHandler = receiptExceptionHandler)
   }
 
 }

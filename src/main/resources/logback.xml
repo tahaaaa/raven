@@ -7,7 +7,7 @@
         </encoder>
     </appender>
 
-    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <appender name="JSON" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>/var/log/opentok/raven.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
             <!-- daily rollover. Make sure the path matches the one in the file element or else
@@ -22,16 +22,22 @@
 
         <encoder>
             <charset>UTF-8</charset>
-            <pattern>%d %-4relative [%thread] %-5level %logger{35} - %msg%n</pattern>
+            <pattern>{"component":"raven","trace_id":"%mdc{trace_id}","timestamp":"%d","thread":"%thread","level":"%level","logger":"%logger{35}","call_type":"%mdc{call_type}","variation":"%mdc{variation}","message":"%replace(%msg){'\"', '\\"'}","exception":"%replace(%rEx){'\n', '\\n'}"}%nopex%n</pattern>
         </encoder>
+    </appender>
+
+    <appender name="ASYNC" class="ch.qos.logback.classic.AsyncAppender">
+        <queueSize>1000000</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <appender-ref ref="JSON" />
     </appender>
 
     <logger name="slick" level="INFO"/>
     <logger name="com.zaxxer.hikari" level="INFO"/>
     <logger name="akka" level="INFO"/>
 
-    <root level="DEBUG">
+    <root level="TRACE">
         <appender-ref ref="STDOUT"/>
-        <appender-ref ref="FILE"/>
+        <appender-ref ref="ASYNC" />
     </root>
 </configuration>

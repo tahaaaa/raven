@@ -1,5 +1,6 @@
 package com.opentok.raven.http
 
+import akka.actor.ActorSystem
 import akka.http.scaladsl.model.MediaTypes._
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model.{ContentType, HttpEntity, HttpResponse}
@@ -16,6 +17,7 @@ trait EndpointUtils {
 
   implicit val timeout: Timeout
   val route: Route
+  val system: ActorSystem
 
   implicit def completeWithStatusCode(f: Future[Receipt]): Route = {
     onComplete(f).tapply {

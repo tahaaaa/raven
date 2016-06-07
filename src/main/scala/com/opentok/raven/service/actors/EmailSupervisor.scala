@@ -1,11 +1,12 @@
 package com.opentok.raven.service.actors
 
 import akka.actor._
-import akka.event.LoggingAdapter
+import com.opentok.raven.RavenLogging
 import com.opentok.raven.dal.components.EmailRequestDao
 import com.opentok.raven.model.{EmailRequest, Receipt, Requestable}
 
 import scala.concurrent.duration._
+import scala.util.{Failure, Success}
 
 /**
  * Email Service Supervisor. This actor will take an arbitrary [[akka.actor.Props]],
@@ -24,23 +25,21 @@ import scala.concurrent.duration._
  */
 class EmailSupervisor(superviseeProps: Props, nSupervisees: Int,
                       emailDao: EmailRequestDao, retries: Int, deferrer: Int)
-  extends Actor with ActorLogging {
+  extends Actor with RavenLogging {
 
   case class SupervisedRequest(request: Requestable, requester: ActorRef)
 
   import context.dispatcher
 
   override def preStart(): Unit = {
-    log.info(s"Supervisor up and monitoring $superviseeProps with a pool of $nSupervisees " +
-      s"actors and with a max number of retries of $retries")
+    debug(log, "Supervisor up and monitoring {} with a pool of {} actors and with a max number of retries of {}",
+      superviseeProps, nSupervisees, retries)
   }
 
   override def supervisorStrategy: SupervisorStrategy = OneForOneStrategy() {
     case e: Exception ⇒ SupervisorStrategy.Restart
     case e: Throwable ⇒ SupervisorStrategy.Escalate
   }
-
-  implicit val logger: LoggingAdapter = log
 
   val poolRange = 0 until nSupervisees
 
@@ -60,6 +59,7 @@ class EmailSupervisor(superviseeProps: Props, nSupervisees: Int,
    */
   def superviseRequest(req: Requestable, requester: ActorRef) {
     val supervisedMaybe = pending.find(_._1.request.id == req.id)
+    val id = req.id.get
 
     val ret: Int = if (supervisedMaybe.isDefined) {
       //already registered, update retries
@@ -69,10 +69,12 @@ class EmailSupervisor(superviseeProps: Props, nSupervisees: Int,
       r
     } else {
       // first try
+      val id = req.id.get
       pending.update(SupervisedRequest(req, requester), 1)
       1
     }
-    log.debug("supervising request with id {}, currently with {} retries", req.id.get, ret)
+
+    trace(log, id, SuperviseRequest, Variation.Attempt, Some(s"supervising request '$id'; tries: $ret/$retries"))
 
     //randomly pick one of the supervisees
     val handler = supervisee(poolRange(random nextInt nSupervisees))
@@ -91,8 +93,9 @@ class EmailSupervisor(superviseeProps: Props, nSupervisees: Int,
 
     //forward receipt back to requester
     case rec: Receipt if rec.success ⇒
-      log.debug("completed request with id '{}' successfully", rec.requestId)
       rec.requestId.map { id ⇒
+        trace(log, id, SuperviseRequest, Variation.Success,
+          Some(s"completed request with id '${rec.requestId}' successfully"))
         pending.find(_._1.request.id.get == id).map { request ⇒
           //reply to requester
           request._1.requester ! rec
@@ -103,8 +106,8 @@ class EmailSupervisor(superviseeProps: Props, nSupervisees: Int,
 
     //try to retry
     case receipt: Receipt if !receipt.success ⇒
-      log.warning(s"there was an error when processing request '${receipt.requestId}'")
       receipt.requestId.map { id ⇒
+        trace(log, id, SuperviseRequest, Variation.Failure(new Exception(s"there was an error when processing request '$id'${receipt.errors.headOption.map(" :" + _).getOrElse("")}")))
         pending.find(_._1.request.id.get == id).map {
           case (supervisedRequest, ret) if ret < retries ⇒
             //check that email was not really sent and only if status in db is not completed, retry again
@@ -113,9 +116,8 @@ class EmailSupervisor(superviseeProps: Props, nSupervisees: Int,
                 case Some(req) ⇒ req.status match {
                   //legitimate retry
                   case Some(status) if status == EmailRequest.Failed || status == EmailRequest.Pending ⇒
-                    //schedule send message to self with request in n seconds
                     val in = deferrer.seconds
-                    log.info(s"retrying request '$id' in '$in' status is not success: '$status'; retries: $ret")
+                    //schedule send message to self with request in n seconds
                     context.system.scheduler.scheduleOnce(deferrer.seconds, self, supervisedRequest.request)
                   //already succeeded
                   case Some(status) if status == EmailRequest.Succeeded ⇒
@@ -138,7 +140,6 @@ class EmailSupervisor(superviseeProps: Props, nSupervisees: Int,
                 //there was an exception when retrieving request from db
                 case e: Exception ⇒
                   val msg = "aborting retry mechanism: there was an error when retrieving request from db"
-                  log.error(e, msg)
                   //add error to list of errors
                   val finalReceipt = receipt.copy(errors = s"$msg: $e" :: receipt.errors)
 
@@ -152,8 +153,9 @@ class EmailSupervisor(superviseeProps: Props, nSupervisees: Int,
             //remove request from pending
             pending.remove(supervisedRequest)
             val msg = s"request with id '${supervisedRequest.request.id.get}' exhausted $ret retries and is permanently in failed state"
-            log.error(msg)
-            val err = Receipt.error(new Exception(msg), msg, requestId = supervisedRequest.request.id)
+            val e = new Exception(msg)
+            trace(log, id, SuperviseRequest, Variation.Failure(e), Some(msg))
+            val err = Receipt.error(e, msg, requestId = supervisedRequest.request.id)
             val combined = Receipt.reduce(err :: receipt :: Nil)
             supervisedRequest.requester ! combined
             eventBus.publish(combined)
@@ -161,6 +163,6 @@ class EmailSupervisor(superviseeProps: Props, nSupervisees: Int,
           .getOrElse(logNotFound(s"request with id '$id' not found"))
       }.getOrElse(logNotFound("receipt did not contain a requestId"))
 
-    case anyElse ⇒ log.error(s"not an acceptable request: $anyElse")
+    case anyElse ⇒ warning(log, "not an acceptable request: {}", anyElse)
   }
 }

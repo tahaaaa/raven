@@ -48,7 +48,7 @@ package object fixture {
       }
     }
 
-    def persistRequest(req: EmailRequest): Future[Int] = {
+    def persistRequest(req: EmailRequest)(implicit ctx: ExecutionContext): Future[Int] = {
       if (persistanceFails) Future.failed(new Exception("BOOM"))
       else if (persistanceTimesOut) Future {
         received += req
