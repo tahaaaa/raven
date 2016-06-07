@@ -293,7 +293,7 @@ package object model {
 
       case templateId@"hubble_anomaly" ⇒
         val topicId = fields %> "topic_id"
-        wrapTemplate(requestId, s"[Hubble] anomaly report of '$topicId'", recipient, "hubble@tokbox.com",
+        wrapTemplate(requestId, s"[Hubble] $topicId", recipient, "hubble@tokbox.com",
           html.hubble_anomaly(
             fields %> "message",
             fields %> "results_url", topicId,

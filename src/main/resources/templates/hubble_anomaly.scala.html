@@ -32,7 +32,7 @@
         @dimensions.map{n =>
             <li>
                 <b>Dimensions: </b>
-                <ul>@n.foreach { kv =>
+                <ul>@n.map { kv =>
                     <li>@kv._1 ⇒ @kv._2</li>
                 }</ul>
             </li>
