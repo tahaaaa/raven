@@ -7,10 +7,11 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.settings.RoutingSettings
 import akka.util.CompactByteString
-import com.opentok.raven.{RavenLogging, RavenConfig}
-import com.opentok.raven.http.endpoints.{CertifiedEmailEndpoint, DebugEndpoint, MonitoringEndpoint, PriorityEmailEndpoint}
-import com.opentok.raven.model.{RavenRejection, Receipt}
+import com.opentok.raven.http.endpoints.{DebugEndpoint, EmailEndpoint, MonitoringEndpoint}
+import com.opentok.raven.model.{EmailRequest, RavenRejection, Receipt, Requestable}
 import com.opentok.raven.service.Service
+import com.opentok.raven.{RavenConfig, RavenLogging}
+import JsonProtocol._
 
 import scala.util.Try
 
@@ -69,8 +70,9 @@ trait AkkaApi extends Api {
             Receipt.error(e, msg)).toString()))))
   }
 
-  val certified = new CertifiedEmailEndpoint(certifiedService, ENDPOINT_TIMEOUT)
-  val priority = new PriorityEmailEndpoint(priorityService, ENDPOINT_TIMEOUT)
+  val priority = new EmailEndpoint("priority", priorityService, ENDPOINT_TIMEOUT, as[EmailRequest])
+
+  val certified = new EmailEndpoint("certified", certifiedService, ENDPOINT_TIMEOUT, as[Requestable])
 
   val monitoring = new MonitoringEndpoint(monitoringService, ENDPOINT_TIMEOUT)
 

@@ -13,9 +13,7 @@ trait RavenLogging extends TypedLogging {
 
   case object CompleteRequest extends CallType
 
-  case object HandleCertifiedEmailRequest extends CallType
-
-  case object HandlePriorityEmailRequest extends CallType
+  case class HandleEmailRequest(endpoint: String) extends CallType
 
   case object SuperviseRequest extends CallType
 

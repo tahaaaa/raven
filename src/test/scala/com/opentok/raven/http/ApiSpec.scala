@@ -213,7 +213,7 @@ class ApiSpec extends WordSpec with Matchers with ScalatestRouteTest {
     }
   }
 
-  "should return bad request when trying to pass an email, email batch, or request batch through priority endpoint" in {
+  "should return bad request when trying to pass an email" in {
 
     Post("/v1/priority", marshalledEmail) ~> workingTree ~> check {
       response.status.intValue() shouldBe 400
