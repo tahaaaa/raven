@@ -9,7 +9,7 @@ import akka.http.scaladsl.model.{ContentType, HttpEntity, HttpResponse}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Directive1, Route, RouteResult}
 import akka.http.scaladsl.unmarshalling.FromRequestUnmarshaller
-import akka.util.{CompactByteString, Timeout}
+import akka.util.CompactByteString
 import build.unstable.tylog.Variation
 import com.opentok.raven.RavenLogging
 import com.opentok.raven.http.JsonProtocol._
@@ -21,7 +21,6 @@ import scala.util.{Failure, Success}
 trait EndpointUtils {
   this: RavenLogging ⇒
 
-  implicit val timeout: Timeout
   val route: Route
   val system: ActorSystem
 
