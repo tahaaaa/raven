@@ -1,8 +1,9 @@
 package com.opentok.raven.service.actors
 
-import akka.actor.{Actor, ActorLogging, ActorRef}
+import akka.actor.{Actor, ActorRef}
 import akka.pattern._
 import akka.util.Timeout
+import com.opentok.raven.RavenLogging
 import com.opentok.raven.dal.components.EmailRequestDao
 import com.opentok.raven.model._
 
@@ -13,8 +14,8 @@ import scala.util.{Failure, Success, Try}
  * Common methods used by [[com.opentok.raven.service.actors.PriorityCourier]] and
  * [[com.opentok.raven.service.actors.CertifiedCourier]]
  */
-trait Courier {
-  this: Actor with ActorLogging ⇒
+trait Courier extends RavenLogging {
+  this: Actor ⇒
 
   import context.dispatcher
 
@@ -41,18 +42,11 @@ trait Courier {
   /**
    * Persists request to database and logs op results
    */
-  def persistRequest(req: EmailRequest): Future[Any] = {
-    log.debug("sending request for dao service to persist '{}' with status '{}'", req.id, req.status)
-    daoService.ask(req).andThen {
-      case Success(i) ⇒
-        log.debug("successfully persisted request with id '{}' with status '{}'", req.id, req.status)
-      case Failure(e) ⇒
-        log.error(e, s"there was an error when persisting request with id ${req.id} to database")
-    }
-  }
+  def persistRequest(req: EmailRequest)(implicit ctx: RequestContext): Future[Any] =
+    daoService.ask(ctx.copy(req = req))
 
-  def persistRequests(reqs: List[EmailRequest]): Future[Any] = {
-    if (reqs.isEmpty) Future.failed(new Exception("trying to persist request but list is empty"))
+  def persistRequests(reqs: List[EmailRequest])(implicit ctx: RequestContext): Future[Any] = {
+    if (reqs.isEmpty) Future.failed(new Exception("trying to persist empty list of requests"))
     Future.sequence[Any, List](reqs.map(persistRequest))
   }
 
@@ -61,13 +55,11 @@ trait Courier {
    * Asks email provider to send email and recovers
    * exception into a receipt if there was one
    */
-  def send(id: Option[String], email: Email): Future[Receipt] = {
-    provider.send(email).mapTo[Receipt]
-      .map(_.copy(requestId = id))
+  def send(id: Option[String], email: Email)(implicit ctx: RequestContext): Future[Receipt] = {
+    provider.send(email).mapTo[Receipt].map(_.copy(requestId = id))
       .recover {
         case e: Exception ⇒
           val msg = s"there was a problem when processing email request with id $id"
-          log.error(e, msg)
           Receipt.error(e, message = msg, requestId = id)
       }
   }
@@ -77,7 +69,8 @@ trait Courier {
     //applies the side-effecting function to the result of this future, and returns
     //a new future with the flattened result of the passed future
     //basically it completes promise with initial result when inner future is done
-    def flatAndThen(pf: PartialFunction[Try[Receipt], Future[_]])(implicit executor: ExecutionContext): Future[Receipt] = {
+    def flatAndThen(pf: PartialFunction[Try[Receipt], Future[_]])
+                   (implicit executor: ExecutionContext): Future[Receipt] = {
       val p = Promise[Receipt]()
       f onComplete { r ⇒
         try {
@@ -100,7 +93,7 @@ trait Courier {
      * receipt is successful when email was processed correctly in provider
      * and unsuccessfully if and only if there was a failure when processing email
      */
-    def andThenPersistResult(req: EmailRequest): Future[Receipt] =
+    def andThenPersistResult(req: EmailRequest)(implicit ctx: RequestContext): Future[Receipt] =
       f.flatAndThen {
         //email was processed successfully by provider
         case Success(rec) if rec.success && rec.errors.isEmpty ⇒
@@ -115,7 +108,7 @@ trait Courier {
           persistRequest(req.copy(status = Some(EmailRequest.Failed)))
       }
 
-    def andThenPersistResult(reqs: List[EmailRequest]): Future[Receipt] =
+    def andThenPersistResult(reqs: List[EmailRequest])(implicit ctx: RequestContext): Future[Receipt] =
       f.flatAndThen {
         case Success(rec) if rec.success && rec.errors.isEmpty ⇒
           Future.sequence[Any, List](reqs.map(req ⇒
@@ -140,19 +133,19 @@ trait Courier {
 /**
  * Helper actor that wraps emailsDao futures to provide timeout support
  */
-class RequestPersister(emailsDao: EmailRequestDao) extends Actor with ActorLogging {
+class RequestPersister(emailsDao: EmailRequestDao) extends Actor with RavenLogging {
 
   import context.dispatcher
 
-  val errMsg = "received unacceptable request"
+  def getErrorMsg(req: Any) = s"received unacceptable request: $req"
 
   val singleMessageRecv: PartialFunction[Any, Future[Int]] = {
-    case req: EmailRequest ⇒ emailsDao.persistRequest(req)
-    case req ⇒ log.error(errMsg); Future.failed(new Exception(errMsg))
+    case ctx@RequestContext(req: EmailRequest, traceId) ⇒
+      emailsDao.persistRequest(req)(context.dispatcher, ctx)
+    case req ⇒ Future.failed(new Exception(getErrorMsg(req)))
   }
 
   def receive: Actor.Receive = {
-    case id: String ⇒ emailsDao.retrieveRequest(id) pipeTo sender()
     case msg ⇒ singleMessageRecv(msg) pipeTo sender()
   }
 }

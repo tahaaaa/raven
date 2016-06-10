@@ -1,0 +1,11 @@
+@(message: String, component: String, stack_trace: Option[String])
+
+<!-- H1 -->
+<div align="center" style="font-family: 'ITC Avant Garde Gothic W04 Md', 'Muli', helvetica, arial; font-size: 20px; color: #5f5f61; padding-bottom: 35px;">
+    Bummer! There was an error in @component
+</div>
+<!-- Body Copy -->
+<div style="line-height: 24px; padding-bottom: 35px; font-family: 'Muli', helvetica, arial;"><b>@message</b></div>
+@stack_trace.map {  s =>
+    <div style="line-height: 24px; padding-bottom: 35px; font-family: 'Muli', helvetica, arial;">@s</div>
+}

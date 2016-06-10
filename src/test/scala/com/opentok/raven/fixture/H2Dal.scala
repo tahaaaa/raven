@@ -7,7 +7,7 @@ import slick.jdbc.{JdbcBackend, StaticQuery}
 
 import scala.io.Source
 
-trait H2Dal extends Dal {
+trait H2Dal extends Dal with TestConfig {
   implicit val driver: JdbcProfile = H2Driver
   implicit val db: JdbcBackend#Database = driver.backend.Database.forConfig("raven.database")
   val emailRequestDao: EmailRequestDao = new EmailRequestSlickDao()

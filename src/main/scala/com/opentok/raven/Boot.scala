@@ -8,9 +8,8 @@ import com.typesafe.config.ConfigFactory
 
 import scala.util.{Failure, Success}
 
-
 object Boot extends FromResourcesConfig(ConfigFactory.load())
-with App with MysqlDal with AkkaSystem with AkkaService with AkkaApi {
+with App with MysqlDal with AkkaSystem with AkkaService with AkkaApi with RavenLogging {
 
   import system.dispatcher
 
@@ -18,13 +17,12 @@ with App with MysqlDal with AkkaSystem with AkkaService with AkkaApi {
 
   testDalConnectivity().andThen {
     case s: Success[_] ⇒
-      system.log.info(s"raven service started and listening on $HOST:$PORT; PRD:$PRD; " +
+      log.info(s"raven service started and listening on $HOST:$PORT; PRD:$PRD; " +
         s"restrictTo: $RESTRICT_TO; max-retries=$MAX_RETRIES; deferrer=$DEFERRER; " +
         s"actor-timeout:$ACTOR_TIMEOUT; endpoint-timeout:$ENDPOINT_TIMEOUT")
     case Failure(e) ⇒
-      system.log.error(e, s"data access layer verification failed")
+      log.error(s"data access layer verification failed", e)
       //terminate service
       system.terminate()
   }
-
 }

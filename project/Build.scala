@@ -10,20 +10,24 @@ import scoverage.ScoverageSbtPlugin.autoImport._
 import spray.revolver.RevolverPlugin._
 
 
-object RavenBuild extends Build {
+object Build extends sbt.Build {
 
-  val scalaV = "2.11.7"
-  val akkaStreamV = "2.0.2"
-  val akkaV = "2.4.1"
+  val scalaV = "2.11.8"
+  val akkaV = "2.4.6"
   val playTwirlV = "1.1.1"
 
   val commonSettings = Seq(
     organization := "com.opentok",
     scalaVersion := scalaV,
+    resolvers += Resolver.bintrayRepo("ernestrc", "maven"),
     scalacOptions := Seq(
       "-unchecked",
       "-Xlog-free-terms",
       "-deprecation",
+      "-feature",
+      "-Xlint",
+      "-Ywarn-dead-code",
+      "-Ywarn-unused",
       "-encoding", "UTF-8",
       "-target:jvm-1.8"
     )
@@ -59,15 +63,13 @@ object RavenBuild extends Build {
       test in assembly := {},
       libraryDependencies ++= {
         Seq(
+          "build.unstable" %% "tylog" % "0.2.4",
           "org.scala-lang" % "scala-compiler" % scalaV,
           "com.typesafe.play" %% "twirl-api" % playTwirlV,
           "com.typesafe.akka" %% "akka-actor" % akkaV,
           "com.typesafe.akka" %% "akka-slf4j" % akkaV,
-          "com.typesafe.akka" %% "akka-stream-experimental" % akkaStreamV,
-          "com.typesafe.akka" %% "akka-http-spray-json-experimental" % akkaStreamV,
-          "com.typesafe.akka" %% "akka-http-experimental" % akkaStreamV,
-          "com.typesafe.akka" %% "akka-http-core-experimental" % akkaStreamV,
-          "com.typesafe.akka" %% "akka-http-testkit-experimental" % akkaStreamV,
+          "com.typesafe.akka" %% "akka-stream" % akkaV,
+          "com.typesafe.akka" %% "akka-http-spray-json-experimental" % akkaV,
           "ch.qos.logback" % "logback-classic" % "1.0.13",
           "com.typesafe.slick" %% "slick" % "3.0.2",
           "com.sendgrid" % "sendgrid-java" % "2.2.1",
@@ -77,7 +79,8 @@ object RavenBuild extends Build {
           "com.zaxxer" % "HikariCP" % "2.3.9",
           "com.h2database" % "h2" % "1.3.175",
           "org.scalatest" %% "scalatest" % "2.2.5" % "test",
-          "com.typesafe.akka" %% "akka-testkit" % akkaV % "test"
+          "com.typesafe.akka" %% "akka-testkit" % akkaV % "test",
+          "com.typesafe.akka" %% "akka-http-testkit" % akkaV % "test"
         )
       }
     ).enablePlugins(SbtTwirl, SonarRunnerPlugin)

@@ -45,9 +45,10 @@ trait AkkaService extends Service {
   lazy val priorityService = system.actorOf(
     Props(classOf[EmailSupervisor],
       Props(classOf[PriorityCourier], emailRequestDao, smtpProvider, ACTOR_TIMEOUT),
-      PRIORITY_POOL, emailRequestDao, MAX_RETRIES, DEFERRER).withDispatcher("akka.actor.priority-dispatcher"),
-    "priority-service")
+      PRIORITY_POOL, emailRequestDao, MAX_RETRIES, DEFERRER
+    ).withDispatcher("akka.actor.priority-dispatcher"), "priority-service")
 
-  lazy val monitoringService = system.actorOf(Props(classOf[MonitoringActor], certifiedService, priorityService, db, driver,
-    DB_CHECK, ACTOR_TIMEOUT), "monitoring-service")
+  lazy val monitoringService = system.actorOf(Props(classOf[MonitoringActor],
+    certifiedService, priorityService,
+    () ⇒ testDalConnectivity(), ACTOR_TIMEOUT), "monitoring-service")
 }

@@ -4,7 +4,7 @@ import akka.actor.{ActorSystem, Props}
 import akka.testkit.{ImplicitSender, TestActorRef, TestKit}
 import akka.util.Timeout
 import com.opentok.raven.fixture._
-import com.opentok.raven.model.{EmailRequest, Provider, Receipt}
+import com.opentok.raven.model._
 import com.opentok.raven.service.actors.CertifiedCourier
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 
@@ -34,7 +34,7 @@ with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
       val courier = certifiedCourier(dao, serv)
 
       within(3.seconds) {
-        courier ! testRequest
+        courier ! testRequest.toCtx
 
         expectMsg[Receipt](Receipt.success(None, testRequest.id))
       }
@@ -46,13 +46,36 @@ with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
 
     }
 
+    "Recover error from building template and persist failure" in {
+      val dao = new MockEmailRequestDao(Some(testRequest), persistanceFails = false, persistanceTimesOut = false)
+      val serv = new MockProvider(Receipt.success)
+      val courier = certifiedCourier(dao, serv)
+
+      val nonExistentTemplateRequest =
+        EmailRequest("ernest+raven@tokbox.com", "nonsense", None, None, Some("lol"))
+
+      within(3.seconds) {
+        courier ! nonExistentTemplateRequest.toCtx
+
+        val r = expectMsgType[Receipt]
+
+        assert(!r.success)
+      }
+
+      //could not sent to provider
+      serv.right shouldBe 0
+
+      dao.received.head.status shouldBe Some(EmailRequest.Failed)
+
+    }
+
     "If first attempt to persist fails, try to send anyway but change success receipt message with warning" in {
       val dao = new MockEmailRequestDao(Some(testRequest), persistanceFails = true)
       val serv = new MockProvider(Receipt.success)
       val courier = certifiedCourier(dao, serv)
 
       val r = within(3.seconds) {
-        courier ! testRequest
+        courier ! testRequest.toCtx
 
         expectMsgType[Receipt](implicitly[ClassTag[Receipt]])
       }
@@ -68,7 +91,7 @@ with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
       val courier = certifiedCourier(dao, serv)
 
       val r = within(3.seconds) {
-        courier ! testRequest
+        courier ! testRequest.toCtx
 
         expectMsgType[Receipt](implicitly[ClassTag[Receipt]])
       }
@@ -85,7 +108,7 @@ with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
       val courier = certifiedCourier(dao, serv)
 
       val r = within(3.seconds) {
-        courier ! testRequest
+        courier ! testRequest.toCtx
 
         expectMsgType[Receipt](implicitly[ClassTag[Receipt]])
       }
@@ -106,7 +129,7 @@ with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
       val courier = certifiedCourier(dao, serv)
 
       val r = within(3.seconds) {
-        courier ! testRequest
+        courier ! testRequest.toCtx
 
         expectMsgType[Receipt](implicitly[ClassTag[Receipt]])
       }
@@ -129,7 +152,7 @@ with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
       val courier = certifiedCourier(dao, serv)
 
       within(3.seconds) {
-        courier ! testRequest
+        courier ! testRequest.toCtx
 
         expectMsg[Receipt](rec)
       }
@@ -141,5 +164,4 @@ with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
 
     }
   }
-
 }

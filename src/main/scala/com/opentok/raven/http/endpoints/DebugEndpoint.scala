@@ -18,11 +18,9 @@ import spray.json._
 import scala.collection.JavaConversions._
 import scala.util.Try
 
-class DebugEndpoint(implicit val mat: Materializer, system: ActorSystem) {
+class DebugEndpoint(implicit val mat: Materializer, system: ActorSystem){
 
   import com.opentok.raven.http.JsonProtocol._
-
-  implicit val logger: LoggingAdapter = system.log
 
   val classLoader = this.getClass.getClassLoader
 

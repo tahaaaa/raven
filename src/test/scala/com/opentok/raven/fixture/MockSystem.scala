@@ -4,7 +4,7 @@ import akka.actor.{Actor, ActorRef, ActorSystem, Props}
 import akka.event.LoggingAdapter
 import akka.stream.ActorMaterializer
 import akka.testkit.TestActorRef
-import com.opentok.raven.model.{Provider, Email, EmailRequest, Receipt}
+import com.opentok.raven.model._
 import com.opentok.raven.service.{AkkaSystem, Service}
 
 abstract class MockSystem(handler: Props) extends Service with AkkaSystem {
@@ -16,14 +16,15 @@ abstract class MockSystem(handler: Props) extends Service with AkkaSystem {
 }
 
 abstract class WorkingMockSystem extends MockSystem(Props(new Actor {
-  var received: Any = 0
 
   implicit val log: LoggingAdapter = context.system.log
 
   override def receive: Receive = {
-    case req: EmailRequest ⇒ sender() ! Receipt.success(None, req.id)
-    case em: Email ⇒ sender() ! Receipt.success(None, em.id)
+    case ctx@RequestContext(req: EmailRequest, traceId) ⇒
+      sender() ! Receipt.success(None, req.id)
+    case ctx@RequestContext(em: Email, traceId) ⇒
+      sender() ! Receipt.success(None, em.id)
+    //for monitoring endpoints
     case msg ⇒ sender() ! Receipt.success
-      received = msg
   }
 }))

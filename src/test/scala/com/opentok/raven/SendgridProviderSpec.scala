@@ -1,6 +1,6 @@
 package com.opentok.raven
 
-import com.opentok.raven.model.{Email, EmailRequest, SendgridProvider}
+import com.opentok.raven.model.{RequestContext, Email, EmailRequest, SendgridProvider}
 import com.sendgrid.SendGrid
 import com.sendgrid.SendGrid.{Response}
 import org.joda.time.DateTime
@@ -13,6 +13,8 @@ import scala.concurrent.duration._
 class SendgridProviderSpec extends WordSpecLike with Matchers {
 
   import fixture._
+
+  implicit val rtctx = RequestContext(testRequest, "1")
 
   class MockSendGridClient extends SendGrid("") {
     var sent: Int = 0
