@@ -11,6 +11,7 @@ import slick.driver.JdbcProfile
 import slick.jdbc.JdbcBackend
 
 import scala.collection.mutable
+import scala.concurrent.{Future, Await}
 import scala.util.Try
 
 object MonitoringActor {
@@ -27,13 +28,11 @@ object MonitoringActor {
  *
  * @param certifiedService certified actor/router instance
  * @param priorityService priority actor/router instance
- * @param db database object instance, used to check db connectivity
- * @param driver db driver
- * @param dbCheck query to use when checking for connectivity
+ * @param testDal function to use to test DAL
  * @param t timeout to apply to dal/service checks
  */
 class MonitoringActor(certifiedService: ActorRef, priorityService: ActorRef,
-                      db: JdbcBackend#Database, driver: JdbcProfile, dbCheck: String, t: Timeout)
+                      testDal: () ⇒ Future[_], t: Timeout)
   extends Actor with RavenLogging {
 
   import context.dispatcher
@@ -46,16 +45,20 @@ class MonitoringActor(certifiedService: ActorRef, priorityService: ActorRef,
   //subscribe to receipt to monitor failed requests
   context.system.eventStream.subscribe(self, classOf[Receipt])
 
+  val MAX_FAILED = 200
   val failed = mutable.Queue.empty[Receipt]
 
   override def receive: Receive = {
 
     //from eventBus
-    case r: Receipt ⇒ failed.enqueue(r)
-      //prevent memory leak
-      if (failed.length > 2000) {
-        val dequeued = failed.dequeue()
-        log.warn(s"number of failed emails is over 2000! dropping $dequeued")
+    case r: Receipt ⇒
+      if (!r.success) {
+        failed.enqueue(r)
+        //prevent memory leak
+        if (failed.length > MAX_FAILED) {
+          val dequeued = failed.dequeue()
+          warning(log, "number of failed emails is over {}! dropping {}", MAX_FAILED, dequeued)
+        }
       }
 
     //clone to immutable and send
@@ -69,17 +72,12 @@ class MonitoringActor(certifiedService: ActorRef, priorityService: ActorRef,
         case e: Exception ⇒ Receipt.error(e, "Unable to establish communication with services")
       } pipeTo sender()
 
-    case ComponentHealthCheck("dal") ⇒ sender() ! Try {
-      val conn = db.source.createConnection()
-      val r = Receipt(conn.createStatement().execute(conn.nativeSQL(dbCheck)),
-        message = Some("Ok"))
-      conn.close()
-      r
-    }.recover {
-      case e: Exception ⇒
-        Receipt.error(e, "Unable to establish communication with " +
-          s"db $dbHost:$dbPort using driver $driver")
-    }.get
+    case ComponentHealthCheck("dal") ⇒
+      testDal().map(_ ⇒ Receipt.success).recover {
+        case e: Exception ⇒
+          Receipt.error(e, "Unable to establish communication with " +
+            s"db $dbHost:$dbPort using ")
+      } pipeTo sender()
 
     case ComponentHealthCheck(_) ⇒ sender() ! Receipt.error(
       new Exception("Not a valid component. Try 'dal' or 'service')"), "Error when processing request")

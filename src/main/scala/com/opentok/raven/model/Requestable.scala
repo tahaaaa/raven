@@ -34,11 +34,6 @@ case class EmailRequest(to: String,
   @transient
   lazy val $inject = inject.map(_.fields).getOrElse(Map.empty)
 
-  @transient
-  lazy val json: JsObject = {
-    JsonProtocol.requestJsonFormat.write(this).asJsObject
-  }
-
   def validated: EmailRequest = {
     try {
       val email = Email.buildPF(None, "trash@tokbox.com", $inject)

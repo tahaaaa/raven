@@ -46,6 +46,29 @@ with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
 
     }
 
+    "Recover error from building template and persist failure" in {
+      val dao = new MockEmailRequestDao(Some(testRequest), persistanceFails = false, persistanceTimesOut = false)
+      val serv = new MockProvider(Receipt.success)
+      val courier = certifiedCourier(dao, serv)
+
+      val nonExistentTemplateRequest =
+        EmailRequest("ernest+raven@tokbox.com", "nonsense", None, None, Some("lol"))
+
+      within(3.seconds) {
+        courier ! nonExistentTemplateRequest.toCtx
+
+        val r = expectMsgType[Receipt]
+
+        assert(!r.success)
+      }
+
+      //could not sent to provider
+      serv.right shouldBe 0
+
+      dao.received.head.status shouldBe Some(EmailRequest.Failed)
+
+    }
+
     "If first attempt to persist fails, try to send anyway but change success receipt message with warning" in {
       val dao = new MockEmailRequestDao(Some(testRequest), persistanceFails = true)
       val serv = new MockProvider(Receipt.success)
@@ -141,5 +164,4 @@ with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
 
     }
   }
-
 }

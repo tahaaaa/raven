@@ -85,18 +85,14 @@ class CertifiedCourier(val emailsDao: EmailRequestDao,
             Email.build(req.id, req.template_id, req.$inject, req.to)
 
           val receipt: Future[Receipt] = templateMaybe match {
-
             //successfully built template
             case Success(email) ⇒
               trace(log, traceId, BuildEmail, Variation.Success, "{}", reqId)
               sendEmail(req :: Nil, email)
-
             //persist failed attempt to db,
             case Failure(e) ⇒
               val msg = s"unexpected error when building template ${req.template_id}"
-
               trace(log, traceId, BuildEmail, Variation.Failure(e), msg)
-
               val p = Promise[Receipt]()
               persistRequest(req.copy(status = Some(EmailRequest.Failed)))
                 .onComplete { _ ⇒

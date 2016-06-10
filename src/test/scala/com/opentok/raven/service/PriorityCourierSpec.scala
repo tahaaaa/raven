@@ -39,6 +39,29 @@ with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
       serv.right shouldBe 1
     }
 
+    "Recover error from building template and persist failure" in {
+      val dao = new MockEmailRequestDao(Some(testRequest), persistanceFails = false, persistanceTimesOut = false)
+      val serv = new MockProvider(Receipt.success)
+      val courier = priorityCourier(dao, serv)
+
+      val nonExistentTemplateRequest =
+        EmailRequest("ernest+raven@tokbox.com", "nonsense", None, None, Some("lol"))
+
+      within(3.seconds) {
+        courier ! nonExistentTemplateRequest.toCtx
+
+        val r = expectMsgType[Receipt]
+
+        assert(!r.success)
+      }
+
+      //could not sent to provider
+      serv.right shouldBe 0
+
+      dao.received.head.status shouldBe Some(EmailRequest.Failed)
+
+    }
+
     "Timeout/failing persist should not block forward to Sendgrid or replying success/failure to requester" in {
       val dao = new MockEmailRequestDao(Some(testRequest), persistanceFails = true)
       val serv = new MockProvider(Receipt.success)

@@ -53,11 +53,11 @@ package object fixture {
     def persistRequest(req: EmailRequest)(implicit ctx: ExecutionContext, rctx: RequestContext): Future[Int] = {
       if (persistanceFails) Future.failed(new Exception("BOOM"))
       else if (persistanceTimesOut) Future {
-        received += req
+        received.append(req)
         Thread.sleep(timeout)
         0
       } else Future {
-        received += req
+        received.append(req)
         0
       }
     }
