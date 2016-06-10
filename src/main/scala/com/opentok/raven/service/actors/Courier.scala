@@ -3,7 +3,6 @@ package com.opentok.raven.service.actors
 import akka.actor.{Actor, ActorRef}
 import akka.pattern._
 import akka.util.Timeout
-import build.unstable.tylog.TypedLogging
 import com.opentok.raven.RavenLogging
 import com.opentok.raven.dal.components.EmailRequestDao
 import com.opentok.raven.model._
@@ -43,9 +42,10 @@ trait Courier extends RavenLogging {
   /**
    * Persists request to database and logs op results
    */
-  def persistRequest(req: EmailRequest): Future[Any] = daoService.ask(req)
+  def persistRequest(req: EmailRequest)(implicit ctx: RequestContext): Future[Any] =
+    daoService.ask(ctx.copy(req = req))
 
-  def persistRequests(reqs: List[EmailRequest]): Future[Any] = {
+  def persistRequests(reqs: List[EmailRequest])(implicit ctx: RequestContext): Future[Any] = {
     if (reqs.isEmpty) Future.failed(new Exception("trying to persist empty list of requests"))
     Future.sequence[Any, List](reqs.map(persistRequest))
   }
@@ -55,7 +55,7 @@ trait Courier extends RavenLogging {
    * Asks email provider to send email and recovers
    * exception into a receipt if there was one
    */
-  def send(id: Option[String], email: Email): Future[Receipt] = {
+  def send(id: Option[String], email: Email)(implicit ctx: RequestContext): Future[Receipt] = {
     provider.send(email).mapTo[Receipt].map(_.copy(requestId = id))
       .recover {
         case e: Exception ⇒
@@ -69,7 +69,8 @@ trait Courier extends RavenLogging {
     //applies the side-effecting function to the result of this future, and returns
     //a new future with the flattened result of the passed future
     //basically it completes promise with initial result when inner future is done
-    def flatAndThen(pf: PartialFunction[Try[Receipt], Future[_]])(implicit executor: ExecutionContext): Future[Receipt] = {
+    def flatAndThen(pf: PartialFunction[Try[Receipt], Future[_]])
+                   (implicit executor: ExecutionContext): Future[Receipt] = {
       val p = Promise[Receipt]()
       f onComplete { r ⇒
         try {
@@ -92,7 +93,7 @@ trait Courier extends RavenLogging {
      * receipt is successful when email was processed correctly in provider
      * and unsuccessfully if and only if there was a failure when processing email
      */
-    def andThenPersistResult(req: EmailRequest): Future[Receipt] =
+    def andThenPersistResult(req: EmailRequest)(implicit ctx: RequestContext): Future[Receipt] =
       f.flatAndThen {
         //email was processed successfully by provider
         case Success(rec) if rec.success && rec.errors.isEmpty ⇒
@@ -107,7 +108,7 @@ trait Courier extends RavenLogging {
           persistRequest(req.copy(status = Some(EmailRequest.Failed)))
       }
 
-    def andThenPersistResult(reqs: List[EmailRequest]): Future[Receipt] =
+    def andThenPersistResult(reqs: List[EmailRequest])(implicit ctx: RequestContext): Future[Receipt] =
       f.flatAndThen {
         case Success(rec) if rec.success && rec.errors.isEmpty ⇒
           Future.sequence[Any, List](reqs.map(req ⇒
@@ -136,24 +137,15 @@ class RequestPersister(emailsDao: EmailRequestDao) extends Actor with RavenLoggi
 
   import context.dispatcher
 
-  val errMsg = "received unacceptable request"
+  def getErrorMsg(req: Any) = s"received unacceptable request: $req"
 
   val singleMessageRecv: PartialFunction[Any, Future[Int]] = {
-    case req: EmailRequest ⇒ emailsDao.persistRequest(req)
-    case req ⇒ Future.failed(new Exception(errMsg))
+    case ctx@RequestContext(req: EmailRequest, traceId) ⇒
+      emailsDao.persistRequest(req)(context.dispatcher, ctx)
+    case req ⇒ Future.failed(new Exception(getErrorMsg(req)))
   }
 
   def receive: Actor.Receive = {
-    case id: String ⇒
-      trace(log, id, RetrieveRequestState, Variation.Attempt)
-      val f = emailsDao.retrieveRequest(id)
-      f andThen {
-        case s: Success[_] ⇒
-          trace(log, id, RetrieveRequestState, Variation.Success)
-        case Failure(e) ⇒
-          trace(log, id, RetrieveRequestState, Variation.Failure(e))
-      }
-      f pipeTo sender()
     case msg ⇒ singleMessageRecv(msg) pipeTo sender()
   }
 }

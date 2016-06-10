@@ -1,7 +1,5 @@
 package com.opentok.raven
 
-import java.util.UUID
-
 import com.opentok.raven.Implicits._
 import com.opentok.raven.http.JsonProtocol
 import com.opentok.raven.model.Email._
@@ -24,8 +22,12 @@ package object model {
   class InvalidInjection(value: String, msg: String)
     extends Exception(s"invalid value '$value': $msg") with RavenRejection
 
+  case class RequestContext(req: Requestable, traceId: String)
+
   sealed trait Requestable {
-    val id: Option[String]
+    def id: Option[String]
+
+    def recipients: List[String]
   }
 
   /**
@@ -40,6 +42,9 @@ package object model {
                           inject: Option[JsObject],
                           status: Option[EmailRequest.Status],
                           id: Option[String]) extends Requestable {
+
+    @transient
+    lazy val recipients = List(to)
 
     @transient
     lazy val $inject = inject.map(_.fields).getOrElse(Map.empty)
@@ -65,18 +70,6 @@ package object model {
   }
 
   object EmailRequest {
-
-    //transforms an incoming request without id and status
-    val fillInRequest = { req: EmailRequest ⇒
-      req.id match {
-        case Some(_) ⇒
-          req.copy(status = Some(EmailRequest.Pending))
-        case None ⇒ req.copy(
-          id = Some(UUID.randomUUID.toString),
-          status = Some(EmailRequest.Pending)
-        )
-      }
-    }
 
     sealed trait Status
 

@@ -11,11 +11,11 @@ trait RavenLogging extends TypedLogging {
 
   sealed trait CallType
 
-  case object CertifiedEmailRequest extends CallType
+  case object CompleteRequest extends CallType
 
-  case object PriorityEmailRequest extends CallType
+  case object HandleCertifiedEmailRequest extends CallType
 
-  case object CertifiedEmail extends CallType
+  case object HandlePriorityEmailRequest extends CallType
 
   case object SuperviseRequest extends CallType
 

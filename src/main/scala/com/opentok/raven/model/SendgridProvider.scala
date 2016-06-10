@@ -1,11 +1,12 @@
 package com.opentok.raven.model
 
+import build.unstable.tylog.Variation
 import com.opentok.raven.RavenLogging
 import com.sendgrid.SendGrid
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.matching.Regex
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Success}
 
 /**
  * Processes [[com.opentok.raven.model.Email]] and sends it via SendGrid SMTPAPI
@@ -32,33 +33,49 @@ class SendgridProvider(client: SendGrid, prd: Boolean, restrictTo: Option[String
     tmp.bcc.map(bcc ⇒ m.setBcc(bcc.toArray))
     tmp.attachments.map(o ⇒ o.map(a ⇒ m.addAttachment(a._1, a._2)))
     tmp.headers.map(o ⇒ o.map(h ⇒ m.addHeader(h._1, h._2)))
-    m
+    m.addUniqueArg("request_id", tmp.id.get)
   }
 
   val errorMsg = "error when connecting with SendGrid client"
 
   val restrictRgxMaybe: Option[Regex] = restrictTo.map(new Regex(_))
 
-  def doSend(em: Email)(implicit ctx: ExecutionContext): Future[Receipt] = Future {
-    val msg = s"received email with id '${em.id}' addressed to '${em.recipients}' with subject '${em.subject}'"
-    trace(log, em.id.get, ProviderSendEmail, Variation.Attempt, Some(msg))
-    client.send(em) match {
-      case rsp if rsp.getStatus ⇒
-        Receipt(rsp.getStatus, requestId = em.id)
-      case rsp ⇒
-        val combined = errorMsg + " " + rsp.getMessage
-        Receipt.error(new Exception(combined), errorMsg, em.id)
+  def doSend(em: Email)(implicit ctx: ExecutionContext, rctx: RequestContext): Future[Receipt] = {
+
+    val reqId = em.id.get
+    val traceId = rctx.traceId
+
+    Future {
+
+      trace(log, traceId, ProviderSendEmail, Variation.Attempt,
+        "received email with id '{}' addressed to '${}' with subject '{}'",
+        reqId, em.recipients, em.subject)
+
+      client.send(em) match {
+        case rsp if rsp.getStatus ⇒
+          Receipt(rsp.getStatus, requestId = em.id)
+        case rsp ⇒
+          val combined = errorMsg + " " + rsp.getMessage
+          Receipt.error(new Exception(combined), errorMsg, em.id)
+      }
+
+    }.andThen {
+
+      case Success(r) if r.success ⇒
+        trace(log, traceId, ProviderSendEmail, Variation.Success,
+          "sent email with id {}", reqId)
+
+      case Success(r) ⇒
+        trace(log, traceId, ProviderSendEmail, Variation.Failure(new Exception(r.errors.head)),
+          "failed to send {}", reqId)
+
+      case Failure(e) ⇒
+        trace(log, traceId, ProviderSendEmail, Variation.Failure(e),
+          "failed to send {}", reqId)
     }
-  }.andThen {
-    case Success(r) if r.success ⇒
-      trace(log, em.id.get, ProviderSendEmail, Variation.Success, None)
-    case Success(r) ⇒
-      trace(log, em.id.get, ProviderSendEmail, Variation.Failure(new Exception(r.errors.head)), None)
-    case Failure(e) ⇒
-      trace(log, em.id.get, ProviderSendEmail, Variation.Failure(e), None)
   }
 
-  override def send(em: Email)(implicit ctx: ExecutionContext): Future[Receipt] = {
+  def send(em: Email)(implicit ctx: ExecutionContext, rctx: RequestContext): Future[Receipt] = {
     //if not prd filter out recipients that don't match regex restrictTo
     if (!prd) {
       val restrictRgx = restrictRgxMaybe.get //guaranteed by RavenConfig when booting up
