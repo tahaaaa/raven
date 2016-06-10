@@ -130,7 +130,6 @@ class EmailSupervisor(superviseeProps: Props, nSupervisees: Int,
 
                     //legitimate retry
                     case Some(status) if status == EmailRequest.Failed || status == EmailRequest.Pending ⇒
-                      val in = deferrer.seconds
                       //schedule send message to self with request in n seconds
                       context.system.scheduler.scheduleOnce(deferrer.seconds, self, supervisedRequest.ctx)
 

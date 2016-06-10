@@ -48,7 +48,7 @@ class SendgridProvider(client: SendGrid, prd: Boolean, restrictTo: Option[String
     Future {
 
       trace(log, traceId, ProviderSendEmail, Variation.Attempt,
-        "received email with id '{}' addressed to '${}' with subject '{}'",
+        "received email with id '{}' addressed to '{}' with subject '{}'",
         reqId, em.recipients, em.subject)
 
       client.send(em) match {

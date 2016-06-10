@@ -16,6 +16,7 @@ import com.opentok.raven.http.JsonProtocol._
 import com.opentok.raven.model._
 
 import scala.concurrent.Future
+import scala.language.implicitConversions
 import scala.util.{Failure, Success}
 
 trait EndpointUtils {

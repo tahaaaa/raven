@@ -24,6 +24,10 @@ object Build extends sbt.Build {
       "-unchecked",
       "-Xlog-free-terms",
       "-deprecation",
+      "-feature",
+      "-Xlint",
+      "-Ywarn-dead-code",
+      "-Ywarn-unused",
       "-encoding", "UTF-8",
       "-target:jvm-1.8"
     )

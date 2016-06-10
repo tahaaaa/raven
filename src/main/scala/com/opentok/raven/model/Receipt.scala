@@ -21,13 +21,7 @@ case class Receipt(
                     success: Boolean,
                     requestId: Option[String] = None,
                     message: Option[String] = None,
-                    errors: List[String] = List.empty) {
-
-  @transient
-  lazy val json: JsObject = {
-    JsonProtocol.receiptJsonFormat.write(this).asJsObject
-  }
-}
+                    errors: List[String] = List.empty)
 
 object Receipt {
 
