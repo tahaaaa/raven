@@ -16,12 +16,13 @@ sealed trait Requestable {
 }
 
 /**
- * Service email task request
- * @param to Email address of the recipient
- * @param template_id template name in resources/templates without extension
- * @param status status of the request. Check sealed trait [[com.opentok.raven.model.EmailRequest.Status]]
- * @param inject map of key value pairs to inject to the template
- */
+  * Service email task request
+  *
+  * @param to          Email address of the recipient
+  * @param template_id template name in resources/templates without extension
+  * @param status      status of the request. Check sealed trait [[com.opentok.raven.model.EmailRequest.Status]]
+  * @param inject      map of key value pairs to inject to the template
+  */
 case class EmailRequest(to: String,
                         template_id: String,
                         inject: Option[JsObject],
@@ -92,7 +93,7 @@ case class Email(
                   bcc: Option[List[EmailAddress]] = None,
                   attachments: Option[List[(String, String)]] = None,
                   headers: Option[Map[String, String]] = None
-                  ) extends Requestable
+                ) extends Requestable
 
 object Email {
 
@@ -124,8 +125,8 @@ object Email {
                    bcc: Option[List[EmailAddress]] = None,
                    attachments: Option[List[(String, String)]] = None,
                    headers: Option[Map[String, String]] = None): Email =
-    Email(requestId, subject, recipient :: Nil, from, html.wrap_email_v2(recipient, template).body,
-      Some(fromTemplateId), toName, fromName, Some("raven" :: fromTemplateId :: categories), setReply, cc, bcc, attachments, headers)
+  Email(requestId, subject, recipient :: Nil, from, html.wrap_email_v2(recipient, template).body,
+    Some(fromTemplateId), toName, fromName, Some("raven" :: fromTemplateId :: categories), setReply, cc, bcc, attachments, headers)
 
   //decoupled from build to check at runtime what templates are available
   def buildPF(requestId: Option[String], recipient: String,
@@ -193,9 +194,8 @@ object Email {
         templateId, fromName = Some("TokBox"))
 
     case templateId@"payment_failed" ⇒
-      wrapTemplate(requestId, "Payment Failed", recipient, "messages@tokbox.com",
-        html.payment_failed(fields.extract[Int]("try_num"),
-          fields.extract[Long]("next_unix_ms"), fields %> "account_portal_url"),
+      wrapTemplate(requestId, "Verify your payment information", recipient, "messages@tokbox.com",
+        html.payment_failed(fields.extract[Long]("next_unix_ms"), fields %> "account_portal_url"),
         templateId, fromName = Some("TokBox"))
 
     case templateId@"account_deleted" ⇒
