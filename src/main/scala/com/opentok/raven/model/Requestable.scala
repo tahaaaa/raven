@@ -225,6 +225,11 @@ object Email {
         html.test(fields %> "a", fields.extract[Int]("b")),
         templateId, fromName = Some("TokBox"))
 
+    case templateId@"callback_disabled" ⇒
+      wrapTemplate(requestId, "Session Monitoring Suspended", recipient, "support@tokbox.com",
+        html.callback_disabled(fields %> "target_url", fields.extract[Int]("project_id")),
+        templateId, fromName = Some("TokBox"))
+
     case templateId@"harvester" ⇒
       wrapTemplate(requestId, "Harvester Email", recipient, "analytics@tokbox.com",
         html.harvester(
