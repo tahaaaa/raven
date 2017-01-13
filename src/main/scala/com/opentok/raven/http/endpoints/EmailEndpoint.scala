@@ -11,6 +11,7 @@ import build.unstable.tylog.Variation
 import com.opentok.raven.RavenLogging
 import com.opentok.raven.http.EndpointUtils
 import com.opentok.raven.model.{Receipt, Requestable}
+import org.slf4j.event.Level
 
 import scala.util.{Failure, Success}
 
@@ -41,23 +42,23 @@ class EmailEndpoint[T <: Requestable](endpoint: String, handler: ActorRef, timeo
             val traceId = ctx.traceId
             lazy val recipients = ctx.req.recipients
 
-            trace(log, traceId, callType, Variation.Attempt, "extracted request with id {}", requestId)
+            log.tylog(Level.INFO, traceId, callType, Variation.Attempt, "extracted request with id {}", requestId)
 
             handler.ask(ctx)(timeout).mapTo[Receipt].andThen {
 
               case Success(r) if r.success ⇒
-                trace(log, ctx.traceId, callType, Variation.Success,
+                log.tylog(Level.INFO, ctx.traceId, callType, Variation.Success,
                   "email request with id '{}' was sent successfully to '{}'",
                   requestId, recipients)
 
               case Success(r) ⇒
-                trace(log, ctx.traceId, callType,
+                log.tylog(Level.INFO, ctx.traceId, callType,
                   Variation.Failure(new Exception(r.errors.headOption.getOrElse("unknown error"))),
                   "email request with id '{}' failed to send to '{}'",
                   requestId, recipients)
 
               case Failure(e) ⇒
-                trace(log, ctx.traceId, callType, Variation.Failure(e),
+                log.tylog(Level.INFO, ctx.traceId, callType, Variation.Failure(e),
                   "email request with id '{}' failed to send to '{}'",
                   requestId, recipients)
             }

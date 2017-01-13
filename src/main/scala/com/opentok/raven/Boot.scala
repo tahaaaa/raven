@@ -21,7 +21,7 @@ with App with MysqlDal with AkkaSystem with AkkaService with AkkaApi with RavenL
         s"restrictTo: $RESTRICT_TO; max-retries=$MAX_RETRIES; deferrer=$DEFERRER; " +
         s"actor-timeout:$ACTOR_TIMEOUT; endpoint-timeout:$ENDPOINT_TIMEOUT")
     case Failure(e) ⇒
-      log.error(s"data access layer verification failed", e)
+      log.error(e, s"data access layer verification failed")
       //terminate service
       system.terminate()
   }

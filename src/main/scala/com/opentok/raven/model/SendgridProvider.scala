@@ -3,6 +3,7 @@ package com.opentok.raven.model
 import build.unstable.tylog.Variation
 import com.opentok.raven.RavenLogging
 import com.sendgrid.SendGrid
+import org.slf4j.event.Level
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.matching.Regex
@@ -47,7 +48,7 @@ class SendgridProvider(client: SendGrid, prd: Boolean, restrictTo: Option[String
 
     Future {
 
-      trace(log, traceId, ProviderSendEmail, Variation.Attempt,
+      log.tylog(Level.INFO, traceId, ProviderSendEmail, Variation.Attempt,
         "received email with id '{}' addressed to '{}' with subject '{}'",
         reqId, em.recipients, em.subject)
 
@@ -62,15 +63,15 @@ class SendgridProvider(client: SendGrid, prd: Boolean, restrictTo: Option[String
     }.andThen {
 
       case Success(r) if r.success ⇒
-        trace(log, traceId, ProviderSendEmail, Variation.Success,
+        log.tylog(Level.INFO, traceId, ProviderSendEmail, Variation.Success,
           "sent email with id {}", reqId)
 
       case Success(r) ⇒
-        trace(log, traceId, ProviderSendEmail, Variation.Failure(new Exception(r.errors.head)),
+        log.tylog(Level.INFO, traceId, ProviderSendEmail, Variation.Failure(new Exception(r.errors.head)),
           "failed to send {}", reqId)
 
       case Failure(e) ⇒
-        trace(log, traceId, ProviderSendEmail, Variation.Failure(e),
+        log.tylog(Level.INFO, traceId, ProviderSendEmail, Variation.Failure(e),
           "failed to send {}", reqId)
     }
   }
@@ -83,7 +84,7 @@ class SendgridProvider(client: SendGrid, prd: Boolean, restrictTo: Option[String
 
       if (finalRecipients.isEmpty) {
         val msg = s"email '${em.id.get}' not sent: flag prd set to false and no recipients matched regex: '${restrictRgx.regex}'"
-        log.warn(msg)
+        log.warning(msg)
         Future.successful(Receipt(
           success = true,
           errors = List(msg),

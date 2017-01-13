@@ -7,8 +7,6 @@ trait RavenLogging extends TypedLogging {
 
   type TraceID = String
 
-  lazy val log: Logger = LoggerFactory.getLogger(this.getClass)
-
   sealed trait CallType
 
   case object CompleteRequest extends CallType

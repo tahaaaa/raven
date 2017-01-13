@@ -57,7 +57,7 @@ class MonitoringActor(certifiedService: ActorRef, priorityService: ActorRef,
         //prevent memory leak
         if (failed.length > MAX_FAILED) {
           val dequeued = failed.dequeue()
-          warning(log, "number of failed emails is over {}! dropping {}", MAX_FAILED, dequeued)
+          log.warning("number of failed emails is over {}! dropping {}", MAX_FAILED, dequeued)
         }
       }
 
@@ -82,6 +82,6 @@ class MonitoringActor(certifiedService: ActorRef, priorityService: ActorRef,
     case ComponentHealthCheck(_) ⇒ sender() ! Receipt.error(
       new Exception("Not a valid component. Try 'dal' or 'service')"), "Error when processing request")
 
-    case msg ⇒ log.warn(s"unable to process message: $msg")
+    case msg ⇒ log.warning("unable to process message: {}", msg)
   }
 }

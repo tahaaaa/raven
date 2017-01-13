@@ -6,6 +6,7 @@ import akka.util.Timeout
 import build.unstable.tylog.Variation
 import com.opentok.raven.dal.components.EmailRequestDao
 import com.opentok.raven.model._
+import org.slf4j.event.Level
 
 import scala.concurrent.{Future, Promise}
 import scala.util.{Failure, Success}
@@ -50,7 +51,7 @@ class CertifiedCourier(val emailsDao: EmailRequestDao,
       //because send recovers itself with an error receipt
       //in which case, we skip persistance step and try to send anyway
       case e: Exception ⇒
-        log.warn("There was a problem when trying to save request BEFORE forwarding it to provider. Skipping persist..")
+        log.warning("There was a problem when trying to save request BEFORE forwarding it to provider. Skipping persist..")
         //add error in errors but leave receipt success as it is
         send(reqs.head.id, email).map(_.copy(
           message = Some("email delivered but there was a problem when persisting request to db"),
@@ -79,7 +80,7 @@ class CertifiedCourier(val emailsDao: EmailRequestDao,
             if (r.status.isEmpty) r.copy(status = Some(EmailRequest.Pending))
             else r
 
-          trace(log, traceId, BuildEmail, Variation.Attempt, "{}", reqId)
+          log.tylog(Level.INFO, traceId, BuildEmail, Variation.Attempt, "{}", reqId)
 
           val templateMaybe =
             Email.build(req.id, req.template_id, req.$inject, req.to)
@@ -87,12 +88,12 @@ class CertifiedCourier(val emailsDao: EmailRequestDao,
           val receipt: Future[Receipt] = templateMaybe match {
             //successfully built template
             case Success(email) ⇒
-              trace(log, traceId, BuildEmail, Variation.Success, "{}", reqId)
+              log.tylog(Level.INFO ,traceId, BuildEmail, Variation.Success, "{}", reqId)
               sendEmail(req :: Nil, email)
             //persist failed attempt to db,
             case Failure(e) ⇒
               val msg = s"unexpected error when building template ${req.template_id}"
-              trace(log, traceId, BuildEmail, Variation.Failure(e), msg)
+              log.tylog(Level.INFO, traceId, BuildEmail, Variation.Failure(e), msg)
               val p = Promise[Receipt]()
               persistRequest(req.copy(status = Some(EmailRequest.Failed)))
                 .onComplete { _ ⇒
@@ -106,7 +107,7 @@ class CertifiedCourier(val emailsDao: EmailRequestDao,
       }
 
 
-    case anyElse ⇒ warning(log, "Not an acceptable request: {}", anyElse)
+    case anyElse ⇒ log.warning("Not an acceptable request: {}", anyElse)
   }
 
 }

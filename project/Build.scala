@@ -63,14 +63,15 @@ object Build extends sbt.Build {
       test in assembly := {},
       libraryDependencies ++= {
         Seq(
-          "build.unstable" %% "tylog" % "0.2.4",
+          "build.unstable" %% "tylog" % "0.3.0",
           "org.scala-lang" % "scala-compiler" % scalaV,
           "com.typesafe.play" %% "twirl-api" % playTwirlV,
           "com.typesafe.akka" %% "akka-actor" % akkaV,
           "com.typesafe.akka" %% "akka-slf4j" % akkaV,
           "com.typesafe.akka" %% "akka-stream" % akkaV,
           "com.typesafe.akka" %% "akka-http-spray-json-experimental" % akkaV,
-          "ch.qos.logback" % "logback-classic" % "1.0.13",
+          "ch.qos.logback" % "logback-classic" % "1.1.7",
+          "net.logstash.logback" % "logstash-logback-encoder" % "4.7",
           "com.typesafe.slick" %% "slick" % "3.0.2",
           "com.sendgrid" % "sendgrid-java" % "2.2.1",
           "mysql" % "mysql-connector-java" % "5.1.6",

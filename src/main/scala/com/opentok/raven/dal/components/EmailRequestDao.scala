@@ -3,6 +3,7 @@ package com.opentok.raven.dal.components
 import build.unstable.tylog.Variation
 import com.opentok.raven.RavenLogging
 import com.opentok.raven.model.{EmailRequest, RequestContext}
+import org.slf4j.event.Level
 import slick.driver.JdbcProfile
 import slick.jdbc.JdbcBackend
 
@@ -43,7 +44,7 @@ class EmailRequestSlickDao()(implicit driver: JdbcProfile, db: JdbcBackend#Datab
     Try(str.map(_.parseJson.asJsObject)).toOption.flatten
 
   def persistRequest(req: EmailRequest)(implicit ctx: ExecutionContext, rctx: RequestContext): Future[Int] = {
-    trace(log, rctx.traceId, PersistRequestState, Variation.Attempt,
+    log.tylog(Level.DEBUG, rctx.traceId, PersistRequestState, Variation.Attempt,
       "trying to persist request '{}' with status '{}'", req.id, req.status)
 
     val inject: Option[String] = req.inject.flatMap(injectToString)
@@ -62,18 +63,18 @@ class EmailRequestSlickDao()(implicit driver: JdbcProfile, db: JdbcBackend#Datab
       .andThen {
 
         case Success(i) ⇒
-          trace(log, rctx.traceId, PersistRequestState, Variation.Success,
+          log.tylog(Level.DEBUG, rctx.traceId, PersistRequestState, Variation.Success,
             "successfully persisted request with id '{}' with status '{}'", req.id, req.status)
 
         case Failure(e) ⇒
-          trace(log, rctx.traceId, PersistRequestState, Variation.Failure(e),
+          log.tylog(Level.DEBUG, rctx.traceId, PersistRequestState, Variation.Failure(e),
             "there was an error when persisting request with id {} with status '{}'", req.id, req.status)
       }
   }
 
 
   def retrieveRequest(id: String)(implicit ctx: ExecutionContext, rctx: RequestContext): Future[Option[EmailRequest]] = {
-    trace(log, rctx.traceId, RetrieveRequestState, Variation.Attempt,
+    log.tylog(Level.DEBUG, rctx.traceId, RetrieveRequestState, Variation.Attempt,
       "attempting to retrieve request with id {}", id)
 
     db.run(sql"""
@@ -87,10 +88,10 @@ class EmailRequestSlickDao()(implicit driver: JdbcProfile, db: JdbcBackend#Datab
       })
       .andThen {
 
-        case s: Success[_] ⇒ trace(log, rctx.traceId, RetrieveRequestState, Variation.Success,
+        case s: Success[_] ⇒ log.tylog(Level.DEBUG, rctx.traceId, RetrieveRequestState, Variation.Success,
           "successfully retrieved request with id {}", id)
 
-        case Failure(e) ⇒ trace(log, rctx.traceId, RetrieveRequestState, Variation.Failure(e),
+        case Failure(e) ⇒ log.tylog(Level.DEBUG, rctx.traceId, RetrieveRequestState, Variation.Failure(e),
           "failed to retrieve request with id {}", id)
       }
   }

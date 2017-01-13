@@ -30,7 +30,7 @@ trait Courier extends RavenLogging {
     message match {
       //send receipt to supervisor so that it can retry
       case Some(req: Requestable) ⇒ context.parent ! Receipt.error(reason, "courier crashed", req.id)
-      case _ ⇒ log.error(s"${self.path} could not recover $reason: message was not a requestable")
+      case _ ⇒ log.error(reason, s"${self.path} could not recover: message was not a requestable")
     }
     context.children foreach { child ⇒
       context.unwatch(child)

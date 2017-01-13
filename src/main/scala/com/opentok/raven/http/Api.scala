@@ -38,7 +38,7 @@ trait AkkaApi extends Api {
 
   val rejectionHandler = RejectionHandler.newBuilder().handle {
     case rej@ValidationRejection(msg, Some(cause)) ⇒
-      warning(log, "rejected: {}", rej)
+      log.warning("rejected: {}", rej)
       complete {
         HttpResponse(
           status = BadRequest,
@@ -53,7 +53,7 @@ trait AkkaApi extends Api {
             ).toString)))
       }
     case rej: Rejection ⇒
-      warning(log, "rejected: {}", rej)
+      log.warning("rejected: {}", rej)
       completeWithMessage("rejected", rej)
   }
 
@@ -63,7 +63,7 @@ trait AkkaApi extends Api {
     //rest of exceptions
     case e: Exception ⇒
       val msg = "unexpected error"
-      log.error(msg, e)
+      log.error(e, msg)
       complete(HttpResponse(InternalServerError,
         entity = HttpEntity.Strict(ContentType(`application/json`),
           CompactByteString(JsonProtocol.receiptJsonFormat.write(

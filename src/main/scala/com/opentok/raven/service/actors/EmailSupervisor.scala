@@ -5,6 +5,7 @@ import build.unstable.tylog.Variation
 import com.opentok.raven.RavenLogging
 import com.opentok.raven.dal.components.EmailRequestDao
 import com.opentok.raven.model.{EmailRequest, Receipt, RequestContext}
+import org.slf4j.event.Level
 
 import scala.concurrent.duration._
 
@@ -32,7 +33,7 @@ class EmailSupervisor(superviseeProps: Props, nSupervisees: Int,
   import context.dispatcher
 
   override def preStart(): Unit = {
-    debug(log, "Supervisor up and monitoring {} with a pool of {} actors and with a max number of retries of {}",
+    log.info("Supervisor up and monitoring {} with a pool of {} actors and with a max number of retries of {}",
       superviseeProps, nSupervisees, retries)
   }
 
@@ -73,7 +74,7 @@ class EmailSupervisor(superviseeProps: Props, nSupervisees: Int,
       1
     }
 
-    trace(log, ctx.traceId, SuperviseRequest, Variation.Attempt,
+    log.tylog(Level.DEBUG, ctx.traceId, SuperviseRequest, Variation.Attempt,
       "supervising request '{}'; tries: {}/{}", id, ret, retries)
 
     //randomly pick one of the supervisees
@@ -82,7 +83,7 @@ class EmailSupervisor(superviseeProps: Props, nSupervisees: Int,
   }
 
   val logNotFound = { reason: String ⇒
-    warning(log, "could not send receipt back to original requester: {}", reason)
+    log.warning("could not send receipt back to original requester: {}", reason)
   }
 
   val eventBus = context.system.eventStream
@@ -95,7 +96,7 @@ class EmailSupervisor(superviseeProps: Props, nSupervisees: Int,
     case rec: Receipt if rec.success ⇒
       rec.requestId.map { id ⇒
 
-        trace(log, id, SuperviseRequest, Variation.Success,
+        log.tylog(Level.DEBUG, id, SuperviseRequest, Variation.Success,
           "completed request with id '{}' successfully", id)
 
         pending.find(_._1.ctx.req.id.get == id).map { request ⇒
@@ -116,7 +117,7 @@ class EmailSupervisor(superviseeProps: Props, nSupervisees: Int,
 
           val traceId = sup._1.ctx.traceId
 
-          trace(log, traceId, SuperviseRequest,
+          log.tylog(Level.DEBUG, traceId, SuperviseRequest,
             Variation.Failure(new Exception("request failed")), "request with id {} failed", sup._1.ctx.req.id.get)
 
           sup match {
@@ -138,20 +139,20 @@ class EmailSupervisor(superviseeProps: Props, nSupervisees: Int,
                       val msg = s"aborting retry mechanism: request with id '$id' appears to have succeeded already"
                       supervisedRequest.requester ! receipt
                       eventBus.publish(receipt)
-                      log.error(msg)
+                      log.error(new Exception(msg), "")
 
                     case None ⇒
                       val msg = s"aborting retry mechanism: request with id '$id' not set in the db"
                       supervisedRequest.requester ! receipt
                       eventBus.publish(receipt)
-                      log.error(msg)
+                      log.error(new Exception(msg), "")
                   }
 
                   case None ⇒
-                    val msg = s"aborting retry mechanism: request with id '$id' was not persisted first time"
+                    val msg = new Exception(s"aborting retry mechanism: request with id '$id' was not persisted first time")
                     supervisedRequest.requester ! receipt
                     eventBus.publish(receipt)
-                    log.error(msg)
+                    log.error(msg, "")
                 }.recover {
                   //there was an exception when retrieving request from db
                   case e: Exception ⇒
@@ -163,7 +164,7 @@ class EmailSupervisor(superviseeProps: Props, nSupervisees: Int,
 
                     supervisedRequest.requester ! finalReceipt
                 }
-              }.getOrElse(log.error("aborting retry mechanism: request doesn't have a request id"))
+              }.getOrElse(log.error(new Exception("aborting retry mechanism: request doesn't have a request id"), ""))
 
             case (supervisedRequest, ret) ⇒
               //remove request from pending
@@ -171,7 +172,7 @@ class EmailSupervisor(superviseeProps: Props, nSupervisees: Int,
               val msg = s"request with id '${supervisedRequest.ctx.req.id.get}' exhausted $ret retries and is permanently in failed state"
               val e = new Exception(msg)
 
-              trace(log, traceId, SuperviseRequest, Variation.Failure(e), msg)
+              log.tylog(Level.DEBUG, traceId, SuperviseRequest, Variation.Failure(e), msg)
 
               val err = Receipt.error(e, msg, requestId = supervisedRequest.ctx.req.id)
               val combined = Receipt.reduce(err :: receipt :: Nil)
@@ -181,6 +182,6 @@ class EmailSupervisor(superviseeProps: Props, nSupervisees: Int,
         }.getOrElse(logNotFound(s"request with id '$id' not found"))
       }.getOrElse(logNotFound("receipt did not contain a requestId"))
 
-    case anyElse ⇒ warning(log, "not an acceptable request: {}", anyElse)
+    case anyElse ⇒ log.warning("not an acceptable request: {}", anyElse)
   }
 }

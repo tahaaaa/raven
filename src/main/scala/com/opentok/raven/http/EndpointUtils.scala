@@ -14,6 +14,7 @@ import build.unstable.tylog.Variation
 import com.opentok.raven.RavenLogging
 import com.opentok.raven.http.JsonProtocol._
 import com.opentok.raven.model._
+import org.slf4j.event.Level
 
 import scala.concurrent.Future
 import scala.language.implicitConversions
@@ -41,7 +42,7 @@ trait EndpointUtils {
       val generatedId = UUID.randomUUID().toString
       val (requestId, traceId) = traceIdMaybe.map(t ⇒ generatedId → t).getOrElse(generatedId → generatedId)
 
-      trace(log, traceId, CompleteRequest, Variation.Attempt, "")
+      log.tylog(Level.DEBUG, traceId, CompleteRequest, Variation.Attempt, "")
 
       entity(um).tflatMap { case Tuple1(t) ⇒
 
@@ -56,11 +57,11 @@ trait EndpointUtils {
 
         mapRouteResultPF {
           case r: RouteResult.Complete ⇒
-            trace(log, traceId, CompleteRequest, Variation.Success, "")
+            log.tylog(Level.DEBUG, traceId, CompleteRequest, Variation.Success, "")
             r
           case r@RouteResult.Rejected(rejections) ⇒
             val e = new Exception(rejections.foldLeft("")((acc, r) ⇒ acc + "; " + r.toString))
-            trace(log, traceId, CompleteRequest, Variation.Failure(e), "")
+            log.tylog(Level.DEBUG, traceId, CompleteRequest, Variation.Failure(e), "")
             r
         }.tflatMap { _ ⇒
           provide(RequestContext(req, traceId))

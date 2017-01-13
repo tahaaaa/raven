@@ -6,6 +6,7 @@ import akka.util.Timeout
 import build.unstable.tylog.Variation
 import com.opentok.raven.dal.components.EmailRequestDao
 import com.opentok.raven.model._
+import org.slf4j.event.Level
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
@@ -40,7 +41,7 @@ class PriorityCourier(val emailsDao: EmailRequestDao, val provider: Provider, va
         if (r.status.isEmpty) r.copy(status = Some(EmailRequest.Pending))
         else r
 
-      trace(log, traceId, BuildEmail, Variation.Attempt, self.path.toString)
+      log.tylog(Level.INFO, traceId, BuildEmail, Variation.Attempt, self.path.toString)
 
       val templateMaybe = Email.build(req.id, req.template_id, req.$inject, req.to)
 
@@ -48,14 +49,14 @@ class PriorityCourier(val emailsDao: EmailRequestDao, val provider: Provider, va
 
         //successfully built email
         case Success(email) ⇒
-          trace(log, traceId, BuildEmail, Variation.Success, self.path.toString)
+          log.tylog(Level.INFO, traceId, BuildEmail, Variation.Success, self.path.toString)
           //attempt to send email via emailProvider
           send(req.id, email) andThenPersistResult req
 
         //error when building email, persist attempt
         case Failure(e) ⇒
           val msg = s"unexpected error when building template ${req.template_id}"
-          trace(log, traceId, BuildEmail, Variation.Failure(e), msg)
+          log.tylog(Level.INFO, traceId, BuildEmail, Variation.Failure(e), msg)
           Future.successful(Receipt.error(e, msg, requestId = req.id))
             //install side effect persist to db
             .andThen {
@@ -65,6 +66,6 @@ class PriorityCourier(val emailsDao: EmailRequestDao, val provider: Provider, va
       //pipe future receipt to sender
       receipt pipeTo sender()
 
-    case anyElse ⇒ warning(log, "Not an acceptable request {}", anyElse)
+    case anyElse ⇒ log.warning("Not an acceptable request {}", anyElse)
   }
 }
