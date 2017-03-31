@@ -264,7 +264,7 @@ object Email {
         templateId, fromName = Some("Tokbox Tools Feedback"))
 
     case templateId@"project_id_interop" ⇒
-      wrapTemplate(requestId, "Issue detected in your OpenTok app: API key-session mismatch", recipient, "messages@tokbox.com",
+      wrapTemplate(requestId, "Issue detected in your OpenTok app: API key-session mismatch", recipient, "support@tokbox.com",
         html.project_id_interop(), templateId)
 
     case templateId@"error" ⇒
