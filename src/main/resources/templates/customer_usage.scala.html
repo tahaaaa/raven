@@ -1,0 +1,241 @@
+@(date: String,
+  name: String,
+  device_current: String,
+  device_last: String,
+  device_change: Int,
+  subscribed_current: String,
+  subscribed_last: String,
+  subscribed_change: Int,
+  account_portal_link: com.opentok.raven.model.Email.Url,
+  recommended_browser: List[com.opentok.raven.resources.Browser],
+  expired_token: List[com.opentok.raven.resources.Project],
+  outdated_browser: List[com.opentok.raven.resources.Browser],
+  unsupported_sdk_client: List[com.opentok.raven.resources.SDK],
+  unsupported_sdk_server: List[com.opentok.raven.resources.SDK],
+  learn_how_link: com.opentok.raven.model.Email.Url,
+  updates: List[com.opentok.raven.resources.Update]
+)
+
+<!-- Sections -->
+
+@MAX_UNSUPPORTED_BROWSERS = @{ 5 }
+
+@greySectionStyles = @{ "box-sizing: border-box; max-width: 510px; background-color: transparent; padding: 0; margin: 0" }
+
+@blueSectionStyles = @{ "box-sizing: border-box; width: 100%; background-color: #fafbfd; padding: 20px; border: solid 1px #d2dcef; margin: 10px 0 30px 0" }
+
+<!-- Texts -->
+
+@titleStyles = @{ "font-family: 'Muli', helvetica, arial; font-size: 20px; color: #5f6062; font-weight: 600; padding: 0; margin: 0 0 20px 0" }
+
+@subTitleStyles = @{ "font-family: 'Muli', helvetica, arial; font-size: 17px; color: #5f6062; font-weight: 600; padding: 0; margin: 0 0 30px 0" }
+
+@headerStyles = @{ "font-family: 'Muli', helvetica, arial; font-size: 34px; color: #5f6062; font-weight: 300; border-width: 0; border-color: #0099cc; border-style: solid; border-left-width: 1px; padding: 0 0 0 18px; margin: 0 0 20px 0; display: block" }
+
+@paragraphStyles = @{ "font-family: 'Muli', helvetica, arial; font-size: 16px; color: #5f6062; margin: 0; padding: 0" }
+
+@bold = @{ "font-weight: 600" }
+
+<!-- White cards -->
+
+@titleCardStyles = @{ "font-family: 'Muli', helvetica, arial; font-size: 34px; color: #5f6062; font-weight: 300; display: block; padding: 0; margin: 0 0 5px 0" }
+
+@paragraphCardStyles = @{ "padding: 0; margin: 0" }
+
+@cardStyles = @{ "text-align: center; box-sizing: border-box; display: inline-block; width: 164px; background-color: #fafbfd; border: solid 1px #d2dcef; padding: 25px 0px; margin: 0; border-radius: 5px" }
+
+@cardContainerStyles = @{ "font-size: 0" }
+
+@iconCardStyles = @{ "display: inline-block; margin: 0 0 5px 0; padding: 0; border: 0" }
+
+<!-- Links -->
+
+@linkStyles = @{ "font-family: 'Muli', helvetica, arial; font-size: 16px; color: #0099cc; text-decoration: none" }
+
+@linkImgStyles = @{ "position: relative; top: 2px; padding-left: 8px" }
+
+@linkImgSrc = @{ "https://assets.tokbox.com/email/arrow_blue.png" }
+
+<!-- Separator -->
+
+@separatorStyles = @{ "box-sizing: border-box; display: block; width: 100%; height: 1px; background-color: #d2dcef; margin: 30px 0 20px 0" }
+
+@containerWithRightSeparator = @{ "box-sizing: border-box; max-width: 100%; padding: 0 20px 0 0; margin: 0 0 20px 0; border-width: 0; border-color: #d2dcef; border-style: solid; border-right-width: 1px; display: inline-block; min-width: 180px" }
+
+<!-- Lists -->
+
+@listStyles = @{ "box-sizing: border-box; display: inline-block; width: auto; margin-top: 8px" }
+@titleListStyles = @{ "font-size: 17px; margin-bottom: 5px" }
+
+@listItemStyles = @{ "padding: 5px 0; font-family: 'Muli', helvetica, arial; font-size: 16px; color: #5f6062; display: block" }
+
+@updateItemStyle = @{ "margin: 8px 0" }
+
+@unsupportedSdkWithoutClient = @{ "margin-top: 0px" }
+
+@unsupportedSdkWithClient = @{ "margin-top: 10px" }
+
+<div align="center" style="width: 100%">
+
+    <div align="left" style="@greySectionStyles; padding-top: 0">
+
+        <h1 style="@titleStyles">@name, TokBox Usage and Recommendations</h1>
+
+        <h2 style="@subTitleStyles">@date</h2>
+
+        <h1 style="@headerStyles; margin-top: 40px">Connections</h1>
+
+        <p style="@paragraphStyles">You've made it possible for people, whether they're customers, team members, or partners, regardless of geography, to connect.</p>
+
+        <h1 style="@titleStyles; margin-top: 30px">Unique devices</h1>
+
+        <div style="@cardContainerStyles; margin: 10px 0 20px 0">
+            <span style="@cardStyles">
+                <span style="@titleCardStyles">@device_current</span>
+                <p style="@paragraphStyles; @paragraphCardStyles">This month</p>
+            </span>
+            <span style="@cardStyles; margin: 0 9px">
+                <span style="@titleCardStyles">@device_last</span>
+                <p style="@paragraphStyles; @paragraphCardStyles">Last month</p>
+            </span>
+            <span style="@cardStyles">
+                <span style="@titleCardStyles">@device_change%</span>
+                <p style="@paragraphStyles; @paragraphCardStyles">Percentage change</p>
+            </span>
+        </div>
+
+        <p style="@paragraphStyles">Research shows that connecting with people using real time communications &lt;need stats&gt; increase satisfaction and loyalty by a gazillion %.</p>
+
+        <h1 style="@titleStyles; margin-top: 30px">Subscribed Minutes</h1>
+
+        <div style="@cardContainerStyles; margin: 10px 0 20px 0">
+            <span style="@cardStyles">
+                <span style="@titleCardStyles">@subscribed_current</span>
+                <p style="@paragraphStyles; @paragraphCardStyles">This month</p>
+            </span>
+            <span style="@cardStyles; margin: 0 9px">
+                <span style="@titleCardStyles">@subscribed_last</span>
+                <p style="@paragraphStyles; @paragraphCardStyles">Last month</p>
+            </span>
+            <span style="@cardStyles">
+                <span style="@titleCardStyles">@subscribed_change%</span>
+                <p style="@paragraphStyles; @paragraphCardStyles">Percentage change</p>
+            </span>
+        </div>
+
+        <p style="@paragraphStyles">To monitor your usage, visit your <a style="@linkStyles" href="@account_portal_link">Account Portal <img style="@linkImgStyles" src="@linkImgSrc" alt="&rarr;" border="0"/></a></p>
+
+        <div style="@separatorStyles"></div>
+
+        <h1 style="@headerStyles; margin-top: 40px">Recommendations</h1>
+
+        <p style="@paragraphStyles">We recommend you plan your upgrades to be sure you are using currently supported SDKs and recommended browsers.</p>
+
+        <h1 style="@titleStyles; margin-top: 30px">Recommended Browsers</h1>
+
+        <div style="@cardContainerStyles; margin: 10px 0 30px 0">
+            @recommended_browser.zipWithIndex.map{ case(browser, index) =>
+              @if(index % 2 != 0) {
+                  <span style="@cardStyles; margin: 0 9px">
+              } else {
+                  <span style="@cardStyles">
+              }
+                <img style="@iconCardStyles" src="@browser.icon" border="0"/>
+                <span style="@titleCardStyles">@browser.name</span>
+                <p style="@paragraphStyles; @paragraphCardStyles">@browser.versions(0)</p>
+            </span>
+            }
+        </div>
+
+        @if(!expired_token.isEmpty) {
+            <div style="@containerWithRightSeparator">
+                <h1 style="@titleStyles; @titleListStyles">Expired Tokens</h1>
+                <div style="@listStyles">
+                    @for(expired <- expired_token) {
+                    <span style="@listItemStyles">Project @expired.name: @expired.expiredTokens</span>
+                    }
+                </div>
+            </div>
+            <div style="@paragraphStyles; display: inline-block; padding-left: 20px; padding-top: 2px; max-width: 300px; vertical-align: top">
+                You are using expired tokens. Users cannot join sessions with expired tokens.
+            </div>
+            <br>
+        }
+
+        @if(!unsupported_sdk_client.isEmpty || !unsupported_sdk_server.isEmpty) {
+            <div style="@containerWithRightSeparator">
+                <h1 style="@titleStyles; @titleListStyles">Unsupported SDKs</h1>
+                <div style="@listStyles">
+                @if(!unsupported_sdk_client.isEmpty) {
+                    <span style="@listItemStyles; @bold">Client</span>
+                        @for(unsupported <- unsupported_sdk_client) {
+                            <span style="@listItemStyles">@unsupported.name: @unsupported.versions(0)@for(i <- 1 until unsupported.versions.size){, @unsupported.versions(i)}</span>
+                        }
+                }
+                @if(!unsupported_sdk_server.isEmpty) {
+                    @if(unsupported_sdk_client.isEmpty) {
+                        <span style="@listItemStyles; @bold; @unsupportedSdkWithoutClient">Server</span>
+                    } else {
+                        <span style="@listItemStyles; @bold; @unsupportedSdkWithClient">Server</span>
+                    }
+                    @for(unsupported <- unsupported_sdk_server) {
+                        <span style="@listItemStyles">@unsupported.name: @unsupported.versions(0)@for(i <- 1 until unsupported.versions.size){, @unsupported.versions(i)}</span>
+                    }
+                }
+                </div>
+            </div>
+            <div style="@paragraphStyles; display: inline-block; padding-left: 20px; padding-top: 2px; max-width: 290px; vertical-align: top">
+                You are currently using SDKs that are no longer supported. Please update your clients.
+            </div>
+            <br>
+        }
+
+        @if(!outdated_browser.isEmpty) {
+            @if(outdated_browser.filter(_.versions.size > MAX_UNSUPPORTED_BROWSERS).size > 0) {
+                <h1 style="@titleStyles; @titleListStyles">Outdated Browsers</h1>
+                <p style="@paragraphStyles; margin: 0 0 20px 0;">Your users are using browsers that are not recommended. Your app may not work or work well for these users. Consider asking your users to upgrade.</p>
+            } else {
+                <div style="@containerWithRightSeparator">
+                    <h1 style="@titleStyles; @titleListStyles">Outdated Browsers</h1>
+                    <div style="@listStyles">
+                        @for(outdate <- outdated_browser) {
+                            <span style="@listItemStyles">@outdate.name: @outdate.versions(0)@for(i <- 1 until outdate.versions.size){, @outdate.versions(i)}</span>
+                        }
+                    </div>
+                </div>
+            }
+        }
+
+        <div align="center" style="@blueSectionStyles">
+            <table style="border: 0; width: 100%">
+                <tr>
+                    <td style="padding: 0 20px 0 10px">
+                        <img width="60" height="60" src="https://cdn2.iconfinder.com/data/icons/thin-line-icons-for-seo-and-development-1/64/SEO_cogwheels_setting-128.png" border="0"/>
+                    </td>
+                    <td style="padding: 0">
+                        <p style="@paragraphStyles; margin-bottom: 5px">Learn how other customers are rapidly prototyping new apps using our plug and play embeds.</p>
+                        <p style="@paragraphStyles"><a style="@linkStyles" href="@learn_how_link">Learn how to make an Embed <img style="@linkImgStyles" src="@linkImgSrc" alt="&rarr;" border="0"/></a></p>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        @if(!updates.isEmpty) {
+        <h1 style="@titleStyles">TokBox Updates</h1>
+
+        <ul style="@paragraphStyles; padding-left: 30px; box-sizing: border-box; width: 100%">
+            @for(update <- updates) {
+            <li style="@updateItemStyle">@update.text <a style="@linkStyles" href="@update.link">@if(update.linkText != "") {@update.linkText} else {tokbox.com}</a>.</li>
+            }
+        </ul>
+        }
+
+        <h2 style="@subTitleStyles; margin-top: 40px">TokBox, by You</h2>
+
+        <div style="@separatorStyles; margin-top: 20px"></div>
+
+        <p style="@paragraphStyles; text-align: center; width: 100%; font-size: 14px; margin: 10px 0; padding: 0">You are receiving this email because you are a TokBox customer and have elected to be updated about your monthly usage, and other important data and insights.</p>
+
+    </div>
+
+</div>

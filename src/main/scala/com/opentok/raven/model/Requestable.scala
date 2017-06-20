@@ -8,6 +8,11 @@ import spray.json.{JsValue, _}
 import scala.language.implicitConversions
 import scala.util.Try
 
+import com.opentok.raven.resources.Browser
+import com.opentok.raven.resources.SDK
+import com.opentok.raven.resources.Project
+import com.opentok.raven.resources.Update
+
 sealed trait Requestable {
 
   def id: Option[String]
@@ -124,9 +129,14 @@ object Email {
                    cc: Option[List[EmailAddress]] = None,
                    bcc: Option[List[EmailAddress]] = None,
                    attachments: Option[List[(String, String)]] = None,
-                   headers: Option[Map[String, String]] = None): Email =
-  Email(requestId, subject, recipient :: Nil, from, html.wrap_email_v2(recipient, template).body,
-    Some(fromTemplateId), toName, fromName, Some("raven" :: fromTemplateId :: categories), setReply, cc, bcc, attachments, headers)
+                   headers: Option[Map[String, String]] = None,
+                   wrapperTemplateId: String = "wrap_email_v2"): Email = {
+    var wrapper = html.wrap_email_v2(recipient, template)
+    if (wrapperTemplateId == "wrap_email_v3")
+      wrapper = html.wrap_email_v3(recipient, template)
+    Email(requestId, subject, recipient :: Nil, from, wrapper.body, Some(fromTemplateId), toName, fromName,
+      Some("raven" :: fromTemplateId :: categories), setReply, cc, bcc, attachments, headers)
+  }
 
   //decoupled from build to check at runtime what templates are available
   def buildPF(requestId: Option[String], recipient: String,
@@ -249,6 +259,29 @@ object Email {
           fields ?> "harvester_message_2"),
         templateId, fromName = Some("Business Analytics"))
 
+    case templateId@"customer_usage" ⇒
+      val format = new java.text.SimpleDateFormat("MMM, yyyy")
+      val date = format.format(new java.util.Date()).capitalize
+      wrapTemplate(requestId, "Customer usage test", recipient, "messages@tokbox.com",
+        html.customer_usage(
+          date,
+          fields %> "name",
+          fields %> "device_current",
+          fields %> "device_last",
+          fields.extract[Int]("device_change"),
+          fields %> "subscribed_current",
+          fields %> "subscribed_last",
+          fields.extract[Int]("subscribed_change"),
+          fields %> "account_portal_link",
+          fields.extract[List[Browser]]("recommended_browser"),
+          fields.extract[List[Project]]("expired_token"),
+          fields.extract[List[Browser]]("outdated_browser"),
+          fields.extract[List[SDK]]("unsupported_sdk_client"),
+          fields.extract[List[SDK]]("unsupported_sdk_server"),
+          fields %> "learn_how_link",
+          fields.extract[List[Update]]("updates")
+        ), templateId, fromName = Some("TokBox"), wrapperTemplateId = "wrap_email_v3")
+
     case templateId@"tos_production" ⇒
       wrapTemplate(requestId, " TokBox account suspension warning. Your account will be suspended in 24 hours unless we hear from you", recipient, "billing@tokbox.com",
         html.tos_production(fields %> "login_url"),
@@ -290,4 +323,3 @@ object Email {
     buildPF(requestId, recipient, injections)(templateId)
   }
 }
-
