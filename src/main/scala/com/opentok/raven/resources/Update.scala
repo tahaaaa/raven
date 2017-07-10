@@ -1,9 +1,7 @@
 package com.opentok.raven.resources
 
-import com.opentok.raven.model.InvalidInjection
-
-import spray.json._
 import spray.json.DefaultJsonProtocol._
+import spray.json._
 
 case class Update(
   text: String,

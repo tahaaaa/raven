@@ -1,17 +1,13 @@
 package com.opentok.raven.model
 
 import com.opentok.raven.Implicits._
-import com.opentok.raven.http.JsonProtocol
+import com.opentok.raven.http.JsonProtocol._
 import com.opentok.raven.model.Email.{EmailAddress, _}
+import com.opentok.raven.resources.{Browser, Project, SDK, Update}
 import spray.json.{JsValue, _}
 
 import scala.language.implicitConversions
 import scala.util.Try
-
-import com.opentok.raven.resources.Browser
-import com.opentok.raven.resources.SDK
-import com.opentok.raven.resources.Project
-import com.opentok.raven.resources.Update
 
 sealed trait Requestable {
 
@@ -117,9 +113,14 @@ object Email {
   type EmailAddress = String
   type Injections = Map[String, JsValue]
 
-  import com.opentok.raven.http.JsonProtocol._
+  sealed trait Wrapper
 
-  //convenience template constructor that uses html.wrap_email_v2
+  case object V1 extends Wrapper
+
+  case object V2 extends Wrapper
+
+  case object V3 extends Wrapper
+
   def wrapTemplate(requestId: Option[String], subject: String, recipient: String,
                    from: String, template: play.twirl.api.Html, fromTemplateId: String,
                    toName: Option[EmailAddress] = None,
@@ -130,10 +131,12 @@ object Email {
                    bcc: Option[List[EmailAddress]] = None,
                    attachments: Option[List[(String, String)]] = None,
                    headers: Option[Map[String, String]] = None,
-                   wrapperTemplateId: String = "wrap_email_v2"): Email = {
-    var wrapper = html.wrap_email_v2(recipient, template)
-    if (wrapperTemplateId == "wrap_email_v3")
-      wrapper = html.wrap_email_v3(recipient, template)
+                   wrapperTemplateId: Wrapper = V2): Email = {
+    val wrapper = wrapperTemplateId match {
+      case V1 ⇒ html.wrap_email_v1(recipient, template)
+      case V2 ⇒ html.wrap_email_v2(recipient, template)
+      case V3 ⇒ html.wrap_email_v3(recipient, template)
+    }
     Email(requestId, subject, recipient :: Nil, from, wrapper.body, Some(fromTemplateId), toName, fromName,
       Some("raven" :: fromTemplateId :: categories), setReply, cc, bcc, attachments, headers)
   }
@@ -280,7 +283,7 @@ object Email {
           fields.extract[List[SDK]]("unsupported_sdk_server"),
           fields %> "learn_how_link",
           fields.extract[List[Update]]("updates")
-        ), templateId, fromName = Some("TokBox"), wrapperTemplateId = "wrap_email_v3")
+        ), templateId, fromName = Some("TokBox"), wrapperTemplateId = V3)
 
     case templateId@"tos_production" ⇒
       wrapTemplate(requestId, " TokBox account suspension warning. Your account will be suspended in 24 hours unless we hear from you", recipient, "billing@tokbox.com",

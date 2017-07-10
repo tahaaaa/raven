@@ -1,7 +1,7 @@
 package com.opentok.raven.resources
 
-import spray.json._
 import spray.json.DefaultJsonProtocol._
+import spray.json._
 
 case class SDK(
   name: String,

@@ -1,14 +1,15 @@
 @(account_name: String)
+@import com.opentok.raven.resources._
 <!-- H1 -->
-<div align="center" style="font-family: 'ITC Avant Garde Gothic W04 Md', 'Muli', helvetica, arial; font-size: 20px; color: #5f5f61; padding-bottom: 35px;">You have been removed from an OpenTok account.</div>
+<div align="center" style="font-family: @Styles.FONT_HEADING; font-size: 20px; color: #5f5f61; padding-bottom: 35px;">You have been removed from an OpenTok account.</div>
 
 <!-- Body Copy -->
-<div style="line-height: 24px; padding-bottom: 35px; font-family: 'Muli', helvetica, arial;">
+<div style="line-height: 24px; padding-bottom: 35px; font-family: @Styles.FONT_TEXT;">
   You have been removed from the <span>@account_name</span> OpenTok account. If this was done in error, please contact an administrator of <span>@account_name</span> to join again.
 </div>
-<div style="line-height: 24px; padding-bottom: 35px; font-family: 'Muli', helvetica, arial;">
+<div style="line-height: 24px; padding-bottom: 35px; font-family: @Styles.FONT_TEXT;">
   You can still use OpenTok through any of your remaining TokBox accounts.
 </div>
 
 <!-- Thank You -->
-<div style="line-height: 24px; font-family: 'Muli', helvetica, arial;">Thanks for using OpenTok,<br><br>The TokBox Team</div>
+<div style="line-height: 24px; font-family: @Styles.FONT_TEXT;">Thanks for using OpenTok,<br><br>The TokBox Team</div>

@@ -1,8 +1,5 @@
 @(recipient: String, content: play.twirl.api.Html)
-
-@FONT_FAMILY = @{ "'Raleway', 'Proxima Nova', helvetica, arial" }
-
-@BACKGROUND_COLOR = @{ "#f9f9f9" }
+@import com.opentok.raven.resources._
 
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
 <html style="margin: 0; padding: 0">
@@ -12,7 +9,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 </head>
 
-<body style="font-family: @FONT_FAMILY; margin: 0; padding: 0; font-size: 14px; color:#5f6062">
+<body style="font-family: @Styles.FONT_TEXT; margin: 0; padding: 0; font-size: 14px; color:#5f6062">
     <link type="text/css" rel="stylesheet" href="http://fast.fonts.net/cssapi/d2adacd8-a7c8-4ed5-b3ad-1814b107599b.css"/>
     <link href="https://fonts.googleapis.com/css?family=Raleway:300" rel="stylesheet">
     <style type="text/css">
@@ -23,14 +20,14 @@
           font-weight: 300;
         }
         body {
-            margin: 0; padding: 0; font-family: @FONT_FAMILY;
+            font-family: @Styles.FONT_TEXT;
         }
     </style>
 
     <table align="center" border="0" cellpadding="0" cellspacing="0" style="width: 100%; background-color: transparent; font-size: 0; text-align: center;" width="100%">
         <tr>
             <td>
-                <table align="center" border="0" cellpadding="0" cellspacing="0" width="660" style="border-collapse: collapse; box-sizing: border-box; background-color: @BACKGROUND_COLOR; display: inline-block; padding: 0 75px; font-size: 14px;">
+                <table align="center" border="0" cellpadding="0" cellspacing="0" width="660" style="border-collapse: collapse; box-sizing: border-box; background-color: @Styles.BACKGROUND_COLOR; display: inline-block; padding: 0 75px; font-size: 14px;">
                     <tr>
                         <td>
 
@@ -97,7 +94,7 @@
                             </table></div>
 
                             <!-- Adress -->
-                            <div align="center" style=" font-family: @FONT_FAMILY; font-size:11px; line-height:14px; padding-top:12px;">501 2nd Street, Suite 310, San Francisco, CA 94107</div>
+                            <div align="center" style=" font-family: @Styles.FONT_TEXT; font-size:11px; line-height:14px; padding-top:12px;">501 2nd Street, Suite 310, San Francisco, CA 94107</div>
                             <!-- Social Media -->
                             <div align="center" style="padding:20px 0 20px 0" width="300" >
 
@@ -135,7 +132,7 @@
                     <tr>
                         <td>
 
-                            <div align="center" style="font-family: @FONT_FAMILY; font-size:11px; padding:20px 0 20px 0" >
+                            <div align="center" style="font-family: @Styles.FONT_TEXT; font-size:11px; padding:20px 0 20px 0" >
 
                             </div>
                         </td>

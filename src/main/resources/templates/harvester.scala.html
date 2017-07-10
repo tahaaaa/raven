@@ -1,19 +1,20 @@
 @(title: String, datafield: String, datafield_1: Option[String], datafield_2: Option[String], datafield_3: Option[String], harvester_image_link: String, harvester_analysis_image_link: Option[String], harvester_email: String , harvester_email_1: Option[String], harvester_email_2: Option[String], harvester_email_3: Option[String], harvester_message: String, harvester_message_1: Option[String], harvester_message_2: Option[String] )
+@import com.opentok.raven.resources._
 <!-- H1 -->
-<div align="center" style="font-family: 'ITC Avant Garde Gothic W04 Md', 'Muli', helvetica, arial; font-size: 20px; color: #5f5f61; padding-bottom: 35px;">@title</div>
+<div align="center" style="font-family: @Styles.FONT_HEADING; font-size: 20px; color: #5f5f61; padding-bottom: 35px;">@title</div>
 
 <!-- Body Copy -->
-<div align="center" style="line-height: 24px; padding-bottom: 35px; font-family: 'Muli', helvetica, arial;">
+<div align="center" style="line-height: 24px; padding-bottom: 35px; font-family: @Styles.FONT_TEXT;">
 <a href="@datafield"><img src="@harvester_image_link"></a>
      <br><br>
 </div>
 @harvester_analysis_image_link.map{hail =>
-<div align="center" style="line-height: 24px; padding-bottom: 35px; font-family: 'Muli', helvetica, arial;">
+<div align="center" style="line-height: 24px; padding-bottom: 35px; font-family: @Styles.FONT_TEXT;">
 <a href="@datafield"><img style="max-width: 600px" src="@hail"></a>
      <br><br>
 	}
 </div>
-<div align="center" style="line-height: 24px; padding-bottom: 35px; font-family: 'Muli', helvetica, arial;">
+<div align="center" style="line-height: 24px; padding-bottom: 35px; font-family: @Styles.FONT_TEXT;">
 <p>
 @harvester_message
 </p>
@@ -47,7 +48,7 @@
 
 <!-- CTA Button with subtitle -->
 <div align="center" style="padding-bottom: 35px;"><a href="@datafield">
-    <button style="height:40px; background-color:  #0099cc; border: none; font-family: 'Muli' helvetica, arial; font-size: 16px; color: #ffffff; padding: 0px 25px; margin-bottom:12px; border-radius: 3px;">
+    <button style="height:40px; background-color:  #0099cc; border: none; font-family: @Styles.FONT_TEXT; font-size: 16px; color: #ffffff; padding: 0px 25px; margin-bottom:12px; border-radius: 3px;">
         <span class="blank" style="text-decoration:none !important;">
            Harvest this account.
         </span>
@@ -57,4 +58,4 @@
 </div>
 
 <!-- Thank You -->
-<div style="line-height: 24px; font-family: 'Muli', helvetica, arial;">Thanks for contributing,<br><br>The TokBox Business Analytics Team</div>
+<div style="line-height: 24px; font-family: @Styles.FONT_TEXT;">Thanks for contributing,<br><br>The TokBox Business Analytics Team</div>

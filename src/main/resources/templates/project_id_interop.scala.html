@@ -1,8 +1,9 @@
 <!-- H1 -->
-<div align="center" style="font-family: 'ITC Avant Garde Gothic W04 Md', 'Muli', helvetica, arial; font-size: 20px; color: #5f5f61; padding-bottom: 35px;">Issue detected in your OpenTok app: API key-session mismatch</div>
+@import com.opentok.raven.resources._
+<div align="center" style="font-family: @Styles.FONT_HEADING; font-size: 20px; color: #5f5f61; padding-bottom: 35px;">Issue detected in your OpenTok app: API key-session mismatch</div>
 
 <!-- Body Copy -->
-<div style="line-height: 24px; padding-bottom: 35px; font-family: 'Muli', helvetica, arial;">
+<div style="line-height: 24px; padding-bottom: 35px; font-family: @Styles.FONT_TEXT;">
 We constantly monitor access to our system for security reasons and to help our developer community and enterprise partners have the best possible experience.</p>
     <p>	We recently noticed a rather common error in your application that will prevent some of your users from being able to make connections with the sessions you create.</p>
     <p>	Simply put, when a session is created (using an API Key) it can only be accessed by an end user that has a corresponding token (generated with the same API Key).  We have seen multiple instances of your clients trying to connect to your sessions where the API Keys do not match.  Your clients should be receiving an error message indicating that the token is invalid for that session.</p>
@@ -12,14 +13,14 @@ We constantly monitor access to our system for security reasons and to help our 
 
 <!-- CTA Button with subtitle -->
 <div align="center" style="padding-bottom: 35px;"><a href="https://tokbox.com/tools/credential-validator/">
-    <button style="height:40px; background-color:  #0099cc; border: none; font-family: 'Muli' helvetica, arial; font-size: 16px; color: #ffffff; padding: 0px 25px; margin-bottom:12px; border-radius: 3px;">
+    <button style="height:40px; background-color:  #0099cc; border: none; font-family: @Styles.FONT_TEXT; font-size: 16px; color: #ffffff; padding: 0px 25px; margin-bottom:12px; border-radius: 3px;">
         <span class="blank" style="text-decoration:none !important;">Go To Credential Validator</span>
         <img style="position: relative; top: 2px; padding-left: 20px" src="https://assets.tokbox.com/email/arrow_white.png" alt="&rarr;" border="0">
     </button></a>
 
 </div>
 <!-- Thank You -->
-<div style="line-height: 24px; font-family: 'Muli', helvetica, arial;">
+<div style="line-height: 24px; font-family: @Styles.FONT_TEXT;">
     <p>We hope that this development tip helps improve your user experience.</p>
     <p>Thanks for trying OpenTok,<br><br>The TokBox Team</p>
 </div>

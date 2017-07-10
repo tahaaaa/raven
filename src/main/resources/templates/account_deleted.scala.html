@@ -1,20 +1,21 @@
 @(account_name: String)
+@import com.opentok.raven.resources._
 <!-- H1 -->
-<div align="center" style="font-family: 'ITC Avant Garde Gothic W04 Md', 'Muli', helvetica, arial; font-size: 20px; color: #5f5f61 !important; padding-bottom: 35px;">We're sorry to see you go!</div>
+<div align="center" style="font-family: @Styles.FONT_HEADING; font-size: 20px; color: #5f5f61 !important; padding-bottom: 35px;">We're sorry to see you go!</div>
 
 <!-- Body Copy -->
-<div style="line-height: 24px; padding-bottom: 35px; font-family: 'Muli', helvetica, arial;">
+<div style="line-height: 24px; padding-bottom: 35px; font-family: @Styles.FONT_TEXT;">
   Your account @account_name has been cancelled.
 </div>
 <!-- Body Copy with a link -->
-<div style=" font-family: 'Muli', helvetica, arial; line-height: 24px; padding-bottom: 35px;">
+<div style=" font-family: @Styles.FONT_TEXT; line-height: 24px; padding-bottom: 35px;">
   Your feedback is extremely valuable to us. We'd love to hear why OpenTok wasn't right for you. Please fill out our 2 minute 
   <!-- CTA link -->
-  <a href="https://docs.google.com/a/tokbox.com/spreadsheet/viewform?formkey=dGhaamVVWHZweUg1ZlpGNVlkNmpmZXc6MQ#gid=0" style=" font-family: 'Muli', helvetica, arial; color: #0099cc; line-height: 24px; text-decoration: none">
+  <a href="https://docs.google.com/a/tokbox.com/spreadsheet/viewform?formkey=dGhaamVVWHZweUg1ZlpGNVlkNmpmZXc6MQ#gid=0" style=" font-family: @Styles.FONT_TEXT; color: #0099cc; line-height: 24px; text-decoration: none">
     <font color="#0099cc">survey</font>
     <img style="position: relative; top: 2px; padding-left: 10px" src="https://assets.tokbox.com/email/arrow_blue.png" alt="&rarr;" border="0">
   </a>
 </div>
 
 <!-- Thank You -->
-<div style="line-height: 24px; font-family: 'Muli', helvetica, arial;">Thanks for trying OpenTok,<br><br>The TokBox Team</div>
+<div style="line-height: 24px; font-family: @Styles.FONT_TEXT;">Thanks for trying OpenTok,<br><br>The TokBox Team</div>
