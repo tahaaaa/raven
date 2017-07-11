@@ -32,6 +32,8 @@
 
 @subTitleStyles = @{ "font-family: " + FONT_FAMILY + "; font-size: 17px; color: #5f6062; font-weight: 600; padding: 0; margin: 0 0 30px 0" }
 
+@nameStyles = @{ "font-family: " + FONT_FAMILY + "; font-size: 20px; color: #a0a9b8; font-weight: 600; padding: 0; margin: 0 0 30px 0" }
+
 @headerStyles = @{ "font-family: " + FONT_FAMILY + "; font-size: 34px; color: #5f6062; font-weight: 300; border-width: 0; border-color: #0099cc; border-style: solid; border-left-width: 1px; padding: 0 0 0 18px; margin: 0 0 20px 0; display: block" }
 
 @paragraphStyles = @{ "font-family: " + FONT_FAMILY + "; font-size: 16px; color: #5f6062; margin: 0; padding: 0" }
@@ -83,15 +85,15 @@
 
     <div align="left" style="@greySectionStyles; padding-top: 0">
 
-        <h1 style="@titleStyles">@name, TokBox Usage and Recommendations</h1>
+        <h1 style="@titleStyles; margin-bottom: 10px">TokBox Usage and Recommendations</h1>
 
         <h2 style="@subTitleStyles">@date</h2>
 
-        <h1 style="@headerStyles; margin-top: 40px">Connections</h1>
+        <h1 style="@nameStyles">@name</h1>
 
-        <p style="@paragraphStyles">You've made it possible for people, whether they're customers, team members, or partners, regardless of geography, to connect.</p>
+        <h1 style="@headerStyles; margin-top: 40px">Usage</h1>
 
-        <h1 style="@titleStyles; margin-top: 30px">Unique devices</h1>
+        <h1 style="@titleStyles; margin-top: 30px">Subscribed Minutes</h1>
 
         <div style="@cardContainerStyles; margin: 10px 0 20px 0">
             <span style="@cardStyles">
@@ -108,9 +110,9 @@
             </span>
         </div>
 
-        <p style="@paragraphStyles">Research shows that connecting with people using real time communications &lt;need stats&gt; increase satisfaction and loyalty by a gazillion %.</p>
+        <p style="@paragraphStyles">To monitor your usage, visit your <a style="@linkStyles" href="@account_portal_link">Account Portal <img style="@linkImgStyles" src="@linkImgSrc" alt="&rarr;" border="0"/></a></p>
 
-        <h1 style="@titleStyles; margin-top: 30px">Subscribed Minutes</h1>
+        <h1 style="@titleStyles; margin-top: 30px">Devices</h1>
 
         <div style="@cardContainerStyles; margin: 10px 0 20px 0">
             <span style="@cardStyles">
@@ -127,7 +129,7 @@
             </span>
         </div>
 
-        <p style="@paragraphStyles">To monitor your usage, visit your <a style="@linkStyles" href="@account_portal_link">Account Portal <img style="@linkImgStyles" src="@linkImgSrc" alt="&rarr;" border="0"/></a></p>
+        <p style="@paragraphStyles">Research shows that connecting with people using real time communications &lt;need stats&gt; increase satisfaction and loyalty by a gazillion %.</p>
 
         <div style="@separatorStyles"></div>
 
@@ -236,7 +238,7 @@
         </ul>
         }
 
-        <h2 style="@subTitleStyles; margin-top: 40px">TokBox, by You</h2>
+        <h2 style="@subTitleStyles; font-weight: normal; margin-top: 40px">TokBox, by You</h2>
 
         <div style="@separatorStyles; margin-top: 20px"></div>
 
