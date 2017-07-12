@@ -282,7 +282,9 @@ object Email {
           fields.extract[List[SDK]]("unsupported_sdk_client"),
           fields.extract[List[SDK]]("unsupported_sdk_server"),
           fields %> "learn_how_link",
-          fields.extract[List[Update]]("updates")
+          fields.extract[List[String]]("releases_updates"),
+          fields.extract[List[String]]("product_updates"),
+          fields.extract[List[String]]("company_updates")
         ), templateId, fromName = Some("TokBox"), wrapperTemplateId = V3)
 
     case templateId@"tos_production" ⇒

@@ -13,7 +13,9 @@
   unsupported_sdk_client: List[com.opentok.raven.resources.SDK],
   unsupported_sdk_server: List[com.opentok.raven.resources.SDK],
   learn_how_link: com.opentok.raven.model.Email.Url,
-  updates: List[com.opentok.raven.resources.Update]
+  releases_updates: List[String],
+  product_updates: List[String],
+  company_updates: List[String]
 )
 
 <!-- Sections -->
@@ -228,12 +230,33 @@
             </table>
         </div>
 
-        @if(!updates.isEmpty) {
-        <h1 style="@titleStyles">TokBox Updates</h1>
+        @if(!releases_updates.isEmpty || !product_updates.isEmpty || !company_updates.isEmpty) {
+            <h1 style="@titleStyles">TokBox Updates</h1>
+        }
 
+        @if(!releases_updates.isEmpty) {
+        <p style="@paragraphStyles; font-weight: 600; margin-top: 30px">Releases Updates</p>
+        <ul style="@paragraphStyles; padding-left: 30px; box-sizing: border-box; width: 100%;">
+            @for(update <- releases_updates) {
+                <li style="@updateItemStyle">@Html(update.replace("<a ", "<a style=\"@linkStyles\" "))</li>
+            }
+        </ul>
+        }
+
+        @if(!product_updates.isEmpty) {
+        <p style="@paragraphStyles; font-weight: 600; margin-top: 30px">Product Updates</p>
         <ul style="@paragraphStyles; padding-left: 30px; box-sizing: border-box; width: 100%">
-            @for(update <- updates) {
-            <li style="@updateItemStyle">@update.text <a style="@linkStyles" href="@update.link">@if(update.linkText != "") {@update.linkText} else {tokbox.com}</a>.</li>
+            @for(update <- product_updates) {
+                <li style="@updateItemStyle">@Html(update.replace("<a ", "<a style=\"@linkStyles\" "))</li>
+            }
+        </ul>
+        }
+
+        @if(!company_updates.isEmpty) {
+        <p style="@paragraphStyles; font-weight: 600; margin-top: 30px">Company Updates</p>
+        <ul style="@paragraphStyles; padding-left: 30px; box-sizing: border-box; width: 100%">
+            @for(update <- company_updates) {
+                <li style="@updateItemStyle">@Html(update.replace("<a ", "<a style=\"@linkStyles\" "))</li>
             }
         </ul>
         }
