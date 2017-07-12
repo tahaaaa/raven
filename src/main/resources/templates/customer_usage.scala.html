@@ -238,7 +238,7 @@
         <p style="@paragraphStyles; font-weight: 600; margin-top: 30px">Releases Updates</p>
         <ul style="@paragraphStyles; padding-left: 30px; box-sizing: border-box; width: 100%;">
             @for(update <- releases_updates) {
-                <li style="@updateItemStyle">@Html(update.replace("<a ", "<a style=\"@linkStyles\" "))</li>
+                <li style="@updateItemStyle">@Html(update.replace("<a ", "<a style=\"" + linkStyles + "\" "))</li>
             }
         </ul>
         }
@@ -247,7 +247,7 @@
         <p style="@paragraphStyles; font-weight: 600; margin-top: 30px">Product Updates</p>
         <ul style="@paragraphStyles; padding-left: 30px; box-sizing: border-box; width: 100%">
             @for(update <- product_updates) {
-                <li style="@updateItemStyle">@Html(update.replace("<a ", "<a style=\"@linkStyles\" "))</li>
+                <li style="@updateItemStyle">@Html(update.replace("<a ", "<a style=\"" + linkStyles + "\" "))</li>
             }
         </ul>
         }
@@ -256,7 +256,7 @@
         <p style="@paragraphStyles; font-weight: 600; margin-top: 30px">Company Updates</p>
         <ul style="@paragraphStyles; padding-left: 30px; box-sizing: border-box; width: 100%">
             @for(update <- company_updates) {
-                <li style="@updateItemStyle">@Html(update.replace("<a ", "<a style=\"@linkStyles\" "))</li>
+                <li style="@updateItemStyle">@Html(update.replace("<a ", "<a style=\"" + linkStyles + "\" "))</li>
             }
         </ul>
         }
