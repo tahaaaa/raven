@@ -91,7 +91,9 @@
 
         <h2 style="@subTitleStyles">@date</h2>
 
-        <h1 style="@nameStyles">@name,</h1>
+        @if(!name.isEmpty) {
+            <h1 style="@nameStyles">@name.trim,</h1>
+        }
 
         <h1 style="@headerStyles; margin-top: 40px">Usage</h1>
 
@@ -261,11 +263,9 @@
         </ul>
         }
 
-        <h2 style="@subTitleStyles; font-weight: normal; margin-top: 40px">TokBox, by You</h2>
+        <div style="@separatorStyles; margin-top: 30px;"></div>
 
-        <div style="@separatorStyles; margin-top: 20px"></div>
-
-        <p style="@paragraphStyles; text-align: center; width: 100%; font-size: 14px; margin: 10px 0; padding: 0">You are receiving this email because you are a TokBox customer and have elected to be updated about your monthly usage, and other important data and insights.</p>
+        <p style="@paragraphStyles; text-align: center; width: 100%; font-size: 14px; margin: 40px 0 10px 0; padding: 0">You are receiving this email because you are a TokBox customer and have elected to be updated about your monthly usage, and other important data and insights.</p>
 
     </div>
 

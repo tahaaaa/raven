@@ -9,6 +9,8 @@ import spray.json.{JsValue, _}
 import scala.language.implicitConversions
 import scala.util.Try
 
+import java.util.{Date, Locale}
+
 sealed trait Requestable {
 
   def id: Option[String]
@@ -263,7 +265,7 @@ object Email {
         templateId, fromName = Some("Business Analytics"))
 
     case templateId@"customer_usage" ⇒
-      val format = new java.text.SimpleDateFormat("MMM, yyyy")
+      val format = new java.text.SimpleDateFormat("MMMM yyyy", Locale.US)
       val date = format.format(new java.util.Date()).capitalize
       wrapTemplate(requestId, "Customer usage test", recipient, "messages@tokbox.com",
         html.customer_usage(
