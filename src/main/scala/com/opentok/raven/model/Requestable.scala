@@ -267,7 +267,7 @@ object Email {
     case templateId@"customer_usage" ⇒
       val format = new java.text.SimpleDateFormat("MMMM yyyy", Locale.US)
       val date = format.format(new java.util.Date()).capitalize
-      wrapTemplate(requestId, "Customer usage test", recipient, "messages@tokbox.com",
+      wrapTemplate(requestId, "Your Monthly TokBox Usage Stats and Recommendations for " + date, recipient, "messages@tokbox.com",
         html.customer_usage(
           date,
           fields %> "name",
