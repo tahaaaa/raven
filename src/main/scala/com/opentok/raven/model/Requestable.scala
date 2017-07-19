@@ -270,7 +270,7 @@ object Email {
       wrapTemplate(requestId, "Your Monthly TokBox Usage Stats and Recommendations for " + date, recipient, "messages@tokbox.com",
         html.customer_usage(
           date,
-          fields %> "name",
+          fields ?> "name",
           fields %> "device_current",
           fields %> "device_last",
           fields.extract[Int]("device_change"),
@@ -283,7 +283,8 @@ object Email {
           fields.extract[List[Browser]]("outdated_browser"),
           fields.extract[List[SDK]]("unsupported_sdk_client"),
           fields.extract[List[SDK]]("unsupported_sdk_server"),
-          fields %> "learn_how_link",
+          fields ?> "learn_how_link",
+          fields ?> "make_embed_link",
           fields.extract[List[String]]("releases_updates"),
           fields.extract[List[String]]("product_updates"),
           fields.extract[List[String]]("company_updates")

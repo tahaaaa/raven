@@ -1,5 +1,5 @@
 @(date: String,
-  name: String,
+  name: Option[String],
   device_current: String,
   device_last: String,
   device_change: Int,
@@ -12,11 +12,57 @@
   outdated_browser: List[com.opentok.raven.resources.Browser],
   unsupported_sdk_client: List[com.opentok.raven.resources.SDK],
   unsupported_sdk_server: List[com.opentok.raven.resources.SDK],
-  learn_how_link: com.opentok.raven.model.Email.Url,
+  learn_how_link: Option[String],
+  make_embed_link: Option[String],
   releases_updates: List[String],
   product_updates: List[String],
   company_updates: List[String]
 )
+
+<!-- We already have the updates defined in the template at least you inject them -->
+
+@import scala.collection.immutable._
+
+@my_releases_updates = @{
+    if(releases_updates.isEmpty) {
+        List(
+            "To get notified for every release, subscribe to our <a href=\"https://support.tokbox.com/hc/en-us/sections/201722216-New-Releases\">New Releases page</a>.",
+
+            "JS Client SDK Updates:" +
+                "<ul>" +
+                    "<li><a href=\"https://tokbox.com/developer/sdks/js/release-notes.html#fixedIssues\">2.11.6</a> is now available on Standard line.</li>" +
+                    "<li>2.11.5 will be moved to the Enterprise line on July 20th.</li>" +
+                    "<li>2.11.6 will be deployed to the Enterprise line the week of August 17th.</li>" +
+                "</ul>",
+
+            "V2.8 SDKs will be deprecated September 22nd."
+        )
+    } else {
+        releases_updates
+    }
+}
+
+@my_product_updates = @{
+    if(product_updates.isEmpty) {
+        List(
+            "Add WebRTC to your app immediately using our production-ready <a href=\"https://tokbox.com/developer/embeds/\">Embeds</a> feature.",
+
+            "We are pleased to announce our support for Apple’s Beta launch of High Sierra and support for WebRTC in Safari. Create a new project in <a href=\"https://tokbox.com/account/#/\">Account Portal</a> to get started. Read about <a href=\"https://tokbox.com/developer/beta/safari\">Safari Beta here</a>."
+        )
+    } else {
+        product_updates
+    }
+}
+
+@my_company_updates = @{
+    if(company_updates.isEmpty) {
+        List(
+            "Our new VP of Customer Success, Paul Reeves, is meeting with Enterprise customers. If you haven’t spoken to him yet, <a href=\"http://calendly.com/paulr-tokbox\">grab a 15 or 30 minute slot on his calendar</a>."
+        )
+    } else {
+        company_updates
+    }
+}
 
 <!-- Sections -->
 
@@ -91,8 +137,10 @@
 
         <h2 style="@subTitleStyles">@date</h2>
 
-        @if(!name.isEmpty) {
-            <h1 style="@nameStyles">@name.trim,</h1>
+        @name.map{value =>
+            @if(!value.isEmpty) {
+                <h1 style="@nameStyles">@value.trim,</h1>
+            }
         }
 
         <h1 style="@headerStyles; margin-top: 40px">Usage</h1>
@@ -223,8 +271,7 @@
                         <img width="60" height="60" src="https://cdn2.iconfinder.com/data/icons/thin-line-icons-for-seo-and-development-1/64/SEO_cogwheels_setting-128.png" border="0"/>
                     </td>
                     <td style="padding: 0">
-                        <p style="@paragraphStyles; margin-bottom: 5px">Learn how other customers are rapidly prototyping new apps using our plug and play embeds.</p>
-                        <p style="@paragraphStyles"><a style="@linkStyles" href="@learn_how_link">Learn how to make an Embed <img style="@linkImgStyles" src="@linkImgSrc" alt="&rarr;" border="0"/></a></p>
+                        <p style="@paragraphStyles; margin-bottom: 5px">Learn how customers are rapidly building production-ready apps using our plug and play embeds. <a style="@linkStyles" href="@make_embed_link.getOrElse("https://tokbox.com/account/#/")">Click here to make an embed</a>. <a style="@linkStyles" href="@learn_how_link.getOrElse("https://tokbox.com/blog/video-chat-embed-copy-and-paste-your-poc/")">Or read about embeds in our blog</a>.</p>
                     </td>
                 </tr>
             </table>
@@ -234,28 +281,28 @@
             <h1 style="@titleStyles">TokBox Updates</h1>
         }
 
-        @if(!releases_updates.isEmpty) {
+        @if(!my_releases_updates.isEmpty) {
         <p style="@paragraphStyles; font-weight: 600; margin-top: 30px">Releases Updates</p>
         <ul style="@paragraphStyles; padding-left: 30px; box-sizing: border-box; width: 100%;">
-            @for(update <- releases_updates) {
+            @for(update <- my_releases_updates) {
                 <li style="@updateItemStyle">@Html(update.replace("<a ", "<a style=\"" + linkStyles + "\" "))</li>
             }
         </ul>
         }
 
-        @if(!product_updates.isEmpty) {
+        @if(!my_product_updates.isEmpty) {
         <p style="@paragraphStyles; font-weight: 600; margin-top: 30px">Product Updates</p>
         <ul style="@paragraphStyles; padding-left: 30px; box-sizing: border-box; width: 100%">
-            @for(update <- product_updates) {
+            @for(update <- my_product_updates) {
                 <li style="@updateItemStyle">@Html(update.replace("<a ", "<a style=\"" + linkStyles + "\" "))</li>
             }
         </ul>
         }
 
-        @if(!company_updates.isEmpty) {
+        @if(!my_company_updates.isEmpty) {
         <p style="@paragraphStyles; font-weight: 600; margin-top: 30px">Company Updates</p>
         <ul style="@paragraphStyles; padding-left: 30px; box-sizing: border-box; width: 100%">
-            @for(update <- company_updates) {
+            @for(update <- my_company_updates) {
                 <li style="@updateItemStyle">@Html(update.replace("<a ", "<a style=\"" + linkStyles + "\" "))</li>
             }
         </ul>
@@ -263,7 +310,9 @@
 
         <div style="@separatorStyles; margin-top: 30px;"></div>
 
-        <p style="@paragraphStyles; text-align: center; width: 100%; font-size: 14px; margin: 40px 0 10px 0; padding: 0">You are receiving this email because you are a TokBox customer and have elected to be updated about your monthly usage, and other important data and insights.</p>
+        <p style="@paragraphStyles; text-align: center; width: 100%; font-size: 14px; margin: 40px 0 20px 0; padding: 0">You are receiving this email because you are a TokBox customer and have elected to be updated about your monthly usage, and other important data and insights.</p>
+
+        <p style="@paragraphStyles; text-align: center; width: 100%; font-size: 14px; margin: 0 0 10px 0; padding: 0">To unsubscribe from this monthly update, <a href="[unsubscribe]">click here</a>.</p>
 
     </div>
 
