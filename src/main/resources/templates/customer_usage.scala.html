@@ -1,4 +1,5 @@
 @(date: String,
+  customDate: Option[String],
   name: Option[String],
   device_current: String,
   device_last: String,
@@ -135,7 +136,7 @@
 
         <h1 style="@titleStyles; margin-bottom: 10px">TokBox Usage and Recommendations</h1>
 
-        <h2 style="@subTitleStyles">@date</h2>
+        <h2 style="@subTitleStyles">@customDate.getOrElse(date)</h2>
 
         @name.map{value =>
             @if(!value.isEmpty) {
