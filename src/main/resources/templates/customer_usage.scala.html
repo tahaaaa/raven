@@ -1,13 +1,15 @@
 @(date: String,
   customDate: Option[String],
+  email: String,
+  last_month: String,
+  previous_month: String,
   name: Option[String],
-  device_current: String,
   device_last: String,
+  device_previous: String,
   device_change: Int,
-  subscribed_current: String,
   subscribed_last: String,
+  subscribed_previous: String,
   subscribed_change: Int,
-  account_portal_link: com.opentok.raven.model.Email.Url,
   recommended_browser: List[com.opentok.raven.resources.Browser],
   expired_token: List[com.opentok.raven.resources.Project],
   outdated_browser: List[com.opentok.raven.resources.Browser],
@@ -150,12 +152,12 @@
 
         <div style="@cardContainerStyles; margin: 10px 0 20px 0">
             <span style="@cardStyles">
-                <span style="@titleCardStyles">@subscribed_current</span>
-                <p style="@paragraphStyles; @paragraphCardStyles">This month</p>
+                <span style="@titleCardStyles">@subscribed_last</span>
+                <p style="@paragraphStyles; @paragraphCardStyles">@last_month</p>
             </span>
             <span style="@cardStyles; margin: 0 9px">
-                <span style="@titleCardStyles">@subscribed_last</span>
-                <p style="@paragraphStyles; @paragraphCardStyles">Last month</p>
+                <span style="@titleCardStyles">@subscribed_previous</span>
+                <p style="@paragraphStyles; @paragraphCardStyles">@previous_month</p>
             </span>
             <span style="@cardStyles">
                 <span style="@titleCardStyles">@subscribed_change%</span>
@@ -163,18 +165,18 @@
             </span>
         </div>
 
-        <p style="@paragraphStyles">To monitor your usage, visit your <a style="@linkStyles" href="@account_portal_link">Account Portal <img style="@linkImgStyles" src="@linkImgSrc" alt="&rarr;" border="0"/></a></p>
+        <p style="@paragraphStyles">To monitor your usage, visit your <a style="@linkStyles" href="https://www.tokbox.com/account/#">Account Portal <img style="@linkImgStyles" src="@linkImgSrc" alt="&rarr;" border="0"/></a></p>
 
         <h1 style="@titleStyles; margin-top: 30px">Devices</h1>
 
         <div style="@cardContainerStyles; margin: 10px 0 20px 0">
             <span style="@cardStyles">
-                <span style="@titleCardStyles">@device_current</span>
-                <p style="@paragraphStyles; @paragraphCardStyles">This month</p>
+                <span style="@titleCardStyles">@device_last</span>
+                <p style="@paragraphStyles; @paragraphCardStyles">@last_month</p>
             </span>
             <span style="@cardStyles; margin: 0 9px">
-                <span style="@titleCardStyles">@device_last</span>
-                <p style="@paragraphStyles; @paragraphCardStyles">Last month</p>
+                <span style="@titleCardStyles">@device_previous</span>
+                <p style="@paragraphStyles; @paragraphCardStyles">@previous_month</p>
             </span>
             <span style="@cardStyles">
                 <span style="@titleCardStyles">@device_change%</span>
@@ -313,7 +315,7 @@
 
         <p style="@paragraphStyles; text-align: center; width: 100%; font-size: 14px; margin: 40px 0 20px 0; padding: 0">You are receiving this email because you are a TokBox customer and have elected to be updated about your monthly usage, and other important data and insights.</p>
 
-        <p style="@paragraphStyles; text-align: center; width: 100%; font-size: 14px; margin: 0 0 10px 0; padding: 0">To unsubscribe from this monthly update, <a href="[unsubscribe]">click here</a>.</p>
+        <p style="@paragraphStyles; text-align: center; width: 100%; font-size: 14px; margin: 0 0 10px 0; padding: 0">To unsubscribe from this monthly update, <a href="https://api.opentok.com/hl/misc/unsubscribe/@email">click here</a>.</p>
 
     </div>
 
