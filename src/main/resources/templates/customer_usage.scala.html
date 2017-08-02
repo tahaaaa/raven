@@ -1,6 +1,5 @@
 @(date: String,
-  customDate: Option[String],
-  email: String,
+  recipient: String,
   last_month: String,
   previous_month: String,
   name: Option[String],
@@ -138,13 +137,15 @@
 
         <h1 style="@titleStyles; margin-bottom: 10px">TokBox Usage and Recommendations</h1>
 
-        <h2 style="@subTitleStyles">@customDate.getOrElse(date)</h2>
+        <h2 style="@subTitleStyles">@last_month</h2>
 
         @name.map{value =>
             @if(!value.isEmpty) {
                 <h1 style="@nameStyles">@value.trim,</h1>
             }
         }
+
+        <p style="@paragraphStyles">Here is your TokBox usage summary for @last_month compared to the previous month.  Below you’ll also find product, release, and company updates.</p>
 
         <h1 style="@headerStyles; margin-top: 40px">Usage</h1>
 
@@ -315,7 +316,7 @@
 
         <p style="@paragraphStyles; text-align: center; width: 100%; font-size: 14px; margin: 40px 0 20px 0; padding: 0">You are receiving this email because you are a TokBox customer and have elected to be updated about your monthly usage, and other important data and insights.</p>
 
-        <p style="@paragraphStyles; text-align: center; width: 100%; font-size: 14px; margin: 0 0 10px 0; padding: 0">To unsubscribe from this monthly update, <a href="https://api.opentok.com/hl/misc/unsubscribe/@email">click here</a>.</p>
+        <p style="@paragraphStyles; text-align: center; width: 100%; font-size: 14px; margin: 0 0 10px 0; padding: 0">To unsubscribe from this monthly update, <a href="https://api.opentok.com/hl/misc/unsubscribe/@recipient">click here</a>.</p>
 
     </div>
 

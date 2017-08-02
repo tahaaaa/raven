@@ -273,8 +273,7 @@ object Email {
       wrapTemplate(requestId, "Your Monthly TokBox Usage Stats and Recommendations for " + date, recipient, "messages@tokbox.com",
         html.customer_usage(
           date,
-          fields ?> "date",
-          fields %> "email",
+          recipient,
           fields %> "last_month",
           fields %> "previous_month",
           fields ?> "name",
