@@ -270,7 +270,7 @@ object Email {
       if (fields.get("date") != None) {
         date = fields.extract[String]("date")
       }
-      wrapTemplate(requestId, "Your Monthly TokBox Usage Stats and Recommendations for " + date, recipient, "messages@tokbox.com",
+      wrapTemplate(requestId, "Your Monthly TokBox Usage Stats and Recommendations for " + fields %> "last_month", recipient, "messages@tokbox.com",
         html.customer_usage(
           date,
           recipient,
