@@ -9,3 +9,7 @@ target/
 .idea_modules
 application.conf
 src/main/resources/templates/examples.html
+.ensime
+.ensime_cache
+ensime-langserver.log
+pc.stdout.log
