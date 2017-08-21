@@ -313,6 +313,25 @@ object Email {
       wrapTemplate(requestId, "Issue detected in your OpenTok app: API key-session mismatch", recipient, "support@tokbox.com",
         html.project_id_interop(), templateId)
 
+    case templateId@"account_credit_expiration_warning" ⇒
+      wrapTemplate(requestId, " Account Credit Warning", recipient, "messages@tokbox.com",
+        html.account_credit_expiration_warning("https://tokbox.com/account"), templateId)
+
+    case templateId@"account_credit_expiration_final_warning" ⇒
+      wrapTemplate(requestId, " Account Credit Final Warning", recipient, "messages@tokbox.com",
+        html.account_credit_expiration_final_warning("https://tokbox.com/account"), templateId)
+
+    case templateId@"account_credit_expiration" ⇒
+      wrapTemplate(requestId, " Account Credit Expired", recipient, "messages@tokbox.com",
+        html.account_credit_expiration("https://tokbox.com/account"), templateId)
+
+    case templateId@"credit_extension" ⇒
+      wrapTemplate(requestId, " Account Credit Extended", recipient, "messages@tokbox.com",
+        html.credit_extension(
+          "https://tokbox.com/account",
+          fields ?> "creditIncrease"),
+        templateId)
+
     case templateId@"error" ⇒
       val component = fields %> "component"
       val owner = fields ?> "owner"

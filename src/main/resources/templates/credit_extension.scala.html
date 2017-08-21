@@ -1,0 +1,24 @@
+@(login_url: com.opentok.raven.model.Email.Url, creditIncrease: Option[String])
+@import com.opentok.raven.resources._
+<!-- H1 -->
+<div align="center" style="font-family: @Styles.FONT_HEADING; font-size: 20px; color: #5f5f61; padding-bottom: 35px;">Your Credit Has Been Extended</div>
+
+<!-- Body Copy -->
+<div style="line-height: 24px; padding-bottom: 35px; font-family: @Styles.FONT_TEXT;">
+    You’ve received $@creditIncrease in free credits as part of your OpenTok trial.<br>
+    These credits will automatically apply to your usage of any OpenTok feature.
+</div>
+
+<!-- CTA Button with subtitle -->
+<div align="center" style="padding-bottom: 35px;"><a href="@login_url">
+    <button style="height:40px; background-color:  #0099cc; border: none; font-family: @Styles.FONT_TEXT; font-size: 16px; color: #ffffff; padding: 0px 25px; margin-bottom:12px; border-radius: 3px;">
+    <span class="blank" style="text-decoration:none !important;">
+            Log in to your account
+    </span>
+        <img style="position: relative; top: 2px; padding-left: 20px" src="https://assets.tokbox.com/email/arrow_white.png" alt="&rarr;" border="0">
+    </button></a>
+
+</div>
+
+<!-- Thank You -->
+<div style="line-height: 24px; font-family: @Styles.FONT_TEXT;">Thanks for trying OpenTok,<br><br>The TokBox Team</div>
