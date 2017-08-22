@@ -315,22 +315,22 @@ object Email {
 
     case templateId@"account_credit_expiration_warning" ⇒
       wrapTemplate(requestId, " Account Credit Warning", recipient, "messages@tokbox.com",
-        html.account_credit_expiration_warning("https://tokbox.com/account"), templateId)
+        html.account_credit_expiration_warning("https://tokbox.com/account"), templateId, fromName = Some("TokBox"))
 
     case templateId@"account_credit_expiration_final_warning" ⇒
       wrapTemplate(requestId, " Account Credit Final Warning", recipient, "messages@tokbox.com",
-        html.account_credit_expiration_final_warning("https://tokbox.com/account"), templateId)
+        html.account_credit_expiration_final_warning("https://tokbox.com/account"), templateId, fromName = Some("TokBox"))
 
     case templateId@"account_credit_expiration" ⇒
       wrapTemplate(requestId, " Account Credit Expired", recipient, "messages@tokbox.com",
-        html.account_credit_expiration("https://tokbox.com/account"), templateId)
+        html.account_credit_expiration("https://tokbox.com/account"), templateId, fromName = Some("TokBox"))
 
     case templateId@"credit_extension" ⇒
       wrapTemplate(requestId, " Account Credit Extended", recipient, "messages@tokbox.com",
         html.credit_extension(
           "https://tokbox.com/account",
           fields ?> "creditIncrease"),
-        templateId)
+        templateId, fromName = Some("TokBox"))
 
     case templateId@"error" ⇒
       val component = fields %> "component"
