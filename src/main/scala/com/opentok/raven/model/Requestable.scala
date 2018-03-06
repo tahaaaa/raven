@@ -3,7 +3,7 @@ package com.opentok.raven.model
 import com.opentok.raven.Implicits._
 import com.opentok.raven.http.JsonProtocol._
 import com.opentok.raven.model.Email.{EmailAddress, _}
-import com.opentok.raven.resources.{Browser, Project, SDK, Update}
+import com.opentok.raven.resources.{Browser, Project, SDK, Update, Insights}
 import spray.json.{JsValue, _}
 
 import scala.language.implicitConversions
@@ -280,6 +280,7 @@ object Email {
           fields %> "device_last",
           fields %> "device_previous",
           fields.extract[Int]("device_change"),
+          fields.extract[List[Insights]]("insights"),
           fields %> "subscribed_last",
           fields %> "subscribed_previous",
           fields.extract[Int]("subscribed_change"),

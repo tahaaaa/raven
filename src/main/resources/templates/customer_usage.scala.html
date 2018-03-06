@@ -6,6 +6,7 @@
   device_last: String,
   device_previous: String,
   device_change: Int,
+  insights: List[com.opentok.raven.resources.Insights],
   subscribed_last: String,
   subscribed_previous: String,
   subscribed_change: Int,
@@ -98,6 +99,8 @@
 
 @cardStyles = @{ "text-align: center; box-sizing: border-box; display: inline-block; width: 164px; background-color: #fff; border: solid 1px #d2dcef; padding: 25px 0px; margin: 0; border-radius: 5px; overflow: hidden; word-wrap: break-word; white-space: normal; vertical-align: top" }
 
+@twoCardStyles = @{ "text-align: center; box-sizing: border-box; display: inline-block; width: 250px; background-color: #fff; border: solid 1px #d2dcef; padding: 25px 0px; margin: 0; border-radius: 5px; overflow: hidden; word-wrap: break-word; white-space: normal; vertical-align: top" }
+
 @cardContainerStyles = @{ "font-size: 0" }
 
 @iconCardStyles = @{ "display: inline-block; margin: 0 0 5px 0; padding: 0; border: 0; width: 60px; height: 60px" }
@@ -186,6 +189,63 @@
         </div>
 
         <div style="@separatorStyles"></div>
+
+        @if(!insights.isEmpty) {
+
+            <h1 style="@headerStyles; margin-top: 40px">Insights BETA</h1>
+
+            <h1 style="@titleStyles; margin-top: 30px">Connectivity</h1>
+
+            <p style="@paragraphStyles">Connectivity is defined as a client connecting successfully to a session. Typically, mature and stable applications enjoy an average 30-day connectivity failure rate of 2% or less.</p>
+
+            <div style="@cardContainerStyles; margin: 10px 0 20px 0">
+                <span style="@twoCardStyles">
+                    <span style="@titleCardStyles">@insights(0).rate%</span>
+                    <p style="@paragraphStyles; @paragraphCardStyles">Failure Rate Last 30 Days</p>
+                </span>
+                <span style="@twoCardStyles; margin: 0 0 0 9px">
+                    <span style="@titleCardStyles">@insights(0).delta</span>
+                    <p style="@paragraphStyles; @paragraphCardStyles">30-day Delta</p>
+                </span>
+            </div>
+
+            @if(insights.size > 1) {
+                <h1 style="@titleStyles; margin-top: 30px">Subscription</h1>
+
+                <p style="@paragraphStyles">Subscribing is defined as being able to receive video data being published to a session. Typically, mature and stable applications enjoy an average 30-day subscription failure rate of 3% or less.</p>
+
+                <div style="@cardContainerStyles; margin: 10px 0 20px 0">
+                    <span style="@twoCardStyles">
+                        <span style="@titleCardStyles">@insights(1).rate%</span>
+                        <p style="@paragraphStyles; @paragraphCardStyles">Failure Rate Last 30 Days</p>
+                    </span>
+                    <span style="@twoCardStyles; margin: 0 0 0 9px">
+                        <span style="@titleCardStyles">@insights(1).delta</span>
+                        <p style="@paragraphStyles; @paragraphCardStyles">30-day Delta</p>
+                    </span>
+                </div>
+            }
+
+            @if(insights.size > 2) {
+                <h1 style="@titleStyles; margin-top: 30px">Publishing</h1>
+
+                <p style="@paragraphStyles">Publishing is defined as a session participant creating a stream and sharing it with a session successfully. Typically, mature and stable applications enjoy an average 30-day publishing failure rate of 5% or less.</p>
+
+                <div style="@cardContainerStyles; margin: 10px 0 20px 0">
+                    <span style="@twoCardStyles">
+                        <span style="@titleCardStyles">@insights(2).rate%</span>
+                        <p style="@paragraphStyles; @paragraphCardStyles">Failure Rate Last 30 Days</p>
+                    </span>
+                    <span style="@twoCardStyles; margin: 0 0 0 9px">
+                        <span style="@titleCardStyles">@insights(2).delta</span>
+                        <p style="@paragraphStyles; @paragraphCardStyles">30-day Delta</p>
+                    </span>
+                </div>
+            }
+
+            <div style="@separatorStyles"></div>
+
+        }
 
         <h1 style="@headerStyles; margin-top: 40px">Recommendations</h1>
 
