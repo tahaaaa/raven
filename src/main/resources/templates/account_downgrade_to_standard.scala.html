@@ -1,0 +1,25 @@
+@(user_firstName: String)
+@import com.opentok.raven.resources._
+
+<div style=" font-family: @Styles.FONT_TEXT; line-height: 24px; padding-bottom: 35px;">
+  <p>Hi @user_firstName,</p>
+
+  <p>We’re writing to let you know that your account has been downgraded.</p>
+
+  <p>You are now on the Standard plan.</p>
+
+  <p>As part of the Standard Plan, you’ll be able to continue using the following features</p>
+  <ul>
+    <li>Core audio and video features</li>
+    <li>Live Streaming (HLS, RTMP)</li>
+    <li>Archiving</li>
+    <li>Security Essentials</li>
+    <li>Basic Support</li>
+  </ul>
+
+  <p>If you have any questions about your new plan, please reach out to <a href="mailto:support@@tokbox.com" style=" font-family: @Styles.FONT_TEXT; color: #0099cc; line-height: 24px; text-decoration: none"><font color="#0099cc">
+       support@@tokbox.com </font></a>and a member of our team will get back to you soon.</p>
+</div>
+
+<!-- Thank You -->
+<div style="line-height: 24px; font-family: @Styles.FONT_TEXT;">Best,<br><br>The TokBox Team</div>

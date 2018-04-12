@@ -350,6 +350,164 @@ object Email {
           fields %> "query", fields %> "source",
           fields %> "analysis", fields.extract[Option[Map[String, String]]]("dimensions"),
           fields ?> "time_cut", fields %> "created_at"), templateId)
+
+    case templateId@"subscription_convert_from_trial_to_standard" ⇒
+      wrapTemplate(requestId, " Welcome to the Standard Plan!", recipient, "support@tokbox.com",
+        html.subscription_convert_from_trial_to_standard(
+          fields %> "user_firstName"),
+        templateId, fromName = Some("TokBox"))
+
+    case templateId@"subscription_convert_from_trial_to_growth" ⇒
+      wrapTemplate(requestId, " Welcome to the Growth Plan!", recipient, "support@tokbox.com",
+        html.subscription_convert_from_trial_to_growth(
+          fields %> "user_firstName"),
+        templateId, fromName = Some("TokBox"))
+
+    case templateId@"subscription_convert_from_trial_to_enterprise" ⇒
+      wrapTemplate(requestId, " Welcome to the Enterprise Plan!", recipient, "support@tokbox.com",
+        html.subscription_convert_from_trial_to_enterprise(
+          fields %> "user_firstName"),
+        templateId, fromName = Some("TokBox"))
+
+    case templateId@"request_received_convert_from_trial_to_enterprise" ⇒
+      wrapTemplate(requestId, " Enterprise upgrade request received", recipient, "support@tokbox.com",
+        html.request_received_convert_from_trial_to_enterprise(
+          fields %> "user_firstName"),
+        templateId, fromName = Some("TokBox"))
+
+    case templateId@"request_received_downgrade_from_enterprise" ⇒
+      wrapTemplate(requestId, " Enterprise downgrade request received", recipient, "support@tokbox.com",
+        html.request_received_downgrade_from_enterprise(
+          fields %> "user_firstName"),
+        templateId, fromName = Some("TokBox"))
+
+    case templateId@"account_upgrade_from_growth_to_enterprise" ⇒
+      wrapTemplate(requestId, " Enterprise upgrade request received", recipient, "support@tokbox.com",
+        html.account_upgrade_from_growth_to_enterprise(
+          fields %> "user_firstName"),
+        templateId, fromName = Some("TokBox"))
+
+    case templateId@"account_upgrade_from_standard_to_enterprise" ⇒
+      wrapTemplate(requestId, " Welcome to the Enterprise Plan!", recipient, "support@tokbox.com",
+        html.account_upgrade_from_standard_to_enterprise(
+          fields %> "user_firstName"),
+        templateId, fromName = Some("TokBox"))
+
+    case templateId@"account_upgrade_from_standard_to_growth" ⇒
+      wrapTemplate(requestId, " Welcome to the Growth Plan!", recipient, "support@tokbox.com",
+        html.account_upgrade_from_standard_to_growth(
+          fields %> "user_firstName"),
+        templateId, fromName = Some("TokBox"))
+
+    case templateId@"account_downgrade_to_standard" ⇒
+      wrapTemplate(requestId, " Welcome to the Standard Plan!", recipient, "support@tokbox.com",
+        html.account_downgrade_to_standard(
+          fields %> "user_firstName"),
+        templateId, fromName = Some("TokBox"))
+
+    case templateId@"account_downgrade_to_growth" ⇒
+      wrapTemplate(requestId, " Welcome to the Growth Plan!", recipient, "support@tokbox.com",
+        html.account_downgrade_to_growth(
+          fields %> "user_firstName"),
+        templateId, fromName = Some("TokBox"))
+
+    case templateId@"request_received_addon_feature" ⇒
+      wrapTemplate(requestId,  fields %> "addon_name" + " has been requested", recipient, "support@tokbox.com",
+        html.request_received_addon_feature(
+          fields %> "user_firstName",
+          fields %> "addon_name"),
+        templateId, fromName = Some("TokBox"))
+
+    case templateId@"request_removal_received_addon_feature" ⇒
+      val addon = fields %> "addon_name"
+      if (addon == "China Relay" || addon == "Advanced Insights" ||  addon == "HIPAA & BAA") {
+        val ccList: Option[List[String]] = Some(List("insidesales@tokbox.com"));
+        wrapTemplate(requestId,  fields %> "addon_name" + " removal has been requested", recipient, "support@tokbox.com",
+          html.request_removal_received_addon_feature(
+            fields %> "user_firstName",
+            fields %> "addon_name"),
+          templateId, fromName = Some("TokBox"), cc = ccList)
+      }
+      else {
+        wrapTemplate(requestId,  fields %> "addon_name" + " removal has been requested", recipient, "support@tokbox.com",
+          html.request_removal_received_addon_feature(
+            fields %> "user_firstName",
+            fields %> "addon_name"),
+          templateId, fromName = Some("TokBox"))
+      }
+
+    case templateId@"addon_aes_256_enabled" ⇒
+      wrapTemplate(requestId, "AES-256 Bit Encryption has been enabled", recipient, "support@tokbox.com",
+        html.addon_aes_256_enabled(
+          fields %> "contact_name"),
+        templateId, fromName = Some("TokBox"))
+
+    case templateId@"addon_hipaa_enabled" ⇒
+      wrapTemplate(requestId, "HIPAA & BAA has been enabled", recipient, "support@tokbox.com",
+        html.addon_hipaa_enabled(
+          fields %> "contact_name"),
+        templateId, fromName = Some("TokBox"))
+
+    case templateId@"addon_advanced_insights_enabled" ⇒
+      wrapTemplate(requestId, "Advanced Insights (Beta) has been enabled", recipient, "support@tokbox.com",
+        html.addon_advanced_insights_enabled(
+          fields %> "account_name"),
+        templateId, fromName = Some("TokBox"))
+
+    case templateId@"addon_support_enabled" ⇒
+      wrapTemplate(requestId, "Mission Critical Support has been enabled", recipient, "support@tokbox.com",
+        html.addon_support_enabled(
+          fields %> "contact_name"),
+        templateId, fromName = Some("TokBox"))
+
+    case templateId@"addon_success_services_enabled" ⇒
+      wrapTemplate(requestId, "Success Service has been enabled", recipient, "support@tokbox.com",
+        html.addon_success_services_enabled(
+          fields %> "contact_name"),
+        templateId, fromName = Some("TokBox"))
+
+    case templateId@"addon_china_relay_enabled" ⇒
+      wrapTemplate(requestId, "China Relay has been enabled", recipient, "support@tokbox.com",
+        html.addon_china_relay_enabled(
+          fields %> "contact_name"),
+        templateId, fromName = Some("TokBox"))
+
+    case templateId@"addon_configurable_turn_enabled" ⇒
+      wrapTemplate(requestId, "Configurable TURN has been enabled", recipient, "support@tokbox.com",
+        html.addon_configurable_turn_enabled(
+          fields %> "contact_name"),
+        templateId, fromName = Some("TokBox"))
+
+    case templateId@"addon_encrypted_archiving_enabled" ⇒
+      wrapTemplate(requestId, "Encrypted archiving has been enabled", recipient, "support@tokbox.com",
+        html.addon_encrypted_archiving_enabled(
+          fields %> "contact_name"),
+        templateId, fromName = Some("TokBox"))
+
+    case templateId@"addon_regional_media_zones_enabled" ⇒
+      wrapTemplate(requestId, "Regional Media Zones has been enabled", recipient, "support@tokbox.com",
+        html.addon_regional_media_zones_enabled(
+          fields %> "contact_name"),
+        templateId, fromName = Some("TokBox"))
+
+    case templateId@"addon_feature_removed" ⇒
+      wrapTemplate(requestId,  fields %> "addon_name" + " has been removed", recipient, "support@tokbox.com",
+        html.addon_feature_removed(
+          fields %> "contact_name",
+          fields %> "addon_name"),
+        templateId, fromName = Some("TokBox"))
+
+    case templateId@"customer_configuration_request" ⇒
+      wrapTemplate(requestId, "customer configuration request", recipient, "support@tokbox.com",
+        html.customer_configuration_request(
+          fields %> "account_name",
+          fields %> "account_id",
+          fields %> "user_id",
+          fields %> "user_name",
+          fields %> "user_email",
+          fields %> "message",
+          fields %> "request"),
+        templateId, fromName = Some("TokBox"))
   }
 
   def build(requestId: Option[String], templateId: String, injections: Injections, recipient: String): Try[Email] = Try {
