@@ -1,0 +1,56 @@
+@(next_unix_ms: Long,
+ account_portal_url: com.opentok.raven.model.Email.Url,
+ overdue_time: Int,
+ contact_name: String,
+ invoice_number: Int,
+ invoice_amount: Int,
+ invoice2_number: Int,
+ invoice2_amount: Int,
+ invoice2_overdue_time: Int
+ )
+
+@import com.opentok.raven.resources._
+<!-- prettify next attempt dt -->
+
+@defining(new org.joda.time.DateTime(next_unix_ms, org.joda.time.DateTimeZone.UTC).toString("YYYY-MM-dd HH:mm:ss ZZZ")){ next_attempt_on =>
+  <!-- H1 -->
+    <div align="center" style="font-family: @Styles.FONT_HEADING; font-size: 20px; color: #5f5f61; padding-bottom: 35px;">Payment Failed - @overdue_time Day Notice</div>
+    <!-- Body Copy -->
+    <div style="line-height: 24px; padding-bottom: 35px; font-family: @Styles.FONT_TEXT;">
+    Hi @contact_name,
+    <br/><br/>Please be advised that the following invoices are now overdue by @overdue_time days or more.
+    <br/><br/>This is our first warning notification. To avoid service interruption, please do one of the following:
+    <br/>1)    Login to your account portal to update your payment information
+    <br/>2)    Remit payment to Tokbox via wire or ACH (wire instructions below) and email <a href="mailto:finance@@tokbox.com" target="_top">finance@@tokbox.com</a> with wire confirmation.
+    <br/><br/>
+    <table>
+        <tr>
+            <th style="text-align:left">Invoice Number</th>
+            <th style="text-align:left">Invoice Amount</th>
+            <th style="text-align:left">Days Overdue</th>
+        </tr>
+        <tr>
+            <td>@invoice_number</td>
+            <td>@invoice_amount</td>
+            <td>@overdue_time</td>
+        </tr>
+        <tr>
+            <td>@invoice2_number</td>
+            <td>@invoice2_amount</td>
+            <td>@invoice2_overdue_time</td>
+        </tr>
+    </table>
+    <br/><br/>
+    <b>Wire instructions:</b><br/>
+    Silicon Valley Bank, Santa Clara<br/>
+    3003 Tasman Drive<br/>
+    Santa Clara, CA 95054<br/>
+    ABA Routing Number: 121140399<br/>
+    Account Number: 3300640964<br/>
+    <b>International Wire Instructions:</b><br/>
+    SWIFT ID: SVBKUS6S<br/>
+
+  </div>
+  <!-- Thank You -->
+  <div style="line-height: 24px; font-family: @Styles.FONT_TEXT;">Thanks for choosing OpenTok,<br><br>The TokBox Team</div>
+}

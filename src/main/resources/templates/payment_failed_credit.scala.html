@@ -1,0 +1,27 @@
+@(next_unix_ms: Long,
+ account_portal_url: com.opentok.raven.model.Email.Url,
+ overdue_time: Int,
+ contact_name: String,
+ invoice_number: Int,
+ invoice_amount: Int,
+ invoice2_number: Int,
+ invoice2_amount: Int,
+ invoice2_overdue_time: Int
+ )
+@import com.opentok.raven.resources._
+
+<!-- prettify next attempt dt -->
+@defining(new org.joda.time.DateTime(next_unix_ms, org.joda.time.DateTimeZone.UTC).toString("YYYY-MM-dd HH:mm:ss ZZZ")){ next_attempt_on =>
+  <!-- H1 -->
+    <div align="center" style="font-family: @Styles.FONT_HEADING; font-size: 20px; color: #5f5f61; padding-bottom: 35px;">Payment Failed - @overdue_time Day Notice</div>
+    <!-- Body Copy -->
+    <div style="line-height: 24px; padding-bottom: 35px; font-family: @Styles.FONT_TEXT;">
+    Hi @contact_name,
+    <br/><br/>We’re writing to let you know that your recent credit card payment attempt has failed.
+    <br/><br/>Please login to your <a href="https://tokbox.com/account/#/billing" target="_top">account portal</a> to update your payment information.
+    <br/>You’ll receive <b>two additional notices</b> if you haven’t updated your credit card within the next 4 days, and after the third notice, we will turn off your service.
+    <br/><br/>
+  </div>
+  <!-- Thank You -->
+  <div style="line-height: 24px; font-family: @Styles.FONT_TEXT;">Thanks for choosing OpenTok,<br><br>The TokBox Team</div>
+}
