@@ -2,11 +2,7 @@
  account_portal_url: com.opentok.raven.model.Email.Url,
  overdue_time: Int,
  contact_name: String,
- invoice_number: Int,
- invoice_amount: Int,
- invoice2_number: Int,
- invoice2_amount: Int,
- invoice2_overdue_time: Int
+ invoice: Array[Array[Int]]
  )
 
 @import com.opentok.raven.resources._
@@ -27,18 +23,15 @@
         <tr>
             <th style="text-align:left">Invoice Number</th>
             <th style="text-align:left">Invoice Amount</th>
-            <th style="text-align:left">Days Overdue</th>
         </tr>
-        <tr>
-            <td>@invoice_number</td>
-            <td>@invoice_amount</td>
-            <td>@overdue_time</td>
-        </tr>
-        <tr>
-            <td>@invoice2_number</td>
-            <td>@invoice2_amount</td>
-            <td>@invoice2_overdue_time</td>
-        </tr>
+        @invoice_table = @{
+            for(var i <- 0 until invoice.length){
+                <tr>
+                    <td>invoice[i][0]</td>
+                    <td>invoice[i][1]</td>
+                </tr>
+            }
+        }
     </table>
     <br/><br/>
     <b>Wire instructions:</b><br/>

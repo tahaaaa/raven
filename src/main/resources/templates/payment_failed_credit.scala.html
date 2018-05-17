@@ -1,13 +1,5 @@
-@(next_unix_ms: Long,
- account_portal_url: com.opentok.raven.model.Email.Url,
- overdue_time: Int,
- contact_name: String,
- invoice_number: Int,
- invoice_amount: Int,
- invoice2_number: Int,
- invoice2_amount: Int,
- invoice2_overdue_time: Int
- )
+@(attempt: Int, contact_name: String)
+
 @import com.opentok.raven.resources._
 
 <!-- prettify next attempt dt -->
@@ -19,7 +11,15 @@
     Hi @contact_name,
     <br/><br/>We’re writing to let you know that your recent credit card payment attempt has failed.
     <br/><br/>Please login to your <a href="https://tokbox.com/account/#/billing" target="_top">account portal</a> to update your payment information.
-    <br/>You’ll receive <b>two additional notices</b> if you haven’t updated your credit card within the next 4 days, and after the third notice, we will turn off your service.
+    @pay_us_warning = @{
+      if (attempt == 1) {
+        "You’ll receive <b>two additional notices</b> if you haven’t updated your credit card within the next 4 days, and after the third notice, we will turn off your service."
+      } else if (attempt == 2) {
+        "You’ll receive <b>one additional notice</b> if you haven’t updated your credit card within the next 4 days, and by the next notice, we will turn off your service."
+      } else {
+        "We have made 3 attempts to contact you and attempt payment from the card details you supplied. Your current service is suspended until your credit card details are updated and your arrears payment is made."
+      }
+    }
     <br/><br/>
   </div>
   <!-- Thank You -->
